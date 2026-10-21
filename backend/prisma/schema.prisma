@@ -1,13 +1,90 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Rol {
+  SUPER_ADMIN
+  ADMIN
+  SUPERVISOR
+  COMISIONISTA
+}
+
+model Empresa {
+  id        String   @id @default(uuid())
+  nombre    String
+  creadoEn  DateTime @default(now()) @map("creado_en")
+
+  sucursales   Sucursal[]
+  usuarios     Usuario[]
+  comisionistas Comisionista[]
+  monedas      Moneda[]
+
+  @@map("empresas")
+}
+
+model Sucursal {
+  id        String   @id @default(uuid())
+  empresaId String   @map("empresa_id")
+  nombre    String
+  codigo    String?
+  creadoEn  DateTime @default(now()) @map("creado_en")
+
+  empresa       Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  comisionistas Comisionista[]
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId])
+  @@map("sucursales")
+}
+
+model Usuario {
+  id           String   @id @default(uuid())
+  empresaId    String   @map("empresa_id")
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  rol          Rol      @default(COMISIONISTA)
+  activo       Boolean  @default(true)
+  creadoEn     DateTime @default(now()) @map("creado_en")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@index([empresaId])
+  @@map("usuarios")
+}
+
+model Comisionista {
+  id         String   @id @default(uuid())
+  empresaId  String   @map("empresa_id")
+  sucursalId String   @map("sucursal_id")
+  nombre     String
+  codigo     String?
+  activo     Boolean  @default(true)
+  creadoEn   DateTime @default(now()) @map("creado_en")
+
+  empresa  Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  sucursal Sucursal @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId])
+  @@index([sucursalId])
+  @@map("comisionistas")
+}
+
+model Moneda {
+  id        String   @id @default(uuid())
+  empresaId String   @map("empresa_id")
+  codigo    String
+  nombre    String
+  creadoEn  DateTime @default(now()) @map("creado_en")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId])
+  @@map("monedas")
 }

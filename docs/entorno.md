@@ -46,16 +46,25 @@ cd backend
 pnpm exec prisma validate
 pnpm exec prisma migrate dev
 pnpm exec prisma generate
+pnpm exec prisma db seed
 ```
 
 El archivo de configuración de Prisma es `prisma7.config.ts` (Prisma 7 lo genera con ese nombre) y lee `DATABASE_URL` desde `backend/.env`.
+
+## Demo
+
+Usuario: `admin@demo.com` · Contraseña: `Clave1234`
+
+Endpoints: `GET /api/health`, `POST /api/auth/login`, `GET|POST /api/comisionistas`, `GET /api/sucursales`.
+
+> Los puertos 4000 y 3000 los usa el proyecto anterior; este usa 4100 y 3100.
 
 ## Frontend
 
 ```bash
 cd frontend
 pnpm install
-pnpm dev           # http://localhost:3000
+pnpm dev -- -p 3100 # http://localhost:3100
 pnpm build
 pnpm lint
 ```
@@ -67,7 +76,9 @@ pnpm lint
 | Variable | Uso |
 |---|---|
 | `DATABASE_URL` | conexión PostgreSQL |
-| `PORT` | puerto del backend (4000) |
+| `PORT` | puerto del backend (4100) |
+| `JWT_SECRET` | firma de los tokens |
+| `WEB_ORIGIN` | origen permitido por CORS |
 
 ## Abrir en VS Code
 

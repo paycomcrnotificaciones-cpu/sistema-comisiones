@@ -7,9 +7,10 @@ Proyecto construido **desde cero** por Dilan.
 - [x] Espacio de trabajo y git
 - [x] Documentación de diseño (borrador)
 - [x] Bootstrap: backend NestJS, frontend Next.js, PostgreSQL en podman
+- [x] Primer avance: login con JWT + CRUD de comisionistas
 - [ ] Diseño cerrado (`docs/design.md`)
 - [ ] Decisiones clave tomadas (`docs/decisiones.md`)
-- [ ] Primer módulo
+- [ ] Diseño y siguientes módulos (ver docs/roadmap.md)
 
 ## Estructura
 
@@ -35,6 +36,16 @@ Proyecto construido **desde cero** por Dilan.
 ## Cómo trabajamos
 
 Ver `COMO-TRABAJAMOS.md`. Dilan escribe el código; el asistente guía, revisa y solo edita si se le pide.
+
+## Cómo correr
+
+```bash
+podman start comisiones-db-v2
+cd backend && pnpm start:dev        # :4100
+cd frontend && pnpm dev -- -p 3100  # :3100
+```
+
+Demo: `admin@demo.com` / `Clave1234`
 
 ## Siguiente paso
 
