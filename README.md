@@ -1,33 +1,41 @@
 # Sistema de Comisiones — Dilan Delgado
 
-Proyecto construido **desde cero** por Dilan. Este repositorio arranca en fase de **diseño**: todavía no hay código.
+Proyecto construido **desde cero** por Dilan.
 
 ## Estado
 
-- [x] Espacio de trabajo creado
+- [x] Espacio de trabajo y git
+- [x] Documentación de diseño (borrador)
+- [x] Bootstrap: backend NestJS, frontend Next.js, PostgreSQL en podman
 - [ ] Diseño cerrado (`docs/design.md`)
 - [ ] Decisiones clave tomadas (`docs/decisiones.md`)
-- [ ] Bootstrap del proyecto
 - [ ] Primer módulo
-
-## Cómo trabajamos
-
-Ver `COMO-TRABAJAMOS.md`. Resumen: Dilan escribe el código; el asistente guía, revisa y solo edita si se le pide explícitamente.
 
 ## Estructura
 
 ```
 .
+├── backend/            # NestJS + Prisma
+│   ├── src/
+│   ├── prisma/schema.prisma
+│   ├── prisma7.config.ts
+│   └── .env.example
+├── frontend/           # Next.js + TypeScript + Tailwind
+│   └── src/app/
+├── docs/
+│   ├── design.md
+│   ├── decisiones.md
+│   ├── roadmap.md
+│   ├── api.md
+│   └── entorno.md
 ├── README.md
-├── COMO-TRABAJAMOS.md
-├── .gitignore
-└── docs/
-    ├── design.md        # documento de diseño (se llena primero)
-    ├── decisiones.md    # registro de decisiones (ADR ligero)
-    ├── roadmap.md       # orden de construcción y definición de terminado
-    └── api.md           # contrato de endpoints
+└── COMO-TRABAJAMOS.md
 ```
+
+## Cómo trabajamos
+
+Ver `COMO-TRABAJAMOS.md`. Dilan escribe el código; el asistente guía, revisa y solo edita si se le pide.
 
 ## Siguiente paso
 
-Completar `docs/design.md` secciones 1–5 y registrar en `docs/decisiones.md` las cinco decisiones clave. Cuando estén, se revisan antes de escribir código.
+Completar `docs/design.md` secciones 1–5 y las cinco decisiones clave en `docs/decisiones.md`.
