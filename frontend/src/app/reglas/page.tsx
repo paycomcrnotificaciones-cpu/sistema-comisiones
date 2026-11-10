@@ -82,7 +82,7 @@ export default function ReglasPage() {
   const [nombre, setNombre] = useState("");
   const [tipo, setTipo] = useState<Tipo>("PORCENTAJE");
   const [valor, setValor] = useState("");
-  const [ambito, setAmbito] = useState<Ambito>("GLOBAL");
+  const [ambito, setAmbito] = useState<Ambito>("PRODUCTO");
   const [producto, setProducto] = useState("");
   const [comisionistaId, setComisionistaId] = useState("");
   const [sucursalId, setSucursalId] = useState("");
@@ -139,7 +139,7 @@ export default function ReglasPage() {
     setNombre("");
     setTipo("PORCENTAJE");
     setValor("");
-    setAmbito("GLOBAL");
+    setAmbito("PRODUCTO");
     setProducto("");
     setComisionistaId("");
     setSucursalId("");
@@ -271,7 +271,19 @@ export default function ReglasPage() {
           <form onSubmit={guardar} className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <label className={`${labelClass} sm:col-span-2`}>
               <span>Nombre</span>
-              <input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. 5% cámaras" className={inputClass} />
+              <input
+                required
+                value={nombre}
+                onChange={(e) => {
+                  const valorNombre = e.target.value;
+                  setNombre(valorNombre);
+                  if (ambito === "PRODUCTO" && (producto === "" || producto === nombre)) {
+                    setProducto(valorNombre);
+                  }
+                }}
+                placeholder="Ej. Cámaras de seguridad"
+                className={inputClass}
+              />
             </label>
             <label className={labelClass}>
               <span>Tipo</span>
@@ -409,15 +421,44 @@ export default function ReglasPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <div className="flex flex-wrap justify-end gap-3">
-                          <button type="button" onClick={() => editar(r)} className="text-[12px] font-semibold text-primary-600 dark:text-primary-100">
-                            Editar
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => editar(r)}
+                            title="Editar"
+                            aria-label={`Editar ${r.nombre}`}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-light-100 text-body-text transition-colors hover:border-primary-500 hover:bg-primary-500/10 hover:text-primary-600 dark:border-dark-600 dark:hover:text-primary-100"
+                          >
+                            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M4 20h4L19 9l-4-4L4 16v4z" />
+                              <path d="M13.5 6.5l4 4" />
+                            </svg>
                           </button>
-                          <button type="button" onClick={() => alternar(r)} className="text-[12px] font-semibold text-body-text">
-                            {r.activa ? "Desactivar" : "Activar"}
+                          <button
+                            type="button"
+                            onClick={() => alternar(r)}
+                            title={r.activa ? "Desactivar" : "Activar"}
+                            aria-label={r.activa ? `Desactivar ${r.nombre}` : `Activar ${r.nombre}`}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-light-100 text-body-text transition-colors hover:border-warning-500 hover:bg-warning-500/10 hover:text-warning-600 dark:border-dark-600"
+                          >
+                            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M12 3v9" />
+                              <path d="M6.3 6.3a8 8 0 1 0 11.4 0" />
+                            </svg>
                           </button>
-                          <button type="button" onClick={() => setPorEliminar(r)} className="text-[12px] font-semibold text-danger-500">
-                            Eliminar
+                          <button
+                            type="button"
+                            onClick={() => setPorEliminar(r)}
+                            title="Eliminar"
+                            aria-label={`Eliminar ${r.nombre}`}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-light-100 text-body-text transition-colors hover:border-danger-500 hover:bg-danger-500/10 hover:text-danger-500 dark:border-dark-600"
+                          >
+                            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M4 7h16" />
+                              <path d="M9 7V4h6v3" />
+                              <path d="M6 7l1 13h10l1-13" />
+                              <path d="M10 11v6M14 11v6" />
+                            </svg>
                           </button>
                         </div>
                       </td>
