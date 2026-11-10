@@ -551,11 +551,11 @@ function PerfilComisionista() {
                     <option value="MONTO_FIJO">Monto fijo (₡)</option>
                   </select>
                 </label>
-                <label className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
+                <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
                   <span>Monto de la venta</span>
                   <input required inputMode="decimal" placeholder="0.00" value={monto} onChange={(e) => setMonto(e.target.value)} className={inputClass} />
                 </label>
-                <label className={labelClass}>
+                <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
                   <span>{comisionTipo === "PORCENTAJE" ? "Porcentaje de comisión (%)" : "Monto fijo de comisión (₡)"}</span>
                   <input required inputMode="decimal" placeholder={comisionTipo === "PORCENTAJE" ? "5" : "0.00"} value={comisionValor} onChange={(e) => setComisionValor(e.target.value)} className={inputClass} />
                 </label>
