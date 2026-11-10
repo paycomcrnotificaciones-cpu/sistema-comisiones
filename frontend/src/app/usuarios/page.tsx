@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { AccionTabla } from "@/components/accion-tabla";
 import { AppShell } from "@/components/app-shell";
 import { apiFetch, getSesion, type SesionJwt } from "@/lib/api";
 
@@ -222,7 +223,7 @@ export default function UsuariosPage() {
                   <th className="px-4 py-3 font-semibold">Rol</th>
                   <th className="px-4 py-3 font-semibold">Estado</th>
                   <th className="px-4 py-3 font-semibold">Comisionista</th>
-                  <th className="px-4 py-3" />
+                  <th className="px-4 py-3 text-right font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -255,21 +256,41 @@ export default function UsuariosPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-body-text">{u.comisionista?.nombre ?? "—"}</td>
-                      <td className="px-4 py-3.5 text-right">
+                      <td className="px-4 py-3.5">
                         {puedeGestionar(u) && (
-                          <div className="flex flex-wrap items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1.5">
                             {claveId === u.id ? (
                               <>
-                                <input type="password" minLength={8} value={nuevaClave} onChange={(e) => setNuevaClave(e.target.value)} placeholder="Nueva contraseña" className="w-36 rounded-md border border-light-100 px-2 py-1 text-sm dark:border-dark-600 dark:bg-dark-700 dark:text-white" />
-                                <button type="button" onClick={() => cambiarPassword(u.id)} className="rounded-md px-2 py-1 text-[12px] font-semibold text-primary-600">Guardar</button>
-                                <button type="button" onClick={() => { setClaveId(null); setNuevaClave(""); }} className="text-[12px] text-body-text">Cancelar</button>
+                                <input
+                                  type="password"
+                                  minLength={8}
+                                  value={nuevaClave}
+                                  onChange={(e) => setNuevaClave(e.target.value)}
+                                  placeholder="Nueva contraseña"
+                                  aria-label="Nueva contraseña"
+                                  className="h-8 w-36 rounded-lg border border-light-100 px-2.5 text-[12px] outline-none focus:border-primary-500 dark:border-dark-600 dark:bg-dark-700 dark:text-white"
+                                />
+                                <button type="button" onClick={() => cambiarPassword(u.id)} className="h-8 rounded-lg bg-primary-500 px-3 text-[12px] font-semibold text-white hover:bg-primary-600">
+                                  Guardar
+                                </button>
+                                <button type="button" onClick={() => { setClaveId(null); setNuevaClave(""); }} className="h-8 rounded-lg border border-light-100 px-3 text-[12px] font-semibold text-body-text hover:bg-light-50 dark:border-dark-600 dark:hover:bg-dark-600">
+                                  Cancelar
+                                </button>
                               </>
                             ) : (
-                              <button type="button" onClick={() => setClaveId(u.id)} className="rounded-md px-2 py-1 text-[12px] font-semibold text-body-text hover:bg-light-50 dark:hover:bg-dark-600">Contraseña</button>
+                              <AccionTabla
+                                etiqueta={`Cambiar contraseña de ${u.email}`}
+                                icono="clave"
+                                variante="primario"
+                                onClick={() => setClaveId(u.id)}
+                              />
                             )}
-                            <button type="button" onClick={() => alternarActivo(u)} className={`rounded-md px-2 py-1 text-[12px] font-semibold ${u.activo ? "text-danger-500" : "text-success-600 dark:text-success-500"}`}>
-                              {u.activo ? "Desactivar" : "Activar"}
-                            </button>
+                            <AccionTabla
+                              etiqueta={u.activo ? `Desactivar a ${u.email}` : `Activar a ${u.email}`}
+                              icono={u.activo ? "desactivar" : "activar"}
+                              variante={u.activo ? "peligro" : "exito"}
+                              onClick={() => alternarActivo(u)}
+                            />
                           </div>
                         )}
                       </td>

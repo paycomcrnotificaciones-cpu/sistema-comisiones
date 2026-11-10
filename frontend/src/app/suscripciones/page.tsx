@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { AccionTabla } from "@/components/accion-tabla";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { apiFetch, getSesion, getToken, type SesionJwt } from "@/lib/api";
@@ -408,14 +409,34 @@ export default function SuscripcionesPage() {
                       </td>
                       <td className="px-6 py-3.5 text-right">
                         {puedeGestionar && s.estado !== "FINALIZADA" && (
-                          <div className="flex flex-wrap justify-end gap-3">
-                            <button type="button" onClick={() => editar(s)} className="text-[12px] font-semibold text-primary-600 dark:text-primary-100">Editar</button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <AccionTabla
+                              etiqueta={`Editar suscripción de ${s.cliente}`}
+                              icono="editar"
+                              variante="primario"
+                              onClick={() => editar(s)}
+                            />
                             {s.estado === "ACTIVA" ? (
-                              <button type="button" onClick={() => pedirCambio(s.id, "pausar", s.cliente)} className="text-[12px] font-semibold text-warning-600">Pausar</button>
+                              <AccionTabla
+                                etiqueta={`Pausar suscripción de ${s.cliente}`}
+                                icono="pausar"
+                                variante="aviso"
+                                onClick={() => pedirCambio(s.id, "pausar", s.cliente)}
+                              />
                             ) : (
-                              <button type="button" onClick={() => pedirCambio(s.id, "reactivar", s.cliente)} className="text-[12px] font-semibold text-success-600 dark:text-success-500">Reactivar</button>
+                              <AccionTabla
+                                etiqueta={`Reactivar suscripción de ${s.cliente}`}
+                                icono="reactivar"
+                                variante="exito"
+                                onClick={() => pedirCambio(s.id, "reactivar", s.cliente)}
+                              />
                             )}
-                            <button type="button" onClick={() => pedirCambio(s.id, "finalizar", s.cliente)} className="text-[12px] font-semibold text-danger-500">Finalizar</button>
+                            <AccionTabla
+                              etiqueta={`Finalizar suscripción de ${s.cliente}`}
+                              icono="finalizar"
+                              variante="peligro"
+                              onClick={() => pedirCambio(s.id, "finalizar", s.cliente)}
+                            />
                           </div>
                         )}
                       </td>

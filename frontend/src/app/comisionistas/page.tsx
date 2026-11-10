@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { AccionTabla } from "@/components/accion-tabla";
 import { AppShell } from "@/components/app-shell";
 import { apiFetch, getSesion, type SesionJwt } from "@/lib/api";
 
@@ -264,7 +265,7 @@ export default function ComisionistasPage() {
                   <th className="px-4 py-3 font-semibold">Código</th>
                   <th className="px-4 py-3 font-semibold">Sucursal</th>
                   <th className="px-4 py-3 font-semibold">Estado</th>
-                  <th className="px-4 py-3" />
+                  <th className="px-4 py-3 text-right font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -313,13 +314,14 @@ export default function ComisionistasPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <Link
-                          href={`/comisionistas/${c.id}`}
-                          aria-label={`${esSupervisor ? "Ver" : "Editar"} perfil de ${c.nombre}`}
-                          className="rounded-md px-2 py-1 text-body-text/60 hover:bg-light-50 hover:text-body-text dark:hover:bg-dark-600"
-                        >
-                          {esSupervisor ? "Ver" : "Editar"}
-                        </Link>
+                        <div className="flex items-center justify-end">
+                          <AccionTabla
+                            href={`/comisionistas/${c.id}`}
+                            etiqueta={`${esSupervisor ? "Ver" : "Editar"} perfil de ${c.nombre}`}
+                            icono={esSupervisor ? "ver" : "editar"}
+                            variante="primario"
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))

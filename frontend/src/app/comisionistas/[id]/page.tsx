@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
+import { AccionTabla } from "@/components/accion-tabla";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { apiFetch, descargarArchivo, getSesion, type SesionJwt } from "@/lib/api";
@@ -911,14 +912,20 @@ function PerfilComisionista() {
                           </td>
                           <td className="px-4 py-3.5">
                             {!soloLectura && (
-                            <div className="flex justify-end gap-2">
-                              <button type="button" onClick={() => editarVenta(v)} className="rounded-lg border border-light-100 px-2.5 py-1.5 text-[12px] font-semibold dark:border-dark-600">
-                                Editar
-                              </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <AccionTabla
+                                etiqueta={`Editar venta de ${v.producto ?? "producto"}`}
+                                icono="editar"
+                                variante="primario"
+                                onClick={() => editarVenta(v)}
+                              />
                               {v.estado === "ACTIVA" && (
-                                <button type="button" onClick={() => setVentaAnular(v)} className="rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-danger-500">
-                                  Anular
-                                </button>
+                                <AccionTabla
+                                  etiqueta={`Anular venta de ${v.producto ?? "producto"}`}
+                                  icono="anular"
+                                  variante="peligro"
+                                  onClick={() => setVentaAnular(v)}
+                                />
                               )}
                             </div>
                             )}

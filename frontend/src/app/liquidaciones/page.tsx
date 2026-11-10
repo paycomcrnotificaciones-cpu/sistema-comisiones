@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useState } from "react";
 
+import { AccionTabla } from "@/components/accion-tabla";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { apiFetch, getSesion, getToken, type SesionJwt } from "@/lib/api";
@@ -375,18 +376,27 @@ export default function LiquidacionesPage() {
                           )}
                         </td>
                         <td className="px-5 py-3 text-right">
-                          <div className="flex flex-wrap justify-end gap-3">
-                            <button type="button" onClick={() => verDetalle(l.id)} className="text-[12px] font-semibold text-primary-600 dark:text-primary-100">
-                              {abierta === l.id ? "Ocultar" : "Detalle"}
-                            </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <AccionTabla
+                              etiqueta={`${abierta === l.id ? "Ocultar" : "Ver"} detalle de ${l.comisionista.nombre}`}
+                              icono="ver"
+                              variante="primario"
+                              onClick={() => verDetalle(l.id)}
+                            />
                             {puedeGestionar && l.estado === "BORRADOR" && (
                               <>
-                                <button type="button" onClick={() => setPagoId(l.id)} className="text-[12px] font-semibold text-success-600 dark:text-success-500">
-                                  Pagar
-                                </button>
-                                <button type="button" onClick={() => setLiqAnular(l)} className="text-[12px] font-semibold text-danger-500">
-                                  Anular
-                                </button>
+                                <AccionTabla
+                                  etiqueta={`Pagar a ${l.comisionista.nombre}`}
+                                  icono="pagar"
+                                  variante="exito"
+                                  onClick={() => setPagoId(l.id)}
+                                />
+                                <AccionTabla
+                                  etiqueta={`Anular liquidación de ${l.comisionista.nombre}`}
+                                  icono="anular"
+                                  variante="peligro"
+                                  onClick={() => setLiqAnular(l)}
+                                />
                               </>
                             )}
                           </div>
