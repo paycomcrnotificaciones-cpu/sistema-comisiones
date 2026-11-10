@@ -150,6 +150,15 @@ function KeyIcon() {
   );
 }
 
+function HomeIcon() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5 9.5V20h5v-6h4v6h5V9.5" />
+    </svg>
+  );
+}
+
 function LogoutIcon() {
   return (
     <svg width={19} height={19} viewBox="0 0 24 24" aria-hidden="true">
@@ -180,6 +189,8 @@ export function AppShell({
   const rutaPerfil = usuario?.comisionistaId
     ? `/comisionistas/${usuario.comisionistaId}`
     : "/comisionistas";
+  const rutaInicio = esComisionista ? rutaPerfil : "/resumen";
+  const enInicio = pathname === rutaInicio;
   const [activos, setActivos] = useState<number | null>(null);
   const [resumen, setResumen] = useState<{ montoVendido: number; totalComision: number; totalVentas: number } | null>(null);
 
@@ -346,10 +357,26 @@ export function AppShell({
 
       <div className="lg:pl-[268px]">
         <header className="sticky top-0 z-20 flex h-[78px] items-center justify-between border-b border-light-100 bg-white/85 px-5 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur dark:border-dark-600 dark:bg-dark-700/85 lg:px-10">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-body-text">Panel</span>
-            <span className="text-body-text/50">/</span>
-            <span className="font-medium text-zinc-900 dark:text-white">{titulo}</span>
+          <div className="flex min-w-0 items-center gap-2 text-sm">
+            <Link
+              href={rutaInicio}
+              aria-label="Ir a la pantalla principal"
+              title="Ir a la pantalla principal"
+              className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3 text-[13px] font-semibold shadow-sm transition-all ${
+                enInicio
+                  ? "border-primary-500 bg-primary-500 text-white hover:bg-primary-600"
+                  : "border-light-100 bg-white text-zinc-900 hover:-translate-y-0.5 hover:border-primary-500 hover:bg-primary-500/10 hover:text-primary-600 dark:border-dark-600 dark:bg-dark-700 dark:text-white dark:hover:text-primary-100"
+              }`}
+            >
+              <HomeIcon />
+              <span className="hidden sm:inline">Inicio</span>
+            </Link>
+            <span className="mx-1 hidden h-5 w-px bg-light-100 dark:bg-dark-600 sm:block" />
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="text-body-text">Panel</span>
+              <span className="text-body-text/50">/</span>
+              <span className="truncate font-medium text-zinc-900 dark:text-white">{titulo}</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2.5">
