@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { apiFetch, getSesion, getToken } from "@/lib/api";
+import { apiFetch, getSesion, getToken, type SesionJwt } from "@/lib/api";
 
 interface Comisionista {
   id: string;
@@ -61,8 +61,13 @@ const inputClass =
 
 export default function LiquidacionesPage() {
   const router = useRouter();
-  const sesion = getSesion();
+  const [sesion, setSesion] = useState<SesionJwt | null>(null);
   const puedeGestionar = sesion?.rol === "ADMIN" || sesion?.rol === "SUPER_ADMIN";
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSesion(getSesion());
+  }, []);
 
   const [mes, setMes] = useState("");
   const [estado, setEstado] = useState("");
@@ -258,7 +263,7 @@ export default function LiquidacionesPage() {
         {mensaje && <p className="text-sm text-success-600 dark:text-success-500">{mensaje}</p>}
 
         {puedeGestionar && (
-          <section className="rounded-2xl border border-light-100 bg-white p-5 shadow-sm dark:border-dark-600 dark:bg-dark-700">
+          <section className="surface p-5">
             <h2 className="font-display text-[18px] font-bold text-zinc-900 dark:text-white">
               Generar borrador individual
             </h2>
@@ -286,7 +291,7 @@ export default function LiquidacionesPage() {
           </section>
         )}
 
-        <section className="overflow-hidden rounded-2xl border border-light-100 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-700">
+        <section className="overflow-hidden surface overflow-hidden">
           <div className="border-b border-light-100 p-5 dark:border-dark-600">
             <h2 className="font-display text-[18px] font-bold text-zinc-900 dark:text-white">
               Liquidaciones del período

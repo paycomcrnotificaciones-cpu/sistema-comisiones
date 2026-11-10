@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { apiFetch, getSesion, getToken } from "@/lib/api";
+import { apiFetch, getSesion, getToken, type SesionJwt } from "@/lib/api";
 
 type Frecuencia = "MENSUAL" | "TRIMESTRAL" | "SEMESTRAL" | "ANUAL" | "UNICA";
 type Estado = "ACTIVA" | "PAUSADA" | "FINALIZADA";
@@ -52,8 +52,13 @@ function fechaHoy(): string {
 
 export default function SuscripcionesPage() {
   const router = useRouter();
-  const sesion = getSesion();
+  const [sesion, setSesion] = useState<SesionJwt | null>(null);
   const puedeGestionar = sesion?.rol === "ADMIN" || sesion?.rol === "SUPER_ADMIN";
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSesion(getSesion());
+  }, []);
 
   const [suscripciones, setSuscripciones] = useState<Suscripcion[]>([]);
   const [comisionistas, setComisionistas] = useState<Comisionista[]>([]);
@@ -227,7 +232,7 @@ export default function SuscripcionesPage() {
         {mensaje && <p className="text-sm text-success-600 dark:text-success-500">{mensaje}</p>}
 
         {puedeGestionar && (
-          <section className="rounded-2xl border border-light-100 bg-white p-6 shadow-sm dark:border-dark-600 dark:bg-dark-700 lg:p-7">
+          <section className="surface p-6 lg:p-7">
             <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
               {editandoId ? "Editar suscripción" : "Nueva suscripción"}
             </h2>
@@ -307,7 +312,7 @@ export default function SuscripcionesPage() {
           </section>
         )}
 
-        <section className="overflow-hidden rounded-2xl border border-light-100 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-700">
+        <section className="overflow-hidden surface overflow-hidden">
           <div className="border-b border-light-100 p-6 dark:border-dark-600">
             <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
               Suscripciones registradas

@@ -81,3 +81,87 @@ svg {
     ),
     var(--background);
 }
+
+.surface {
+  border: 1px solid var(--color-light-100);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 18px 40px -28px rgba(33, 42, 92, 0.28);
+}
+
+.dark .surface {
+  border-color: var(--color-dark-600);
+  background: var(--color-dark-700);
+}
+
+.surface-hover {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.surface-hover:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--color-primary-500) 28%, var(--color-light-100));
+  box-shadow:
+    0 2px 4px rgba(16, 24, 40, 0.04),
+    0 24px 50px -28px rgba(33, 42, 92, 0.38);
+}
+
+.dark .surface-hover:hover {
+  border-color: color-mix(in srgb, var(--color-primary-500) 45%, var(--color-dark-600));
+}
+
+.hero-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, #17233f 0%, #243568 48%, #4254ba 100%);
+  color: #fff;
+  box-shadow: 0 24px 60px -32px rgba(20, 29, 56, 0.75);
+}
+
+.hero-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(74, 196, 243, 0.32), transparent 42%),
+    radial-gradient(circle at 12% 95%, rgba(94, 110, 196, 0.35), transparent 45%);
+  pointer-events: none;
+}
+
+.fade-rise {
+  animation: rise 0.45s ease-out both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.table-row-hover {
+  transition: background-color 0.15s ease;
+}
+
+.table-row-hover:hover {
+  background: color-mix(in srgb, var(--color-primary-500) 5%, transparent);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-primary-500) 35%, transparent) transparent;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+}

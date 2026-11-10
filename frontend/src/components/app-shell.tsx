@@ -189,11 +189,77 @@ export function AppShell({
     };
   }, [router]);
 
+  const navItems = [
+    ...(!esComisionista
+      ? [{ href: "/resumen", texto: "Resumen", icono: <ResumenIcon /> }]
+      : []),
+    ...(esComisionista
+      ? [{ href: rutaPerfil, texto: "Mi perfil", icono: <UsersIcon /> }]
+      : []),
+    ...enlaces
+      .filter((e) => !(esComisionista && e.href === "/liquidaciones"))
+      .filter((e) => !(esComisionista && e.href === "/comisionistas"))
+      .filter((e) => e.href !== "/usuarios" || esGestor)
+      .map((e) => ({
+        href: e.href,
+        texto: e.texto,
+        icono:
+          e.href === "/comisionistas" ? (
+            <UsersIcon />
+          ) : e.href === "/usuarios" ? (
+            <KeyIcon />
+          ) : e.href === "/liquidaciones" ? (
+            <MoneyIcon />
+          ) : e.href === "/suscripciones" ? (
+            <RepeatIcon />
+          ) : (
+            <SalesIcon />
+          ),
+      })),
+  ];
+
+  function linkActivo(href: string) {
+    return href === "/comisionistas"
+      ? pathname.startsWith("/comisionistas")
+      : pathname === href;
+  }
+
+  function navLink(item: (typeof navItems)[number], movil = false) {
+    const activoLink = linkActivo(item.href);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={
+          movil
+            ? `flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[12px] font-semibold transition-colors ${
+                activoLink
+                  ? "bg-primary-500 text-white shadow-sm"
+                  : "bg-light-50 text-body-text dark:bg-dark-700 dark:text-light-100"
+              }`
+            : `relative flex min-h-12 items-center gap-3 rounded-xl px-3.5 text-sm transition-all ${
+                activoLink
+                  ? "bg-white/[0.09] text-white shadow-[inset_3px_0_0_0_var(--color-brand-cyan-500)]"
+                  : "text-white/60 hover:bg-white/5 hover:text-white"
+              }`
+        }
+      >
+        {item.icono}
+        {item.texto}
+        {!movil && item.href === "/comisionistas" && activos !== null && activos > 0 && (
+          <span className="ml-auto rounded-full bg-brand-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-brand-cyan-500">
+            {activos}
+          </span>
+        )}
+      </Link>
+    );
+  }
+
   return (
     <div className="app-bg min-h-screen text-zinc-900 dark:text-light-50">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[268px] flex-col bg-dark-500 px-5 pb-6 pt-8 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[268px] flex-col border-r border-white/5 bg-[linear-gradient(180deg,#151f3b_0%,#1d2a50_55%,#121a33_100%)] px-5 pb-6 pt-8 shadow-[8px_0_40px_-24px_rgba(10,18,38,0.8)] lg:flex">
         <Link href={esComisionista ? rutaPerfil : "/comisionistas"} className="flex items-center gap-3 px-2 pb-8">
-          <Image src={logoIcon} alt="Factelec Comisiones" width={48} height={48} className="shrink-0" />
+          <Image src={logoIcon} alt="Factelec Comisiones" width={48} height={48} className="shrink-0 rounded-2xl bg-white/5 p-1 ring-1 ring-white/10" />
           <span className="flex flex-col">
             <span className="font-display text-[19px] font-bold leading-tight tracking-tight text-white">
               Factelec
@@ -205,66 +271,15 @@ export function AppShell({
         </Link>
 
         <nav className="flex flex-col gap-1">
-          {!esComisionista && (
-            <Link
-              href="/resumen"
-              className={`flex min-h-12 items-center gap-3 rounded-xl px-3.5 text-sm transition-colors ${
-                pathname === "/resumen"
-                  ? "bg-white/10 text-white shadow-[inset_3px_0_0_0_var(--color-primary-500)]"
-                  : "text-white/60 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <ResumenIcon />
-              Resumen
-            </Link>
-          )}
-
-          {esComisionista && (
-            <Link
-              href={rutaPerfil}
-              className={`flex min-h-12 items-center gap-3 rounded-xl px-3.5 text-sm transition-colors ${
-                pathname.startsWith("/comisionistas")
-                  ? "bg-white/10 text-white shadow-[inset_3px_0_0_0_var(--color-primary-500)]"
-                  : "text-white/60 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <UsersIcon />
-              Mi perfil
-            </Link>
-          )}
-
-          {enlaces
-            .filter((e) => !(esComisionista && e.href === "/comisionistas"))
-            .filter((e) => !(esComisionista && e.href === "/liquidaciones"))
-            .filter((e) => e.href !== "/usuarios" || esGestor)
-            .map((e) => {
-            const activoLink = pathname === e.href;
-            return (
-              <Link
-                key={e.href}
-                href={e.href}
-                className={`flex min-h-12 items-center gap-3 rounded-xl px-3.5 text-sm transition-colors ${
-                  activoLink
-                    ? "bg-white/10 text-white shadow-[inset_3px_0_0_0_var(--color-primary-500)]"
-                    : "text-white/60 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                {e.href === "/comisionistas" ? <UsersIcon /> : e.href === "/usuarios" ? <KeyIcon /> : e.href === "/liquidaciones" ? <MoneyIcon /> : e.href === "/suscripciones" ? <RepeatIcon /> : <SalesIcon />}
-                {e.texto}
-                {e.href === "/comisionistas" && activos !== null && activos > 0 && (
-                  <span className="ml-auto rounded-full bg-primary-500 px-2 py-0.5 text-[11px] font-semibold text-white">
-                    {activos}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+          {navItems.map((item) => navLink(item))}
         </nav>
 
         <div className="mt-auto space-y-4">
-          <div className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
-            <p className="text-[11px] uppercase tracking-[1.5px] text-white/50">Resumen del mes</p>
-            <p className="mt-1 font-display text-2xl font-bold text-white">
+          <div className="rounded-xl bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.03))] p-4 ring-1 ring-white/10">
+            <p className="text-[10px] font-semibold uppercase tracking-[1.5px] text-white/50">
+              Resumen del mes
+            </p>
+            <p className="mt-1 font-display text-[24px] font-bold leading-tight text-white">
               {resumen ? formatoDinero.format(resumen.montoVendido) : "—"}
             </p>
             <p className="mt-1 text-[11px] text-white/50">
@@ -272,6 +287,18 @@ export function AppShell({
                 ? `${resumen.totalVentas} ventas · ${formatoDinero.format(resumen.totalComision)} en comisión`
                 : "Sin movimientos aún"}
             </p>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-brand-cyan-500),var(--color-primary-500))]"
+                style={{
+                  width: `${
+                    resumen && resumen.montoVendido > 0
+                      ? Math.min(100, (resumen.totalComision / resumen.montoVendido) * 100 * 4)
+                      : 0
+                  }%`,
+                }}
+              />
+            </div>
           </div>
 
           <button
@@ -289,7 +316,7 @@ export function AppShell({
       </aside>
 
       <div className="lg:pl-[268px]">
-        <header className="sticky top-0 z-20 flex h-[78px] items-center justify-between border-b border-light-100 bg-white/80 px-6 backdrop-blur dark:border-dark-600 dark:bg-dark-700/80 lg:px-10">
+        <header className="sticky top-0 z-20 flex h-[78px] items-center justify-between border-b border-light-100 bg-white/85 px-5 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur dark:border-dark-600 dark:bg-dark-700/85 lg:px-10">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-body-text">Panel</span>
             <span className="text-body-text/50">/</span>
@@ -298,8 +325,8 @@ export function AppShell({
 
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
-            <div className="flex items-center gap-3 rounded-2xl border border-light-100 bg-white px-2 py-1.5 dark:border-dark-600 dark:bg-dark-700">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-500 text-xs font-bold text-white">
+            <div className="flex items-center gap-3 rounded-2xl border border-light-100 bg-white px-2 py-1.5 shadow-sm dark:border-dark-600 dark:bg-dark-700">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--color-primary-500),var(--color-brand-cyan-500))] text-xs font-bold text-white shadow-sm">
                 {usuario?.iniciales ?? "US"}
               </span>
               <span className="hidden flex-col pr-1 sm:flex">
@@ -312,7 +339,11 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-295 px-6 py-8 lg:px-10">{children}</main>
+        <nav className="flex gap-2 overflow-x-auto border-b border-light-100 bg-white/70 px-4 py-3 dark:border-dark-600 dark:bg-dark-700/70 lg:hidden">
+          {navItems.map((item) => navLink(item, true))}
+        </nav>
+
+        <main className="fade-rise mx-auto w-full max-w-295 px-5 py-7 lg:px-10 lg:py-8">{children}</main>
       </div>
     </div>
   );

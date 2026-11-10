@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { apiFetch, getSesion } from "@/lib/api";
+import { apiFetch, getSesion, type SesionJwt } from "@/lib/api";
 
 interface Usuario {
   id: string;
@@ -33,9 +33,14 @@ const inputClass =
 
 export default function UsuariosPage() {
   const router = useRouter();
-  const sesion = getSesion();
+  const [sesion, setSesion] = useState<SesionJwt | null>(null);
   const esSuperAdmin = sesion?.rol === "SUPER_ADMIN";
   const esGestor = esSuperAdmin || sesion?.rol === "ADMIN";
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSesion(getSesion());
+  }, []);
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [email, setEmail] = useState("");
@@ -53,6 +58,7 @@ export default function UsuariosPage() {
   }, []);
 
   useEffect(() => {
+    if (!sesion) return;
     if (!esGestor) {
       router.replace("/comisionistas");
       return;
@@ -71,7 +77,7 @@ export default function UsuariosPage() {
     return () => {
       activo = false;
     };
-  }, [cargar, esGestor, router]);
+  }, [cargar, esGestor, router, sesion]);
 
   async function crear(event: React.FormEvent) {
     event.preventDefault();
@@ -159,7 +165,7 @@ export default function UsuariosPage() {
           </p>
         </div>
 
-        <section className="rounded-2xl border border-light-100 bg-white p-6 shadow-sm dark:border-dark-600 dark:bg-dark-700 lg:p-7">
+        <section className="surface p-6 lg:p-7">
           <div className="mb-6 flex gap-3">
             <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">01</span>
             <div>
@@ -200,7 +206,7 @@ export default function UsuariosPage() {
           {mensaje && <p className="mt-4 text-sm text-success-600 dark:text-success-500">{mensaje}</p>}
         </section>
 
-        <section className="rounded-2xl border border-light-100 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-700">
+        <section className="surface overflow-hidden">
           <div className="border-b border-light-100 p-6 dark:border-dark-600 lg:p-7">
             <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
               Usuarios del sistema

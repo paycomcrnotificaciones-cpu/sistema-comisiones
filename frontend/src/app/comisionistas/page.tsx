@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { apiFetch, getSesion } from "@/lib/api";
+import { apiFetch, getSesion, type SesionJwt } from "@/lib/api";
 
 interface Sucursal {
   id: string;
@@ -37,8 +37,14 @@ function iniciales(nombre: string): string {
 
 export default function ComisionistasPage() {
   const router = useRouter();
-  const esComisionista = getSesion()?.rol === "COMISIONISTA";
-  const esSupervisor = getSesion()?.rol === "SUPERVISOR";
+  const [sesion, setSesion] = useState<SesionJwt | null>(null);
+  const esComisionista = sesion?.rol === "COMISIONISTA";
+  const esSupervisor = sesion?.rol === "SUPERVISOR";
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSesion(getSesion());
+  }, []);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [comisionistas, setComisionistas] = useState<Comisionista[]>([]);
   const [nombre, setNombre] = useState("");
@@ -125,39 +131,40 @@ export default function ComisionistasPage() {
   return (
     <AppShell titulo="Comisionistas">
       <div className="space-y-8">
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-100">
-              Equipo comercial
-            </p>
-            <h1 className="mt-3 font-display text-[37px] font-bold leading-none tracking-[-0.4px] text-zinc-900 dark:text-white">
-              Comisionistas
-            </h1>
-            <p className="mt-3 text-[14px] text-body-text">
-              Administra tu equipo y mantén sus datos siempre al día.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-light-100 bg-white px-4 py-3 shadow-sm dark:border-dark-600 dark:bg-dark-700">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-100">
-              <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" />
-                <circle cx="9.5" cy="7.5" r="3.5" />
-                <path d="M17 11l2 2 3-4" />
-              </svg>
-            </span>
-            <div className="min-w-[92px]">
-              <p className="text-[10px] font-semibold uppercase tracking-[1.5px] text-body-text">Activos</p>
-              <div className="flex items-baseline gap-2">
-                <span className="font-display text-2xl font-bold text-zinc-900 dark:text-white">{activos}</span>
-                <span className="text-[11px] font-medium text-success-600 dark:text-success-500">en total</span>
+        <section className="hero-panel p-6 lg:p-7">
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-5">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[2.4px] text-brand-cyan-500">
+                Equipo comercial
+              </p>
+              <h1 className="mt-2 font-display text-[32px] font-bold leading-none tracking-[-0.5px] text-white">
+                Comisionistas
+              </h1>
+              <p className="mt-3 max-w-lg text-[14px] text-white/70">
+                Administra tu equipo y mantén sus datos siempre al día.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-3 ring-1 ring-white/15">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-brand-cyan-500 ring-1 ring-white/15">
+                <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" />
+                  <circle cx="9.5" cy="7.5" r="3.5" />
+                  <path d="M17 11l2 2 3-4" />
+                </svg>
+              </span>
+              <div className="min-w-[92px]">
+                <p className="text-[10px] font-semibold uppercase tracking-[1.5px] text-white/50">Activos</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-display text-2xl font-bold text-white">{activos}</span>
+                  <span className="text-[11px] font-medium text-[#7ef0e4]">en total</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {!esSupervisor && (
-        <section className="rounded-2xl border border-light-100 bg-white p-6 shadow-sm dark:border-dark-600 dark:bg-dark-700 lg:p-7">
+        <section className="surface p-6 lg:p-7">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
             <div className="flex gap-3">
               <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">01</span>
@@ -216,7 +223,7 @@ export default function ComisionistasPage() {
         </section>
         )}
 
-        <section className="rounded-2xl border border-light-100 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-700">
+        <section className="surface overflow-hidden">
           <div className="flex flex-wrap items-start justify-between gap-4 p-6 lg:p-7">
             <div className="flex gap-3">
               <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">02</span>
@@ -273,7 +280,7 @@ export default function ComisionistasPage() {
                   </tr>
                 ) : (
                   visibles.map((c) => (
-                    <tr key={c.id} className="border-t border-light-100 dark:border-dark-600">
+                    <tr key={c.id} className="table-row-hover border-t border-light-100 dark:border-dark-600">
                       <td className="px-6 py-3.5 lg:px-7">
                         <div className="flex items-center gap-3">
                           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-[11px] font-bold text-primary-700 dark:bg-primary-500/20 dark:text-primary-100">

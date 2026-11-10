@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { apiFetch, getSesion } from "@/lib/api";
+import { apiFetch, getSesion, type SesionJwt } from "@/lib/api";
 
 interface Sucursal {
   id: string;
@@ -87,9 +87,14 @@ function rangoDePeriodo(periodo: Periodo, desde: string, hasta: string) {
 function PerfilComisionista() {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const rol = getSesion()?.rol;
-  const esComisionista = rol === "COMISIONISTA";
-  const soloLectura = esComisionista || rol === "SUPERVISOR";
+  const [sesion, setSesion] = useState<SesionJwt | null>(null);
+  const esComisionista = sesion?.rol === "COMISIONISTA";
+  const soloLectura = esComisionista || sesion?.rol === "SUPERVISOR";
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSesion(getSesion());
+  }, []);
 
   const [comisionista, setComisionista] = useState<Comisionista | null>(null);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
@@ -116,7 +121,7 @@ function PerfilComisionista() {
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [mensajePerfil, setMensajePerfil] = useState<string | null>(null);
 
-  const [fecha, setFecha] = useState(fechaHoy());
+  const [fecha, setFecha] = useState("");
   const [producto, setProducto] = useState("");
   const [monto, setMonto] = useState("");
   const [comisionTipo, setComisionTipo] = useState<"PORCENTAJE" | "MONTO_FIJO">(
@@ -125,6 +130,11 @@ function PerfilComisionista() {
   const [comisionValor, setComisionValor] = useState("");
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [guardandoVenta, setGuardandoVenta] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFecha(fechaHoy());
+  }, []);
 
   const cargarVentas = useCallback(
     async (periodoAct: Periodo, desdeAct: string, hastaAct: string) => {
@@ -306,30 +316,52 @@ function PerfilComisionista() {
     await cargarVentas("rango", desde, hasta);
   }
 
+  const iniciales = (comisionista?.nombre ?? "??")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0])
+    .join("")
+    .toUpperCase();
+
   return (
     <AppShell titulo="Perfil del comisionista">
       <div className="space-y-8">
-        <div>
-          <Link
-            href="/comisionistas"
-            className="text-[12px] font-semibold text-primary-600 hover:underline dark:text-primary-100"
-          >
-            ← Volver a comisionistas
-          </Link>
-          <p className="mt-4 text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-100">
-            Perfil
-          </p>
-          <h1 className="mt-3 font-display text-[37px] font-bold leading-none tracking-[-0.4px] text-zinc-900 dark:text-white">
-            {comisionista?.nombre ?? "Cargando…"}
-          </h1>
-          <p className="mt-3 text-[14px] text-body-text">
-            {soloLectura
-              ? esComisionista
-                ? "Tus datos y tus ventas."
-                : "Datos, acceso y ventas del comisionista."
-              : "Edita sus datos, su acceso y sus ventas."}
-          </p>
-        </div>
+        <section className="hero-panel p-6 lg:p-7">
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-5">
+            <div className="flex items-center gap-4">
+              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-xl font-bold text-white ring-1 ring-white/20">
+                {iniciales}
+              </span>
+              <div>
+                {!esComisionista && (
+                  <Link
+                    href="/comisionistas"
+                    className="text-[11px] font-semibold text-white/55 transition-colors hover:text-white"
+                  >
+                    ← Volver a comisionistas
+                  </Link>
+                )}
+                <h1 className={`font-display text-[30px] font-bold leading-none tracking-[-0.5px] text-white ${esComisionista ? "" : "mt-1"}`}>
+                  {comisionista?.nombre ?? "Cargando…"}
+                </h1>
+                <p className="mt-2 text-[13px] text-white/65">
+                  {comisionista?.sucursal?.nombre ?? "Sin sucursal"}
+                  {comisionista?.codigo ? ` · ${comisionista.codigo}` : ""}
+                </p>
+              </div>
+            </div>
+            <span
+              className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
+                comisionista?.activo
+                  ? "bg-success-500/20 text-[#7ef0e4] ring-1 ring-success-500/30"
+                  : "bg-white/10 text-white/70 ring-1 ring-white/15"
+              }`}
+            >
+              {comisionista?.activo ? "Activo" : "Inactivo"}
+            </span>
+          </div>
+        </section>
 
         {error && <p className="text-sm text-danger-500">{error}</p>}
 
@@ -337,7 +369,7 @@ function PerfilComisionista() {
           <p className="text-sm text-body-text">Cargando perfil…</p>
         ) : (
           <>
-            <section className="rounded-2xl border border-light-100 bg-white p-6 shadow-sm dark:border-dark-600 dark:bg-dark-700">
+            <section className="surface p-6">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-100">
@@ -380,12 +412,12 @@ function PerfilComisionista() {
               </div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {[
-                  { etiqueta: "Monto vendido", valor: totales.montoVendido, clase: "text-zinc-900 dark:text-white" },
-                  { etiqueta: "Comisión generada", valor: totales.totalComision, clase: "text-primary-600 dark:text-primary-100" },
-                  { etiqueta: "Pendiente de pago", valor: totales.comisionPendiente, clase: "text-warning-600" },
-                  { etiqueta: "Comisión pagada", valor: totales.comisionPagada, clase: "text-success-600 dark:text-success-500" },
+                  { etiqueta: "Monto vendido", valor: totales.montoVendido, clase: "text-zinc-900 dark:text-white", borde: "border-t-primary-500" },
+                  { etiqueta: "Comisión generada", valor: totales.totalComision, clase: "text-primary-600 dark:text-primary-100", borde: "border-t-brand-cyan-500" },
+                  { etiqueta: "Pendiente de pago", valor: totales.comisionPendiente, clase: "text-warning-600", borde: "border-t-warning-500" },
+                  { etiqueta: "Comisión pagada", valor: totales.comisionPagada, clase: "text-success-600 dark:text-success-500", borde: "border-t-success-500" },
                 ].map((item) => (
-                  <div key={item.etiqueta} className="rounded-xl bg-light-50 p-4 dark:bg-dark-600">
+                  <div key={item.etiqueta} className={`rounded-xl border border-t-2 border-light-100 bg-light-50/70 p-4 dark:border-dark-600 dark:bg-dark-600/60 ${item.borde}`}>
                     <p className="text-[10px] uppercase tracking-[1.5px] text-body-text">{item.etiqueta}</p>
                     <p className={`mt-1 font-display text-[22px] font-bold ${item.clase}`}>
                       {formatoDinero.format(item.valor)}
@@ -395,13 +427,13 @@ function PerfilComisionista() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-light-100 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-700">
+            <section className="surface overflow-hidden">
               <div className="flex items-center gap-3 border-b border-light-100 p-6 dark:border-dark-600">
                 <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">
                   01
                 </span>
                 <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
-                  Datos del comisionista
+                  {esComisionista ? "Mis datos" : "Datos del comisionista"}
                 </h2>
               </div>
               {soloLectura ? (
@@ -483,7 +515,7 @@ function PerfilComisionista() {
             </section>
 
             {!soloLectura && (
-            <section className="rounded-2xl border border-light-100 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-700">
+            <section className="surface overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
                 <div className="flex items-center gap-3">
                   <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">02</span>
@@ -553,7 +585,7 @@ function PerfilComisionista() {
             </section>
             )}
 
-            <section className="rounded-2xl border border-light-100 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-700">
+            <section className="surface overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
                 <div className="flex items-center gap-3">
                   <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">03</span>
@@ -593,7 +625,7 @@ function PerfilComisionista() {
                       </tr>
                     ) : (
                       ventas.map((v) => (
-                        <tr key={v.id} className="border-t border-light-100 dark:border-dark-600">
+                        <tr key={v.id} className="table-row-hover border-t border-light-100 dark:border-dark-600">
                           <td className="px-6 py-3.5 text-body-text">{v.fecha.slice(0, 10)}</td>
                           <td className="px-4 py-3.5 text-zinc-900 dark:text-white">{v.producto ?? "—"}</td>
                           <td className="px-4 py-3.5 text-right text-body-text">{formatoDinero.format(Number(v.neto))}</td>
