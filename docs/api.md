@@ -47,7 +47,7 @@ Nunca se permite cambiar el rol propio ni dejar la empresa sin un
 
 | Método | Ruta | Request | Response |
 |---|---|---|---|
-| GET | `/resumen` | query: `mes` (`YYYY-MM`, opcional) | Totales del mes |
+| GET | `/resumen` | query: `mes` (`YYYY-MM`, opcional) | Totales del mes, metas, comparativo por sucursal |
 
 Devuelve `totalVentas`, `montoVendido`, `totalComision`,
 `comisionistasActivos`, `comisionPendiente`, `comisionPagada`,
@@ -61,6 +61,25 @@ El mes se interpreta en hora de Costa Rica (UTC-6).
 | Método | Ruta | Request | Response |
 |---|---|---|---|
 | GET | `/sucursales` | — | `Sucursal[]` |
+
+## Metas
+
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| GET | `/metas` | query: `mes` | `{ mes, general, comisionistas: [{ comisionistaId, monto }] }` |
+| PUT | `/metas` | `{ mes, monto, comisionistaId? }` (`monto: null` la elimina) | `Meta` |
+
+Sin `comisionistaId` la meta es general de la empresa; con él aplica solo a
+ese comisionista y tiene prioridad sobre la general.
+
+## Historial
+
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| GET | `/auditoria` | query: `pagina`, `limite`, `accion`, `q` | `{ total, pagina, limite, datos }` |
+
+Registra automáticamente cada acción de escritura (crear, editar, anular,
+pagar) con usuario, rol, entidad y resultado. Solo ADMIN y SUPER_ADMIN.
 
 ## Ventas
 

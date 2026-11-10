@@ -18,6 +18,7 @@ const enlaces: NavItem[] = [
   { href: "/comisionistas", texto: "Comisionistas" },
   { href: "/liquidaciones", texto: "Liquidaciones" },
   { href: "/suscripciones", texto: "Suscripciones" },
+  { href: "/historial", texto: "Historial" },
   { href: "/usuarios", texto: "Usuarios" },
 ];
 
@@ -118,6 +119,16 @@ function MoneyIcon() {
   );
 }
 
+function HistoryIcon() {
+  return (
+    <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 4v5h5" />
+      <path d="M12 8v4l3 2" />
+    </svg>
+  );
+}
+
 function KeyIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -200,6 +211,7 @@ export function AppShell({
       .filter((e) => !(esComisionista && e.href === "/liquidaciones"))
       .filter((e) => !(esComisionista && e.href === "/comisionistas"))
       .filter((e) => e.href !== "/usuarios" || esGestor)
+      .filter((e) => e.href !== "/historial" || esGestor)
       .map((e) => ({
         href: e.href,
         texto: e.texto,
@@ -212,6 +224,8 @@ export function AppShell({
             <MoneyIcon />
           ) : e.href === "/suscripciones" ? (
             <RepeatIcon />
+          ) : e.href === "/historial" ? (
+            <HistoryIcon />
           ) : (
             <SalesIcon />
           ),

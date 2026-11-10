@@ -206,6 +206,36 @@ async function main() {
     });
   }
 
+  const periodoMeta = hoyCR.slice(0, 7);
+  const metasDemo = [
+    { comisionistaId: null, monto: '60000' },
+    { comisionistaId: comisionista.id, monto: '50000' },
+  ];
+  for (const meta of metasDemo) {
+    const existente = await prisma.meta.findFirst({
+      where: {
+        empresaId: empresa.id,
+        periodo: periodoMeta,
+        comisionistaId: meta.comisionistaId,
+      },
+    });
+    if (existente) {
+      await prisma.meta.update({
+        where: { id: existente.id },
+        data: { monto: meta.monto },
+      });
+    } else {
+      await prisma.meta.create({
+        data: {
+          empresaId: empresa.id,
+          periodo: periodoMeta,
+          comisionistaId: meta.comisionistaId,
+          monto: meta.monto,
+        },
+      });
+    }
+  }
+
   console.log(
     'Seed listo: super@demo.com · admin@demo.com · supervisor@demo.com · laura@demo.com (Clave1234)',
   );

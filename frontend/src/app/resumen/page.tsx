@@ -12,10 +12,16 @@ interface Fila {
   ventas: number;
   montoVendido: number;
   comision: number;
+  meta?: number | null;
+  avance?: number | null;
+  montoAnterior?: number;
+  variacion?: number | null;
 }
 
 interface Resumen {
   mes: string;
+  mesAnterior: string;
+  metaGeneral: number | null;
   totalVentas: number;
   montoVendido: number;
   totalComision: number;
@@ -77,6 +83,7 @@ const trazosKpi: Record<string, string[]> = {
     "M21 13v2a4 4 0 0 1-4 4H3",
   ],
   grafico: ["M4 19V5", "M4 19h16", "M8 16v-5", "M12 16V8", "M16 16v-9"],
+  meta: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18", "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10", "M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2"],
 };
 
 function IconoKpi({ tipo }: { tipo: string }) {
@@ -214,6 +221,15 @@ export default function ResumenPage() {
       fondo: "bg-secondary-500/10 text-secondary-600",
     },
     {
+      etiqueta: "Meta general",
+      valor: data?.metaGeneral
+        ? formatoDinero.format(data.metaGeneral)
+        : "Sin meta",
+      tipo: "meta",
+      color: "text-zinc-900 dark:text-white",
+      fondo: "bg-primary-500/10 text-primary-600 dark:text-primary-100",
+    },
+    {
       etiqueta: "Comisión recurrente",
       valor: formatoDinero.format(data?.comisionSuscripciones ?? 0),
       tipo: "grafico",
@@ -325,6 +341,8 @@ export default function ResumenPage() {
                   <th className="px-5 py-2.5">Comisionista</th>
                   <th className="px-3 py-2.5 text-right">Ventas</th>
                   <th className="px-3 py-2.5 text-right">Vendido</th>
+                  <th className="px-3 py-2.5 text-right">Meta</th>
+                  <th className="px-3 py-2.5 text-right">Avance</th>
                   <th className="px-5 py-2.5 text-right">Comisión</th>
                 </tr>
               </thead>
@@ -335,11 +353,15 @@ export default function ResumenPage() {
                       <td className="px-5 py-3 font-medium text-zinc-900 dark:text-white">{f.nombre}</td>
                       <td className="px-3 py-3 text-right text-body-text">{f.ventas}</td>
                       <td className="px-3 py-3 text-right text-body-text">{formatoDinero.format(f.montoVendido)}</td>
+                      <td className="px-3 py-3 text-right text-body-text">{f.meta ? formatoDinero.format(f.meta) : "—"}</td>
+                      <td className={`px-3 py-3 text-right font-semibold ${f.avance !== null && f.avance !== undefined && f.avance >= 100 ? "text-success-600 dark:text-success-500" : "text-body-text"}`}>
+                        {f.avance !== null && f.avance !== undefined ? `${f.avance}%` : "—"}
+                      </td>
                       <td className="px-5 py-3 text-right font-semibold text-zinc-900 dark:text-white">{formatoDinero.format(f.comision)}</td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan={4} className="px-5 py-6 text-center text-body-text">Sin datos</td></tr>
+                  <tr><td colSpan={6} className="px-5 py-6 text-center text-body-text">Sin datos</td></tr>
                 )}
               </tbody>
             </table>
@@ -350,7 +372,9 @@ export default function ResumenPage() {
               <h2 className="font-display text-[18px] font-bold text-zinc-900 dark:text-white">
                 Por sucursal
               </h2>
-              <p className="mt-1 text-[12px] text-body-text">Ventas y comisión por punto de venta.</p>
+              <p className="mt-1 text-[12px] text-body-text">
+                Ventas por punto de venta frente al mes anterior.
+              </p>
             </div>
             <table className="w-full text-left text-sm">
               <thead className="bg-light-50 text-[10px] uppercase tracking-[1.2px] text-body-text dark:bg-dark-600">
@@ -358,7 +382,8 @@ export default function ResumenPage() {
                   <th className="px-5 py-2.5">Sucursal</th>
                   <th className="px-3 py-2.5 text-right">Ventas</th>
                   <th className="px-3 py-2.5 text-right">Vendido</th>
-                  <th className="px-5 py-2.5 text-right">Comisión</th>
+                  <th className="px-3 py-2.5 text-right">Mes anterior</th>
+                  <th className="px-5 py-2.5 text-right">Variación</th>
                 </tr>
               </thead>
               <tbody>
@@ -368,11 +393,22 @@ export default function ResumenPage() {
                       <td className="px-5 py-3 font-medium text-zinc-900 dark:text-white">{f.nombre}</td>
                       <td className="px-3 py-3 text-right text-body-text">{f.ventas}</td>
                       <td className="px-3 py-3 text-right text-body-text">{formatoDinero.format(f.montoVendido)}</td>
-                      <td className="px-5 py-3 text-right font-semibold text-zinc-900 dark:text-white">{formatoDinero.format(f.comision)}</td>
+                      <td className="px-3 py-3 text-right text-body-text">{formatoDinero.format(f.montoAnterior ?? 0)}</td>
+                      <td className={`px-5 py-3 text-right font-semibold ${
+                        f.variacion === null || f.variacion === undefined
+                          ? "text-body-text"
+                          : f.variacion >= 0
+                            ? "text-success-600 dark:text-success-500"
+                            : "text-danger-500"
+                      }`}>
+                        {f.variacion === null || f.variacion === undefined
+                          ? "—"
+                          : `${f.variacion > 0 ? "+" : ""}${f.variacion}%`}
+                      </td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan={4} className="px-5 py-6 text-center text-body-text">Sin datos</td></tr>
+                  <tr><td colSpan={5} className="px-5 py-6 text-center text-body-text">Sin datos</td></tr>
                 )}
               </tbody>
             </table>

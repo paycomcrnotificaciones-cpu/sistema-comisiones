@@ -198,3 +198,17 @@ export const suscripcionQuerySchema = z.object({
 });
 
 export type SuscripcionQueryInput = z.infer<typeof suscripcionQuerySchema>;
+
+export const metaQuerySchema = z.object({
+  mes: periodo,
+});
+
+export type MetaQueryInput = z.infer<typeof metaQuerySchema>;
+
+export const metaUpsertSchema = z.object({
+  mes: periodo,
+  monto: z.coerce.number().min(0).nullable(),
+  comisionistaId: z.string().uuid().nullable().optional(),
+});
+
+export type MetaUpsertInput = z.infer<typeof metaUpsertSchema>;

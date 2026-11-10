@@ -71,6 +71,17 @@ function fechaCorta(d: Date): string {
   return `${d.getFullYear()}-${mes}-${dia}`;
 }
 
+function mesDePeriodo(periodo: Periodo): string | null {
+  if (periodo === "todos" || periodo === "rango") return null;
+  const hoy = new Date();
+  const base = new Date(
+    hoy.getFullYear(),
+    hoy.getMonth() + (periodo === "anterior" ? -1 : 0),
+    1,
+  );
+  return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function rangoDePeriodo(periodo: Periodo, desde: string, hasta: string) {
   if (periodo === "todos") return {};
   if (periodo === "rango") return { desde, hasta };
@@ -90,6 +101,7 @@ function PerfilComisionista() {
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
   const esComisionista = sesion?.rol === "COMISIONISTA";
   const soloLectura = esComisionista || sesion?.rol === "SUPERVISOR";
+  const esGestor = sesion?.rol === "ADMIN" || sesion?.rol === "SUPER_ADMIN";
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -105,6 +117,9 @@ function PerfilComisionista() {
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [exportando, setExportando] = useState(false);
+  const [meta, setMeta] = useState<number | null>(null);
+  const [metaInput, setMetaInput] = useState("");
+  const [metaGuardando, setMetaGuardando] = useState(false);
   const [totales, setTotales] = useState({
     montoVendido: 0,
     totalComision: 0,
@@ -138,6 +153,52 @@ function PerfilComisionista() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFecha(fechaHoy());
   }, []);
+
+  const mesMeta = mesDePeriodo(periodo);
+
+  useEffect(() => {
+    if (!mesMeta) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMeta(null);
+      return;
+    }
+    let vivo = true;
+    (async () => {
+      try {
+        const data = await apiFetch<{
+          general: number | null;
+          comisionistas: { comisionistaId: string; monto: number }[];
+        }>(`/metas?mes=${mesMeta}`);
+        if (!vivo) return;
+        const propia = data.comisionistas.find((c) => c.comisionistaId === id);
+        const valor = propia?.monto ?? data.general ?? null;
+        setMeta(valor);
+        setMetaInput(valor === null ? "" : String(valor));
+      } catch {
+        if (vivo) setMeta(null);
+      }
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [mesMeta, id]);
+
+  async function guardarMeta(monto: number | null) {
+    if (!mesMeta) return;
+    setMetaGuardando(true);
+    try {
+      await apiFetch("/metas", {
+        method: "PUT",
+        body: JSON.stringify({ mes: mesMeta, monto, comisionistaId: id }),
+      });
+      setMeta(monto);
+      setMetaInput(monto === null ? "" : String(monto));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar la meta");
+    } finally {
+      setMetaGuardando(false);
+    }
+  }
 
   const paramsVentas = useCallback(
     (
@@ -513,6 +574,62 @@ function PerfilComisionista() {
                   </div>
                 ))}
               </div>
+
+              {mesMeta && (
+                <div className="mt-3 rounded-xl border border-light-100 bg-light-50/70 p-4 dark:border-dark-600 dark:bg-dark-600/60">
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[1.5px] text-body-text">Meta del mes</p>
+                      <p className="mt-1 font-display text-[22px] font-bold text-zinc-900 dark:text-white">
+                        {meta === null ? "Sin meta" : formatoDinero.format(meta)}
+                      </p>
+                    </div>
+                    <p className="text-[12px] text-body-text">
+                      {meta && meta > 0
+                        ? `${formatoDinero.format(totales.montoVendido)} vendido · ${Math.round((totales.montoVendido / meta) * 1000) / 10}% de la meta`
+                        : "Fija una meta para medir el avance del mes"}
+                    </p>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-light-100 dark:bg-dark-500">
+                    <div
+                      className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-brand-cyan-500),var(--color-primary-500))] transition-all"
+                      style={{ width: `${meta && meta > 0 ? Math.min(100, (totales.montoVendido / meta) * 100) : 0}%` }}
+                    />
+                  </div>
+                  {esGestor && (
+                    <div className="mt-3 flex flex-wrap items-end gap-2">
+                      <label className={`${labelClass} w-40`}>
+                        <span>Meta (₡)</span>
+                        <input
+                          inputMode="decimal"
+                          placeholder="0.00"
+                          value={metaInput}
+                          onChange={(e) => setMetaInput(e.target.value)}
+                          className={inputClass}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={metaGuardando || !metaInput}
+                        onClick={() => guardarMeta(Number(metaInput) || 0)}
+                        className="h-[42px] rounded-xl bg-primary-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+                      >
+                        {metaGuardando ? "Guardando…" : "Guardar meta"}
+                      </button>
+                      {meta !== null && (
+                        <button
+                          type="button"
+                          disabled={metaGuardando}
+                          onClick={() => guardarMeta(null)}
+                          className="h-[42px] rounded-xl border border-light-100 px-4 text-sm font-semibold text-body-text transition-colors hover:border-danger-500 hover:text-danger-500 dark:border-dark-600"
+                        >
+                          Quitar meta
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             <section className="surface overflow-hidden">
