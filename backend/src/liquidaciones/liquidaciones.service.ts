@@ -8,6 +8,7 @@ import {
 import { rangoMes } from '../common/periodo.js';
 import type {
   LiquidacionCreateInput,
+  LiquidacionPagarInput,
   LiquidacionQueryInput,
 } from '../common/validators.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -164,7 +165,11 @@ export class LiquidacionesService {
     });
   }
 
-  async pagar(empresaId: string, id: string) {
+  async pagar(
+    empresaId: string,
+    id: string,
+    input: LiquidacionPagarInput = { metodoPago: 'EFECTIVO' },
+  ) {
     const liquidacion = await this.prisma.liquidacion.findFirst({
       where: { id, empresaId },
     });
@@ -177,7 +182,12 @@ export class LiquidacionesService {
 
     return this.prisma.liquidacion.update({
       where: { id },
-      data: { estado: 'PAGADA', pagadaEn: new Date() },
+      data: {
+        estado: 'PAGADA',
+        pagadaEn: new Date(),
+        metodoPago: input.metodoPago,
+        ...(input.nota ? { nota: input.nota } : {}),
+      },
       include: incluir,
     });
   }

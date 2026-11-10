@@ -116,6 +116,13 @@ enum EstadoLiquidacion {
   PAGADA
 }
 
+enum MetodoPago {
+  EFECTIVO
+  SINPE
+  TRANSFERENCIA
+  OTRO
+}
+
 enum Frecuencia {
   MENSUAL
   TRIMESTRAL
@@ -139,6 +146,7 @@ model Liquidacion {
   comisionTotal  Decimal           @default(0) @db.Decimal(18, 4) @map("comision_total")
   ventasCount    Int               @default(0) @map("ventas_count")
   nota           String?
+  metodoPago     MetodoPago?       @map("metodo_pago")
   creadaEn       DateTime          @default(now()) @map("creada_en")
   pagadaEn       DateTime?         @map("pagada_en")
 

@@ -96,6 +96,8 @@ export const ventaQuerySchema = z.object({
   comisionistaId: z.string().uuid().optional(),
   sucursalId: z.string().uuid().optional(),
   estado: z.enum(['ACTIVA', 'ANULADA']).optional(),
+  pago: z.enum(['PENDIENTE', 'PAGADA']).optional(),
+  q: z.string().trim().max(100).optional(),
 })
 
 export type VentaQueryInput = z.infer<typeof ventaQuerySchema>;
@@ -148,6 +150,15 @@ export const liquidacionQuerySchema = z.object({
 });
 
 export type LiquidacionQueryInput = z.infer<typeof liquidacionQuerySchema>;
+
+export const liquidacionPagarSchema = z.object({
+  metodoPago: z
+    .enum(['EFECTIVO', 'SINPE', 'TRANSFERENCIA', 'OTRO'])
+    .default('EFECTIVO'),
+  nota: z.string().trim().max(300).optional(),
+});
+
+export type LiquidacionPagarInput = z.infer<typeof liquidacionPagarSchema>;
 
 export const frecuenciaSchema = z.enum([
   'MENSUAL',

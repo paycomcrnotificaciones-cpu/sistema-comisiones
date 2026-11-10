@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { apiFetch, getSesion, type SesionJwt } from "@/lib/api";
+import { apiFetch, descargarArchivo, getSesion, type SesionJwt } from "@/lib/api";
 
 interface Sucursal {
   id: string;
@@ -102,6 +102,9 @@ function PerfilComisionista() {
   const [periodo, setPeriodo] = useState<Periodo>("mes");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
+  const [estadoFiltro, setEstadoFiltro] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+  const [exportando, setExportando] = useState(false);
   const [totales, setTotales] = useState({
     montoVendido: 0,
     totalComision: 0,
@@ -136,8 +139,14 @@ function PerfilComisionista() {
     setFecha(fechaHoy());
   }, []);
 
-  const cargarVentas = useCallback(
-    async (periodoAct: Periodo, desdeAct: string, hastaAct: string) => {
+  const paramsVentas = useCallback(
+    (
+      periodoAct: Periodo,
+      desdeAct: string,
+      hastaAct: string,
+      estadoAct = "",
+      qAct = "",
+    ) => {
       const params = new URLSearchParams({
         comisionistaId: id,
         limite: "100",
@@ -145,6 +154,23 @@ function PerfilComisionista() {
       const rango = rangoDePeriodo(periodoAct, desdeAct, hastaAct);
       if (rango.desde) params.set("desde", rango.desde);
       if (rango.hasta) params.set("hasta", rango.hasta);
+      if (estadoAct === "ANULADA") params.set("estado", "ANULADA");
+      else if (estadoAct) params.set("pago", estadoAct);
+      if (qAct.trim()) params.set("q", qAct.trim());
+      return params;
+    },
+    [id],
+  );
+
+  const cargarVentas = useCallback(
+    async (
+      periodoAct: Periodo,
+      desdeAct: string,
+      hastaAct: string,
+      estadoAct = "",
+      qAct = "",
+    ) => {
+      const params = paramsVentas(periodoAct, desdeAct, hastaAct, estadoAct, qAct);
       const data = await apiFetch<RespuestaVentas>(
         `/ventas?${params.toString()}`,
       );
@@ -156,7 +182,7 @@ function PerfilComisionista() {
         comisionPagada: Number(data.comisionPagada),
       });
     },
-    [id],
+    [paramsVentas],
   );
 
   useEffect(() => {
@@ -273,7 +299,7 @@ function PerfilComisionista() {
         });
       }
       resetVenta();
-      await cargarVentas(periodo, desde, hasta);
+      await cargarVentas(periodo, desde, hasta, estadoFiltro, busqueda);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar la venta");
     } finally {
@@ -285,7 +311,7 @@ function PerfilComisionista() {
     if (!window.confirm("¿Anular esta venta?")) return;
     try {
       await apiFetch(`/ventas/${ventaId}/anular`, { method: "POST" });
-      await cargarVentas(periodo, desde, hasta);
+      await cargarVentas(periodo, desde, hasta, estadoFiltro, busqueda);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo anular");
     }
@@ -299,7 +325,7 @@ function PerfilComisionista() {
   function cambiarPeriodo(nuevo: Periodo) {
     setPeriodo(nuevo);
     if (nuevo !== "rango") {
-      void cargarVentas(nuevo, desde, hasta);
+      void cargarVentas(nuevo, desde, hasta, estadoFiltro, busqueda);
     }
   }
 
@@ -313,7 +339,31 @@ function PerfilComisionista() {
       return;
     }
     setError(null);
-    await cargarVentas("rango", desde, hasta);
+    await cargarVentas("rango", desde, hasta, estadoFiltro, busqueda);
+  }
+
+  function cambiarEstado(nuevo: string) {
+    setEstadoFiltro(nuevo);
+    void cargarVentas(periodo, desde, hasta, nuevo, busqueda);
+  }
+
+  function aplicarBusqueda(event: React.FormEvent) {
+    event.preventDefault();
+    void cargarVentas(periodo, desde, hasta, estadoFiltro, busqueda);
+  }
+
+  async function exportarCsv() {
+    setExportando(true);
+    try {
+      const params = paramsVentas(periodo, desde, hasta, estadoFiltro, busqueda);
+      params.delete("limite");
+      const nombre = `ventas-${(comisionista?.nombre ?? "comisionista").replace(/\s+/g, "-").toLowerCase()}.csv`;
+      await descargarArchivo(`/ventas/export?${params.toString()}`, nombre);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo exportar");
+    } finally {
+      setExportando(false);
+    }
   }
 
   const iniciales = (comisionista?.nombre ?? "??")
@@ -393,6 +443,44 @@ function PerfilComisionista() {
                       <option value="rango">Rango personalizado</option>
                     </select>
                   </label>
+                  <label className={labelClass}>
+                    <span>Estado</span>
+                    <select
+                      value={estadoFiltro}
+                      onChange={(e) => cambiarEstado(e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="">Todas</option>
+                      <option value="PENDIENTE">Pendientes</option>
+                      <option value="PAGADA">Pagadas</option>
+                      <option value="ANULADA">Anuladas</option>
+                    </select>
+                  </label>
+                  <form onSubmit={aplicarBusqueda} className="flex items-end gap-2">
+                    <label className={labelClass}>
+                      <span>Buscar</span>
+                      <input
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                        placeholder="Producto…"
+                        className={inputClass}
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      className="h-[42px] rounded-xl border border-light-100 bg-light-50 px-4 text-sm font-semibold text-body-text transition-colors hover:border-primary-500 hover:text-primary-600 dark:border-dark-600 dark:bg-dark-600"
+                    >
+                      Buscar
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    onClick={exportarCsv}
+                    disabled={exportando}
+                    className="h-[42px] rounded-xl border border-light-100 bg-white px-4 text-sm font-semibold text-primary-600 transition-colors hover:border-primary-500 disabled:opacity-50 dark:border-dark-600 dark:bg-dark-700 dark:text-primary-100"
+                  >
+                    {exportando ? "Exportando…" : "Exportar CSV"}
+                  </button>
                   {periodo === "rango" && (
                     <>
                       <label className={labelClass}>

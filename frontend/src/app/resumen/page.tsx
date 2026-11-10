@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { apiFetch, getSesion, getToken } from "@/lib/api";
+import { apiFetch, descargarArchivo, getSesion, getToken } from "@/lib/api";
 
 interface Fila {
   id: string;
@@ -45,6 +45,12 @@ const nombreMes = new Intl.DateTimeFormat("es-CR", {
   year: "numeric",
   timeZone: "UTC",
 });
+
+function rangoMes(mes: string): { desde: string; hasta: string } {
+  const [anio, numero] = mes.split("-").map(Number);
+  const dias = new Date(anio, numero, 0).getDate();
+  return { desde: `${mes}-01`, hasta: `${mes}-${String(dias).padStart(2, "0")}` };
+}
 
 function tituloMes(mes: string): string {
   const [anio, numero] = mes.split("-").map(Number);
@@ -88,7 +94,24 @@ export default function ResumenPage() {
   const [mes, setMes] = useState("");
   const [data, setData] = useState<Resumen | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [exportando, setExportando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function exportarCsv() {
+    if (!mes) return;
+    setExportando(true);
+    try {
+      const { desde, hasta } = rangoMes(mes);
+      await descargarArchivo(
+        `/ventas/export?desde=${desde}&hasta=${hasta}`,
+        `ventas-${mes}.csv`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo exportar");
+    } finally {
+      setExportando(false);
+    }
+  }
 
   useEffect(() => {
     if (!mes) {
@@ -215,17 +238,27 @@ export default function ResumenPage() {
                 {mes ? tituloMes(mes) : "Cargando…"} · ventas, comisiones y desempeño del equipo.
               </p>
             </div>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-[10px] font-semibold uppercase tracking-[1.5px] text-white/50">
-                Mes
-              </span>
-              <input
-                type="month"
-                value={mes}
-                onChange={(e) => setMes(e.target.value)}
-                className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none backdrop-blur transition focus:border-brand-cyan-500 focus:ring-2 focus:ring-brand-cyan-500/20 [color-scheme:dark]"
-              />
-            </label>
+            <div className="flex items-end gap-3">
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="text-[10px] font-semibold uppercase tracking-[1.5px] text-white/50">
+                  Mes
+                </span>
+                <input
+                  type="month"
+                  value={mes}
+                  onChange={(e) => setMes(e.target.value)}
+                  className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none backdrop-blur transition focus:border-brand-cyan-500 focus:ring-2 focus:ring-brand-cyan-500/20 [color-scheme:dark]"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={exportarCsv}
+                disabled={exportando || !mes}
+                className="h-[38px] rounded-xl border border-white/20 bg-white/10 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+              >
+                {exportando ? "Exportando…" : "Exportar CSV"}
+              </button>
+            </div>
           </div>
         </section>
 

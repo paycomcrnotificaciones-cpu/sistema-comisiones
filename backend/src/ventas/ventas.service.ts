@@ -22,28 +22,49 @@ function calcularComisionMonto(
 @Injectable()
 export class VentasService {
     constructor(private readonly prisma: PrismaService){}
-    
-    async listar(
+
+    private construirWhere(
         empresaId: string,
         query: VentaQueryInput,
         soloComisionistaId?: string | null,
-    ){
-        const {pagina, limite, desde, hasta, comisionistaId, sucursalId, estado } = query;
+    ) {
+        const { desde, hasta, comisionistaId, sucursalId, estado, pago, q } = query;
 
         const hastaExclusivo = hasta
             ? new Date(new Date(`${hasta}T06:00:00Z`).getTime() + 24 * 60 * 60 * 1000)
             : undefined;
 
-        const where = {
+        return {
             empresaId,
             comisionistaId: soloComisionistaId ?? comisionistaId,
             sucursalId,
             estado,
+            ...(q ? { producto: { contains: q, mode: 'insensitive' as const } } : {}),
+            ...(pago === 'PAGADA'
+                ? { liquidacion: { is: { estado: 'PAGADA' as const } } }
+                : pago === 'PENDIENTE'
+                  ? {
+                        OR: [
+                            { liquidacionId: null },
+                            { liquidacion: { is: { estado: 'BORRADOR' as const } } },
+                        ],
+                    }
+                  : {}),
             fecha: {
                 gte: desde ? new Date(`${desde}T06:00:00Z`) : undefined,
                 lt: hastaExclusivo,
             },
         };
+    }
+
+    async listar(
+        empresaId: string,
+        query: VentaQueryInput,
+        soloComisionistaId?: string | null,
+    ){
+        const {pagina, limite } = query;
+
+        const where = this.construirWhere(empresaId, query, soloComisionistaId);
 
         const whereActivas = { ...where, estado: 'ACTIVA' as const };
 
@@ -226,21 +247,8 @@ export class VentasService {
     query: VentaQueryInput,
     soloComisionistaId?: string | null,
   ) {
-    const { desde, hasta, comisionistaId, sucursalId, estado } = query;
-    const hastaExclusivo = hasta
-      ? new Date(new Date(`${hasta}T06:00:00Z`).getTime() + 24 * 60 * 60 * 1000)
-      : undefined;
     const datos = await this.prisma.venta.findMany({
-      where: {
-        empresaId,
-        comisionistaId: soloComisionistaId ?? comisionistaId,
-        sucursalId,
-        estado,
-        fecha: {
-          gte: desde ? new Date(`${desde}T06:00:00Z`) : undefined,
-          lt: hastaExclusivo,
-        },
-      },
+      where: this.construirWhere(empresaId, query, soloComisionistaId),
       orderBy: [{ fecha: 'asc' }, { creadoEn: 'asc' }],
       include: {
         sucursal: { select: { nombre: true } },

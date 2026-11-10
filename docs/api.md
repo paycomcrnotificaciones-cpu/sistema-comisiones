@@ -66,7 +66,7 @@ El mes se interpreta en hora de Costa Rica (UTC-6).
 
 | Método | Ruta | Request | Response |
 |---|---|---|---|
-| GET | `/ventas` | query: `pagina`, `limite`, `desde`, `hasta`, `comisionistaId`, `sucursalId`, `estado` | `{ total, pagina, limite, datos, montoVendido, totalComision, comisionPendiente, comisionPagada }` |
+| GET | `/ventas` | query: `pagina`, `limite`, `desde`, `hasta`, `comisionistaId`, `sucursalId`, `estado`, `pago` (`PENDIENTE`/`PAGADA`), `q` (busca en producto) | `{ total, pagina, limite, datos, montoVendido, totalComision, comisionPendiente, comisionPagada }` |
 | POST | `/ventas` | datos de la venta + comisión | `Venta` |
 | PATCH | `/ventas/:id` | campos de la venta a modificar | `Venta` |
 | POST | `/ventas/:id/anular` | — | `Venta` con estado `ANULADA` (409 si está liquidada) |
@@ -112,7 +112,7 @@ El mes se interpreta en hora de Costa Rica (UTC-6).
 | GET | `/liquidaciones` | query: `mes`, `estado`, `comisionistaId` | `Liquidacion[]` |
 | GET | `/liquidaciones/:id` | — | `Liquidacion` con `ventas` |
 | POST | `/liquidaciones` | `{ comisionistaId, mes, nota? }` | `Liquidacion` en `BORRADOR` |
-| POST | `/liquidaciones/:id/pagar` | — | `Liquidacion` en `PAGADA` |
+| POST | `/liquidaciones/:id/pagar` | `{ metodoPago?: EFECTIVO\|SINPE\|TRANSFERENCIA\|OTRO, nota? }` | `Liquidacion` en `PAGADA` con `metodoPago` y `pagadaEn` |
 | POST | `/liquidaciones/:id/anular` | — | Libera las ventas y elimina el borrador |
 
 Al generar un borrador se incluyen las ventas activas del mes que aún no

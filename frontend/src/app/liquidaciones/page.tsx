@@ -20,6 +20,7 @@ interface Liquidacion {
   nota: string | null;
   creadaEn: string;
   pagadaEn: string | null;
+  metodoPago: MetodoPago | null;
   comisionista: { id: string; nombre: string };
 }
 
@@ -59,6 +60,15 @@ function mesActual(): string {
 const inputClass =
   "rounded-md border border-light-100 bg-white px-3 py-1.5 text-sm dark:border-dark-600 dark:bg-dark-700 dark:text-white";
 
+type MetodoPago = "EFECTIVO" | "SINPE" | "TRANSFERENCIA" | "OTRO";
+
+const metodosPago: { valor: MetodoPago; texto: string }[] = [
+  { valor: "EFECTIVO", texto: "Efectivo" },
+  { valor: "SINPE", texto: "SINPE Móvil" },
+  { valor: "TRANSFERENCIA", texto: "Transferencia" },
+  { valor: "OTRO", texto: "Otro" },
+];
+
 export default function LiquidacionesPage() {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
@@ -80,6 +90,10 @@ export default function LiquidacionesPage() {
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [pagoId, setPagoId] = useState<string | null>(null);
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>("EFECTIVO");
+  const [notaPago, setNotaPago] = useState("");
+  const [pagando, setPagando] = useState(false);
 
   const cargar = useCallback(async () => {
     const params = new URLSearchParams();
@@ -180,14 +194,24 @@ export default function LiquidacionesPage() {
     }
   }
 
-  async function pagar(id: string) {
-    if (!window.confirm("¿Marcar esta liquidación como pagada?")) return;
+  async function pagar(event: React.FormEvent) {
+    event.preventDefault();
+    if (!pagoId) return;
     setError(null);
+    setPagando(true);
     try {
-      await apiFetch(`/liquidaciones/${id}/pagar`, { method: "POST" });
+      await apiFetch(`/liquidaciones/${pagoId}/pagar`, {
+        method: "POST",
+        body: JSON.stringify({ metodoPago, ...(notaPago.trim() ? { nota: notaPago.trim() } : {}) }),
+      });
+      setPagoId(null);
+      setNotaPago("");
+      setMetodoPago("EFECTIVO");
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al pagar");
+    } finally {
+      setPagando(false);
     }
   }
 
@@ -337,6 +361,11 @@ export default function LiquidacionesPage() {
                         </td>
                         <td className="px-3 py-3 text-body-text">
                           {l.pagadaEn ? l.pagadaEn.slice(0, 10) : "—"}
+                          {l.metodoPago && (
+                            <span className="ml-1.5 text-[11px] text-body-text/80">
+                              · {metodosPago.find((m) => m.valor === l.metodoPago)?.texto ?? l.metodoPago}
+                            </span>
+                          )}
                         </td>
                         <td className="px-5 py-3 text-right">
                           <div className="flex flex-wrap justify-end gap-3">
@@ -345,7 +374,7 @@ export default function LiquidacionesPage() {
                             </button>
                             {puedeGestionar && l.estado === "BORRADOR" && (
                               <>
-                                <button type="button" onClick={() => pagar(l.id)} className="text-[12px] font-semibold text-success-600 dark:text-success-500">
+                                <button type="button" onClick={() => setPagoId(l.id)} className="text-[12px] font-semibold text-success-600 dark:text-success-500">
                                   Pagar
                                 </button>
                                 <button type="button" onClick={() => anular(l.id)} className="text-[12px] font-semibold text-danger-500">
@@ -394,6 +423,69 @@ export default function LiquidacionesPage() {
           </div>
         </section>
       </div>
+
+      {pagoId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <form
+            onSubmit={pagar}
+            className="w-full max-w-md rounded-2xl border border-light-100 bg-white p-6 shadow-2xl dark:border-dark-600 dark:bg-dark-700"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-100">
+              Confirmar pago
+            </p>
+            <h2 className="mt-2 font-display text-[22px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
+              ¿Cómo se pagó la comisión?
+            </h2>
+            <p className="mt-1 text-[13px] text-body-text">
+              La liquidación quedará marcada como pagada con la fecha de hoy.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <label className="block space-y-1.5 text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">
+                <span>Método de pago</span>
+                <select
+                  value={metodoPago}
+                  onChange={(e) => setMetodoPago(e.target.value as MetodoPago)}
+                  className="w-full rounded-xl border border-light-100 bg-light-50 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-zinc-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-dark-600 dark:bg-dark-600 dark:text-white"
+                >
+                  {metodosPago.map((m) => (
+                    <option key={m.valor} value={m.valor}>
+                      {m.texto}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block space-y-1.5 text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">
+                <span>Nota (opcional)</span>
+                <input
+                  value={notaPago}
+                  onChange={(e) => setNotaPago(e.target.value)}
+                  placeholder="Ej. pago parcial acordado"
+                  className="w-full rounded-xl border border-light-100 bg-light-50 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-zinc-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-dark-600 dark:bg-dark-600 dark:text-white"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setPagoId(null)}
+                className="h-[42px] rounded-xl border border-light-100 px-4 text-sm font-semibold text-body-text dark:border-dark-600"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={pagando}
+                className="h-[42px] rounded-xl bg-success-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-success-500 disabled:opacity-60"
+              >
+                {pagando ? "Registrando…" : "Confirmar pago"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </AppShell>
   );
 }

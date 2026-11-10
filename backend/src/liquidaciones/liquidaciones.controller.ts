@@ -13,8 +13,10 @@ import { JwtAuthGuard, type RequestConUsuario } from '../auth/jwt-auth.guard.js'
 import { Roles, RolesGuard } from '../auth/roles.guard.js';
 import {
   liquidacionCreateSchema,
+  liquidacionPagarSchema,
   liquidacionQuerySchema,
   type LiquidacionCreateInput,
+  type LiquidacionPagarInput,
   type LiquidacionQueryInput,
 } from '../common/validators.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
@@ -63,8 +65,13 @@ export class LiquidacionesController {
   @Post(':id/pagar')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
-  pagar(@Req() req: RequestConUsuario, @Param('id') id: string) {
-    return this.liquidaciones.pagar(req.usuario!.empresaId, id);
+  pagar(
+    @Req() req: RequestConUsuario,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(liquidacionPagarSchema))
+    body: LiquidacionPagarInput,
+  ) {
+    return this.liquidaciones.pagar(req.usuario!.empresaId, id, body);
   }
 
   @Post(':id/anular')
