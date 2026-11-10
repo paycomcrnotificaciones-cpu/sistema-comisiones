@@ -1,0 +1,422 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+
+import { AppShell } from "@/components/app-shell";
+import { apiFetch, getSesion, getToken, type SesionJwt } from "@/lib/api";
+
+type Ambito = "GLOBAL" | "PRODUCTO" | "COMISIONISTA" | "SUCURSAL";
+type Tipo = "PORCENTAJE" | "MONTO_FIJO";
+
+interface Regla {
+  id: string;
+  nombre: string;
+  activa: boolean;
+  tipo: Tipo;
+  valor: string;
+  ambito: Ambito;
+  producto: string | null;
+  prioridad: number;
+  acumulable: boolean;
+  vigenciaDesde: string | null;
+  vigenciaHasta: string | null;
+  comisionista: { id: string; nombre: string } | null;
+  sucursal: { id: string; nombre: string } | null;
+}
+
+interface Opcion {
+  id: string;
+  nombre: string;
+}
+
+const formatoDinero = new Intl.NumberFormat("es-CR", {
+  style: "currency",
+  currency: "CRC",
+  minimumFractionDigits: 2,
+});
+
+const inputClass =
+  "w-full rounded-xl border border-light-100 bg-light-50 px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-dark-600 dark:bg-dark-600 dark:text-white";
+
+const labelClass =
+  "space-y-1.5 text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text";
+
+const ambitos: { valor: Ambito; texto: string }[] = [
+  { valor: "GLOBAL", texto: "Global" },
+  { valor: "PRODUCTO", texto: "Por producto" },
+  { valor: "COMISIONISTA", texto: "Por comisionista" },
+  { valor: "SUCURSAL", texto: "Por sucursal" },
+];
+
+function detalleAmbito(r: Regla): string {
+  if (r.ambito === "PRODUCTO") return r.producto ?? "—";
+  if (r.ambito === "COMISIONISTA") return r.comisionista?.nombre ?? "—";
+  if (r.ambito === "SUCURSAL") return r.sucursal?.nombre ?? "—";
+  return "Todas las ventas";
+}
+
+function valorTexto(r: Regla): string {
+  return r.tipo === "PORCENTAJE"
+    ? `${Number(r.valor)}%`
+    : formatoDinero.format(Number(r.valor));
+}
+
+
+export default function ReglasPage() {
+  const router = useRouter();
+  const [sesion, setSesion] = useState<SesionJwt | null>(null);
+  const esGestor = sesion?.rol === "ADMIN" || sesion?.rol === "SUPER_ADMIN";
+
+  const [reglas, setReglas] = useState<Regla[]>([]);
+  const [comisionistas, setComisionistas] = useState<Opcion[]>([]);
+  const [sucursales, setSucursales] = useState<Opcion[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [trabajando, setTrabajando] = useState(false);
+
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [nombre, setNombre] = useState("");
+  const [tipo, setTipo] = useState<Tipo>("PORCENTAJE");
+  const [valor, setValor] = useState("");
+  const [ambito, setAmbito] = useState<Ambito>("GLOBAL");
+  const [producto, setProducto] = useState("");
+  const [comisionistaId, setComisionistaId] = useState("");
+  const [sucursalId, setSucursalId] = useState("");
+  const [prioridad, setPrioridad] = useState("100");
+  const [acumulable, setAcumulable] = useState(false);
+  const [activa, setActiva] = useState(true);
+  const [vigenciaDesde, setVigenciaDesde] = useState("");
+  const [vigenciaHasta, setVigenciaHasta] = useState("");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSesion(getSesion());
+  }, []);
+
+  const cargar = useCallback(async () => {
+    const [lista, gente, sedes] = await Promise.all([
+      apiFetch<Regla[]>("/reglas"),
+      apiFetch<Opcion[]>("/comisionistas"),
+      apiFetch<Opcion[]>("/sucursales"),
+    ]);
+    setReglas(lista);
+    setComisionistas(gente);
+    setSucursales(sedes);
+  }, []);
+
+  useEffect(() => {
+    if (!getToken()) {
+      router.replace("/login");
+      return;
+    }
+    if (!sesion) return;
+    if (!esGestor) {
+      router.replace("/comisionistas");
+      return;
+    }
+    let vivo = true;
+    (async () => {
+      try {
+        await cargar();
+        if (vivo) setCargando(false);
+      } catch (err) {
+        if (!vivo) return;
+        setError(err instanceof Error ? err.message : "Error al cargar");
+        setCargando(false);
+      }
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [cargar, esGestor, router, sesion]);
+
+  function limpiar() {
+    setEditandoId(null);
+    setNombre("");
+    setTipo("PORCENTAJE");
+    setValor("");
+    setAmbito("GLOBAL");
+    setProducto("");
+    setComisionistaId("");
+    setSucursalId("");
+    setPrioridad("100");
+    setAcumulable(false);
+    setActiva(true);
+    setVigenciaDesde("");
+    setVigenciaHasta("");
+  }
+
+  function editar(r: Regla) {
+    setEditandoId(r.id);
+    setNombre(r.nombre);
+    setTipo(r.tipo);
+    setValor(String(Number(r.valor)));
+    setAmbito(r.ambito);
+    setProducto(r.producto ?? "");
+    setComisionistaId(r.comisionista?.id ?? "");
+    setSucursalId(r.sucursal?.id ?? "");
+    setPrioridad(String(r.prioridad));
+    setAcumulable(r.acumulable);
+    setActiva(r.activa);
+    setVigenciaDesde(r.vigenciaDesde ? r.vigenciaDesde.slice(0, 10) : "");
+    setVigenciaHasta(r.vigenciaHasta ? r.vigenciaHasta.slice(0, 10) : "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function guardar(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setTrabajando(true);
+    try {
+      const cuerpo = {
+        nombre,
+        tipo,
+        valor: valor || "0",
+        ambito,
+        producto: ambito === "PRODUCTO" ? producto : null,
+        comisionistaId: ambito === "COMISIONISTA" ? comisionistaId || null : null,
+        sucursalId: ambito === "SUCURSAL" ? sucursalId || null : null,
+        prioridad: Number(prioridad) || 100,
+        acumulable,
+        activa,
+        vigenciaDesde: vigenciaDesde || null,
+        vigenciaHasta: vigenciaHasta || null,
+      };
+      if (editandoId) {
+        await apiFetch(`/reglas/${editandoId}`, {
+          method: "PATCH",
+          body: JSON.stringify(cuerpo),
+        });
+      } else {
+        await apiFetch("/reglas", {
+          method: "POST",
+          body: JSON.stringify(cuerpo),
+        });
+      }
+      limpiar();
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar la regla");
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  async function alternar(r: Regla) {
+    setError(null);
+    try {
+      await apiFetch(`/reglas/${r.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ activa: !r.activa }),
+      });
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo actualizar");
+    }
+  }
+
+  async function eliminar(r: Regla) {
+    if (!window.confirm(`¿Eliminar la regla "${r.nombre}"?`)) return;
+    setError(null);
+    try {
+      await apiFetch(`/reglas/${r.id}`, { method: "DELETE" });
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo eliminar");
+    }
+  }
+
+  if (!esGestor) return null;
+
+  return (
+    <AppShell titulo="Reglas">
+      <div className="space-y-8">
+        <section className="hero-panel p-6 lg:p-7">
+          <div className="relative z-10">
+            <p className="text-[10px] font-bold uppercase tracking-[2.4px] text-brand-cyan-500">
+              Comisiones automáticas
+            </p>
+            <h1 className="mt-2 font-display text-[32px] font-bold leading-none tracking-[-0.5px] text-white">
+              Reglas de comisión
+            </h1>
+            <p className="mt-3 max-w-xl text-[14px] text-white/70">
+              Define cuánto se paga según el producto, el comisionista o la sucursal.
+              La regla más específica se sugiere al registrar la venta.
+            </p>
+          </div>
+        </section>
+
+        {error && <p className="text-sm text-danger-500">{error}</p>}
+
+        <section className="surface p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
+              {editandoId ? "Editar regla" : "Nueva regla"}
+            </h2>
+            {editandoId && (
+              <button type="button" onClick={limpiar} className="text-[12px] font-semibold text-body-text hover:text-primary-600">
+                Cancelar edición
+              </button>
+            )}
+          </div>
+
+          <form onSubmit={guardar} className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <label className={`${labelClass} sm:col-span-2`}>
+              <span>Nombre</span>
+              <input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. 5% cámaras" className={inputClass} />
+            </label>
+            <label className={labelClass}>
+              <span>Tipo</span>
+              <select value={tipo} onChange={(e) => setTipo(e.target.value as Tipo)} className={inputClass}>
+                <option value="PORCENTAJE">Porcentaje (%)</option>
+                <option value="MONTO_FIJO">Monto fijo (₡)</option>
+              </select>
+            </label>
+            <label className={labelClass}>
+              <span>{tipo === "PORCENTAJE" ? "Valor (%)" : "Valor (₡)"}</span>
+              <input required inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder={tipo === "PORCENTAJE" ? "5" : "0.00"} className={inputClass} />
+            </label>
+            <label className={`${labelClass} sm:col-span-2`}>
+              <span>Ámbito</span>
+              <select value={ambito} onChange={(e) => setAmbito(e.target.value as Ambito)} className={inputClass}>
+                {ambitos.map((a) => (
+                  <option key={a.valor} value={a.valor}>{a.texto}</option>
+                ))}
+              </select>
+            </label>
+            {ambito === "PRODUCTO" && (
+              <label className={`${labelClass} sm:col-span-2`}>
+                <span>Producto</span>
+                <input required value={producto} onChange={(e) => setProducto(e.target.value)} placeholder="Ej. Cámara de seguridad" className={inputClass} />
+              </label>
+            )}
+            {ambito === "COMISIONISTA" && (
+              <label className={`${labelClass} sm:col-span-2`}>
+                <span>Comisionista</span>
+                <select required value={comisionistaId} onChange={(e) => setComisionistaId(e.target.value)} className={inputClass}>
+                  <option value="">Selecciona…</option>
+                  {comisionistas.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {ambito === "SUCURSAL" && (
+              <label className={`${labelClass} sm:col-span-2`}>
+                <span>Sucursal</span>
+                <select required value={sucursalId} onChange={(e) => setSucursalId(e.target.value)} className={inputClass}>
+                  <option value="">Selecciona…</option>
+                  {sucursales.map((s) => (
+                    <option key={s.id} value={s.id}>{s.nombre}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label className={labelClass}>
+              <span>Prioridad</span>
+              <input inputMode="numeric" value={prioridad} onChange={(e) => setPrioridad(e.target.value)} className={inputClass} />
+            </label>
+            <label className={labelClass}>
+              <span>Desde</span>
+              <input type="date" value={vigenciaDesde} onChange={(e) => setVigenciaDesde(e.target.value)} className={inputClass} />
+            </label>
+            <label className={labelClass}>
+              <span>Hasta</span>
+              <input type="date" value={vigenciaHasta} onChange={(e) => setVigenciaHasta(e.target.value)} className={inputClass} />
+            </label>
+            <div className="flex flex-wrap items-center gap-5 pb-1 sm:col-span-2 lg:col-span-2">
+              <label className="flex items-center gap-2 text-sm text-body-text">
+                <input type="checkbox" checked={acumulable} onChange={(e) => setAcumulable(e.target.checked)} />
+                Acumulable
+              </label>
+              <label className="flex items-center gap-2 text-sm text-body-text">
+                <input type="checkbox" checked={activa} onChange={(e) => setActiva(e.target.checked)} />
+                Activa
+              </label>
+            </div>
+            <div className="flex items-end sm:col-span-2 lg:col-span-2">
+              <button type="submit" disabled={trabajando} className="h-[42px] rounded-xl bg-primary-500 px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-60">
+                {trabajando ? "Guardando…" : editandoId ? "Guardar cambios" : "Agregar regla"}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section className="surface overflow-hidden">
+          <div className="border-b border-light-100 p-5 dark:border-dark-600">
+            <h2 className="font-display text-[18px] font-bold text-zinc-900 dark:text-white">
+              Reglas configuradas
+            </h2>
+            <p className="mt-1 text-[12px] text-body-text">
+              Se aplica la más específica; si hay empate, la de menor prioridad.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] text-left text-sm">
+              <thead className="bg-light-50 text-[10px] uppercase tracking-[1.2px] text-body-text dark:bg-dark-600">
+                <tr>
+                  <th className="px-5 py-3">Prioridad</th>
+                  <th className="px-3 py-3">Nombre</th>
+                  <th className="px-3 py-3">Tipo</th>
+                  <th className="px-3 py-3 text-right">Valor</th>
+                  <th className="px-3 py-3">Ámbito</th>
+                  <th className="px-3 py-3">Vigencia</th>
+                  <th className="px-3 py-3">Estado</th>
+                  <th className="px-5 py-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cargando ? (
+                  <tr><td colSpan={8} className="px-5 py-8 text-center text-body-text">Cargando…</td></tr>
+                ) : reglas.length === 0 ? (
+                  <tr><td colSpan={8} className="px-5 py-8 text-center text-body-text">Aún no hay reglas configuradas</td></tr>
+                ) : (
+                  reglas.map((r) => (
+                    <tr key={r.id} className="table-row-hover border-t border-light-100 dark:border-dark-600">
+                      <td className="px-5 py-3 text-body-text">{r.prioridad}</td>
+                      <td className="px-3 py-3 font-medium text-zinc-900 dark:text-white">
+                        {r.nombre}
+                        {r.acumulable && <span className="ml-1.5 text-[11px] text-body-text">· acumulable</span>}
+                      </td>
+                      <td className="px-3 py-3 text-body-text">{r.tipo === "PORCENTAJE" ? "Porcentaje" : "Monto fijo"}</td>
+                      <td className="px-3 py-3 text-right font-semibold text-zinc-900 dark:text-white">{valorTexto(r)}</td>
+                      <td className="px-3 py-3 text-body-text">{detalleAmbito(r)}</td>
+                      <td className="px-3 py-3 text-body-text">
+                        {r.vigenciaDesde || r.vigenciaHasta
+                          ? `${r.vigenciaDesde?.slice(0, 10) ?? "—"} a ${r.vigenciaHasta?.slice(0, 10) ?? "—"}`
+                          : "Siempre"}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                          r.activa
+                            ? "bg-success-500/10 text-success-600 dark:text-success-500"
+                            : "bg-light-100 text-body-text dark:bg-dark-600"
+                        }`}>
+                          {r.activa ? "Activa" : "Inactiva"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <div className="flex flex-wrap justify-end gap-3">
+                          <button type="button" onClick={() => editar(r)} className="text-[12px] font-semibold text-primary-600 dark:text-primary-100">
+                            Editar
+                          </button>
+                          <button type="button" onClick={() => alternar(r)} className="text-[12px] font-semibold text-body-text">
+                            {r.activa ? "Desactivar" : "Activar"}
+                          </button>
+                          <button type="button" onClick={() => eliminar(r)} className="text-[12px] font-semibold text-danger-500">
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </AppShell>
+  );
+}

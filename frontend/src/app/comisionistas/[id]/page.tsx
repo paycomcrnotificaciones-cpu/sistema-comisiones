@@ -120,6 +120,11 @@ function PerfilComisionista() {
   const [meta, setMeta] = useState<number | null>(null);
   const [metaInput, setMetaInput] = useState("");
   const [metaGuardando, setMetaGuardando] = useState(false);
+  const [sugerencia, setSugerencia] = useState<{
+    nombre: string;
+    tipo: "PORCENTAJE" | "MONTO_FIJO";
+    valor: number;
+  } | null>(null);
   const [totales, setTotales] = useState({
     montoVendido: 0,
     totalComision: 0,
@@ -182,6 +187,37 @@ function PerfilComisionista() {
       vivo = false;
     };
   }, [mesMeta, id]);
+
+  useEffect(() => {
+    const texto = producto.trim();
+    if (texto.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSugerencia(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          producto: texto,
+          comisionistaId: id,
+        });
+        if (ventaSucursalId) params.set("sucursalId", ventaSucursalId);
+        const regla = await apiFetch<{
+          nombre: string;
+          tipo: "PORCENTAJE" | "MONTO_FIJO";
+          valor: number;
+        } | null>(`/reglas/sugerir?${params.toString()}`);
+        setSugerencia(regla);
+        if (regla && !editandoId) {
+          setComisionTipo(regla.tipo);
+          setComisionValor(String(regla.valor));
+        }
+      } catch {
+        setSugerencia(null);
+      }
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [producto, ventaSucursalId, id, editandoId]);
 
   async function guardarMeta(monto: number | null) {
     if (!mesMeta) return;
@@ -764,7 +800,12 @@ function PerfilComisionista() {
                   <span>{comisionTipo === "PORCENTAJE" ? "Porcentaje de comisión (%)" : "Monto fijo de comisión (₡)"}</span>
                   <input required inputMode="decimal" placeholder={comisionTipo === "PORCENTAJE" ? "5" : "0.00"} value={comisionValor} onChange={(e) => setComisionValor(e.target.value)} className={inputClass} />
                 </label>
-                <div className="flex items-end pb-2 text-sm text-body-text sm:col-span-2">
+                <div className="flex flex-col justify-end gap-1 pb-2 text-sm text-body-text sm:col-span-2">
+                  {sugerencia && (
+                    <span className="text-[12px] font-medium text-primary-600 dark:text-primary-100">
+                      Regla aplicada: {sugerencia.nombre}
+                    </span>
+                  )}
                   {comisionTipo === "PORCENTAJE"
                     ? `El ${Number(comisionValor) || 0}% de ${formatoDinero.format(Number(monto) || 0)} = ${formatoDinero.format(comisionCalculada)}`
                     : `Monto fijo: ${formatoDinero.format(comisionCalculada)}`}

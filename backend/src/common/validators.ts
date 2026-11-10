@@ -212,3 +212,55 @@ export const metaUpsertSchema = z.object({
 });
 
 export type MetaUpsertInput = z.infer<typeof metaUpsertSchema>;
+
+const fechaOpcional = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .nullable()
+  .optional();
+
+const reglaComisionBase = z.object({
+  nombre: z.string().trim().min(1).max(120),
+  tipo: z.enum(['PORCENTAJE', 'MONTO_FIJO']),
+  valor: z.coerce.number().min(0),
+  ambito: z
+    .enum(['GLOBAL', 'PRODUCTO', 'COMISIONISTA', 'SUCURSAL'])
+    .default('GLOBAL'),
+  producto: z.string().trim().max(120).nullable().optional(),
+  comisionistaId: z.string().uuid().nullable().optional(),
+  sucursalId: z.string().uuid().nullable().optional(),
+  prioridad: z.coerce.number().int().min(1).max(999).default(100),
+  acumulable: z.boolean().default(false),
+  activa: z.boolean().default(true),
+  vigenciaDesde: fechaOpcional,
+  vigenciaHasta: fechaOpcional,
+});
+
+export const reglaComisionSchema = reglaComisionBase
+  .refine((v) => v.ambito !== 'PRODUCTO' || !!v.producto, {
+    message: 'Indica el producto de la regla',
+    path: ['producto'],
+  })
+  .refine((v) => v.ambito !== 'COMISIONISTA' || !!v.comisionistaId, {
+    message: 'Indica el comisionista de la regla',
+    path: ['comisionistaId'],
+  })
+  .refine((v) => v.ambito !== 'SUCURSAL' || !!v.sucursalId, {
+    message: 'Indica la sucursal de la regla',
+    path: ['sucursalId'],
+  });
+
+export const reglaComisionUpdateSchema = reglaComisionBase.partial();
+
+export type ReglaComisionInput = z.infer<typeof reglaComisionSchema>;
+export type ReglaComisionUpdateInput = z.infer<
+  typeof reglaComisionUpdateSchema
+>;
+
+export const reglaSugerirSchema = z.object({
+  producto: z.string().trim().max(120).optional(),
+  comisionistaId: z.string().uuid().optional(),
+  sucursalId: z.string().uuid().optional(),
+});
+
+export type ReglaSugerirInput = z.infer<typeof reglaSugerirSchema>;

@@ -62,6 +62,20 @@ El mes se interpreta en hora de Costa Rica (UTC-6).
 |---|---|---|---|
 | GET | `/sucursales` | — | `Sucursal[]` |
 
+## Reglas de comisión
+
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| GET | `/reglas` | — | `ReglaComision[]` |
+| GET | `/reglas/sugerir` | query: `producto`, `comisionistaId`, `sucursalId` | Regla ganadora o `null` |
+| POST | `/reglas` | `{ nombre, tipo, valor, ambito, ... }` | `ReglaComision` |
+| PATCH | `/reglas/:id` | campos a modificar | `ReglaComision` |
+| DELETE | `/reglas/:id` | — | `{ eliminada: true }` |
+
+La regla más específica (comisionista > producto > sucursal > global) y de
+menor prioridad se sugiere al registrar la venta. El formulario autocompleta
+el tipo y el valor; la venta conserva su propia comisión.
+
 ## Metas
 
 | Método | Ruta | Request | Response |

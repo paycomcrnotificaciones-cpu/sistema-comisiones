@@ -48,6 +48,13 @@ function describir(
     return null;
   }
 
+  if (recurso === 'reglas') {
+    if (metodo === 'POST') return { accion: 'Creó una regla', entidad: 'Regla' };
+    if (metodo === 'PATCH') return { accion: 'Editó una regla', entidad: 'Regla' };
+    if (metodo === 'DELETE') return { accion: 'Eliminó una regla', entidad: 'Regla' };
+    return null;
+  }
+
   if (recurso === 'metas') {
     return { accion: 'Fijó una meta', entidad: 'Meta' };
   }

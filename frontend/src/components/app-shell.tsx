@@ -18,6 +18,7 @@ const enlaces: NavItem[] = [
   { href: "/comisionistas", texto: "Comisionistas" },
   { href: "/liquidaciones", texto: "Liquidaciones" },
   { href: "/suscripciones", texto: "Suscripciones" },
+  { href: "/reglas", texto: "Reglas" },
   { href: "/historial", texto: "Historial" },
   { href: "/usuarios", texto: "Usuarios" },
 ];
@@ -119,6 +120,17 @@ function MoneyIcon() {
   );
 }
 
+function ReglasIcon() {
+  return (
+    <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 7h10M18 7h2" />
+      <path d="M4 17h4M12 17h8" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="10" cy="17" r="2" />
+    </svg>
+  );
+}
+
 function HistoryIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -212,6 +224,7 @@ export function AppShell({
       .filter((e) => !(esComisionista && e.href === "/comisionistas"))
       .filter((e) => e.href !== "/usuarios" || esGestor)
       .filter((e) => e.href !== "/historial" || esGestor)
+      .filter((e) => e.href !== "/reglas" || esGestor)
       .map((e) => ({
         href: e.href,
         texto: e.texto,
@@ -226,6 +239,8 @@ export function AppShell({
             <RepeatIcon />
           ) : e.href === "/historial" ? (
             <HistoryIcon />
+          ) : e.href === "/reglas" ? (
+            <ReglasIcon />
           ) : (
             <SalesIcon />
           ),

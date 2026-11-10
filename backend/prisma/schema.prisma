@@ -29,6 +29,7 @@ model Empresa {
   comisionesSuscripcion ComisionSuscripcion[]
   metas                 Meta[]
   auditoria             Auditoria[]
+  reglaComisions        ReglaComision[]
 
   @@map("empresas")
 }
@@ -40,8 +41,9 @@ model Sucursal {
   codigo    String?
   creadoEn  DateTime @default(now()) @map("creado_en")
 
-  empresa       Empresa        @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresa       Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   comisionistas Comisionista[]
+  reglas        ReglaComision[]
   ventas        Venta[]
 
   @@unique([empresaId, codigo])
@@ -83,6 +85,7 @@ model Comisionista {
   suscripciones         Suscripcion[]
   comisionesSuscripcion ComisionSuscripcion[]
   metas                 Meta[]
+  reglaComisions        ReglaComision[]
 
   @@unique([empresaId, codigo])
   @@index([empresaId])
@@ -117,6 +120,13 @@ enum TipoComision {
 enum EstadoLiquidacion {
   BORRADOR
   PAGADA
+}
+
+enum AmbitoRegla {
+  GLOBAL
+  PRODUCTO
+  COMISIONISTA
+  SUCURSAL
 }
 
 enum MetodoPago {
@@ -277,4 +287,30 @@ model Auditoria {
 
   @@index([empresaId, creadoEn])
   @@map("auditoria")
+}
+
+model ReglaComision {
+  id             String       @id @default(uuid())
+  empresaId      String       @map("empresa_id")
+  nombre         String
+  activa         Boolean      @default(true)
+  tipo           TipoComision
+  valor          Decimal      @db.Decimal(18, 4)
+  ambito         AmbitoRegla  @default(GLOBAL)
+  producto       String?
+  comisionistaId String?      @map("comisionista_id")
+  sucursalId     String?      @map("sucursal_id")
+  prioridad      Int          @default(100)
+  acumulable     Boolean      @default(false)
+  vigenciaDesde  DateTime?    @map("vigencia_desde")
+  vigenciaHasta  DateTime?    @map("vigencia_hasta")
+  creadoEn       DateTime     @default(now()) @map("creado_en")
+  actualizadoEn  DateTime     @updatedAt @map("actualizado_en")
+
+  empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  comisionista Comisionista? @relation(fields: [comisionistaId], references: [id], onDelete: Cascade)
+  sucursal     Sucursal?     @relation(fields: [sucursalId], references: [id], onDelete: Cascade)
+
+  @@index([empresaId, ambito])
+  @@map("reglas_comision")
 }
