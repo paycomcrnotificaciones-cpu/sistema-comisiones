@@ -532,19 +532,15 @@ function PerfilComisionista() {
               </div>
 
               <form onSubmit={guardarVenta} className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
-                <label className={labelClass}>
-                  <span>Fecha</span>
-                  <input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputClass} />
-                </label>
-                <label className={labelClass}>
+                <label className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
                   <span>¿Qué vendió?</span>
                   <input required value={producto} onChange={(e) => setProducto(e.target.value)} placeholder="Ej. Cámara de seguridad" className={inputClass} />
                 </label>
-                <label className={labelClass}>
-                  <span>Monto de la venta</span>
-                  <input required inputMode="decimal" placeholder="0.00" value={monto} onChange={(e) => setMonto(e.target.value)} className={inputClass} />
+                <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
+                  <span>Fecha</span>
+                  <input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputClass} />
                 </label>
-                <label className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
+                <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
                   <span>¿Cómo se le paga?</span>
                   <select
                     value={comisionTipo}
@@ -554,6 +550,10 @@ function PerfilComisionista() {
                     <option value="PORCENTAJE">Porcentaje (%)</option>
                     <option value="MONTO_FIJO">Monto fijo (₡)</option>
                   </select>
+                </label>
+                <label className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
+                  <span>Monto de la venta</span>
+                  <input required inputMode="decimal" placeholder="0.00" value={monto} onChange={(e) => setMonto(e.target.value)} className={inputClass} />
                 </label>
                 <label className={labelClass}>
                   <span>{comisionTipo === "PORCENTAJE" ? "Porcentaje de comisión (%)" : "Monto fijo de comisión (₡)"}</span>
