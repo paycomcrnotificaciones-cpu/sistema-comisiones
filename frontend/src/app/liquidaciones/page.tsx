@@ -331,16 +331,16 @@ export default function LiquidacionesPage() {
             <p className="mt-1 text-[12px] text-body-text">{liquidaciones.length} registros</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-sm">
+            <table className="w-full xl:min-w-[820px] text-left text-sm">
               <thead className="bg-light-50 text-[10px] uppercase tracking-[1.2px] text-body-text dark:bg-dark-600">
                 <tr>
                   <th className="px-5 py-3">Comisionista</th>
-                  <th className="px-3 py-3">Período</th>
-                  <th className="px-3 py-3 text-right">Ventas</th>
-                  <th className="px-3 py-3 text-right">Comisión</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Período</th>
+                  <th className="hidden xl:table-cell px-3 py-3 text-right">Ventas</th>
+                  <th className="hidden xl:table-cell px-3 py-3 text-right">Comisión</th>
                   <th className="px-3 py-3">Estado</th>
-                  <th className="px-3 py-3">Pago</th>
-                  <th className="px-5 py-3 text-right">Acciones</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Pago</th>
+                  <th className="sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-5 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -352,10 +352,15 @@ export default function LiquidacionesPage() {
                   liquidaciones.map((l) => (
                     <Fragment key={l.id}>
                       <tr className="border-t border-light-100 dark:border-dark-600">
-                        <td className="px-5 py-3 font-medium text-zinc-900 dark:text-white">{l.comisionista.nombre}</td>
-                        <td className="px-3 py-3 text-body-text">{l.periodo}</td>
-                        <td className="px-3 py-3 text-right text-body-text">{l.ventasCount}</td>
-                        <td className="px-3 py-3 text-right font-semibold text-zinc-900 dark:text-white">
+                        <td className="px-3 py-3 font-medium text-zinc-900 dark:text-white sm:px-5">
+                          {l.comisionista.nombre}
+                          <span className="mt-0.5 block text-[11px] font-semibold text-body-text xl:hidden">
+                            {formatoDinero.format(Number(l.comisionTotal))} · {l.periodo}
+                          </span>
+                        </td>
+                        <td className="hidden xl:table-cell px-3 py-3 text-body-text">{l.periodo}</td>
+                        <td className="hidden xl:table-cell px-3 py-3 text-right text-body-text">{l.ventasCount}</td>
+                        <td className="hidden xl:table-cell px-3 py-3 text-right font-semibold text-zinc-900 dark:text-white">
                           {formatoDinero.format(Number(l.comisionTotal))}
                         </td>
                         <td className="px-3 py-3">
@@ -367,7 +372,7 @@ export default function LiquidacionesPage() {
                             {l.estado === "PAGADA" ? "Pagada" : "Borrador"}
                           </span>
                         </td>
-                        <td className="px-3 py-3 text-body-text">
+                        <td className="hidden xl:table-cell px-3 py-3 text-body-text">
                           {l.pagadaEn ? l.pagadaEn.slice(0, 10) : "—"}
                           {l.metodoPago && (
                             <span className="ml-1.5 text-[11px] text-body-text/80">
@@ -375,7 +380,7 @@ export default function LiquidacionesPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-3 text-right">
+                        <td className="sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-3 py-3 text-right sm:px-5">
                           <div className="flex items-center justify-end gap-1.5">
                             <AccionTabla
                               etiqueta={`${abierta === l.id ? "Ocultar" : "Ver"} detalle de ${l.comisionista.nombre}`}

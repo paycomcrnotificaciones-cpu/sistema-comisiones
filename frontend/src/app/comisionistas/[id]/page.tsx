@@ -865,15 +865,15 @@ function PerfilComisionista() {
                 )}
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
+                <table className="w-full xl:min-w-[720px] text-left text-sm">
                   <thead>
                     <tr className="bg-light-50 text-[10px] uppercase tracking-[1.5px] text-body-text dark:bg-dark-600">
-                      <th className="px-6 py-3 font-semibold">Fecha</th>
+                      <th className="hidden xl:table-cell px-6 py-3 font-semibold">Fecha</th>
                       <th className="px-4 py-3 font-semibold">¿Qué vendió?</th>
-                      <th className="px-4 py-3 text-right font-semibold">Monto</th>
-                      <th className="px-4 py-3 text-right font-semibold">Comisión</th>
-                      <th className="px-4 py-3 font-semibold">Estado</th>
-                      <th className="px-4 py-3 text-right font-semibold">Acciones</th>
+                      <th className="hidden xl:table-cell px-4 py-3 text-right font-semibold">Monto</th>
+                      <th className="hidden xl:table-cell px-4 py-3 text-right font-semibold">Comisión</th>
+                      <th className="hidden xl:table-cell px-4 py-3 font-semibold">Estado</th>
+                      <th className="sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-4 py-3 text-right font-semibold">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -886,16 +886,37 @@ function PerfilComisionista() {
                     ) : (
                       ventas.map((v) => (
                         <tr key={v.id} className="table-row-hover border-t border-light-100 dark:border-dark-600">
-                          <td className="px-6 py-3.5 text-body-text">{v.fecha.slice(0, 10)}</td>
-                          <td className="px-4 py-3.5 text-zinc-900 dark:text-white">{v.producto ?? "—"}</td>
-                          <td className="px-4 py-3.5 text-right text-body-text">{formatoDinero.format(Number(v.neto))}</td>
-                          <td className="px-4 py-3.5 text-right">
+                          <td className="hidden xl:table-cell px-6 py-3.5 text-body-text">{v.fecha.slice(0, 10)}</td>
+                          <td className="px-4 py-3.5 text-zinc-900 dark:text-white">
+                            {v.producto ?? "—"}
+                            <span className="mt-0.5 block text-[11px] font-medium xl:hidden">
+                              {formatoDinero.format(Number(v.comisionMonto))}
+                              {" · "}
+                              <span
+                                className={
+                                  v.estado === "ANULADA"
+                                    ? "text-body-text"
+                                    : v.liquidacion?.estado === "PAGADA"
+                                      ? "text-success-600 dark:text-success-500"
+                                      : "text-warning-600"
+                                }
+                              >
+                                {v.estado === "ANULADA"
+                                  ? "Anulada"
+                                  : v.liquidacion?.estado === "PAGADA"
+                                    ? "Pagada"
+                                    : "Pendiente"}
+                              </span>
+                            </span>
+                          </td>
+                          <td className="hidden xl:table-cell px-4 py-3.5 text-right text-body-text">{formatoDinero.format(Number(v.neto))}</td>
+                          <td className="hidden xl:table-cell px-4 py-3.5 text-right">
                             <span className="font-medium text-zinc-900 dark:text-white">{formatoDinero.format(Number(v.comisionMonto))}</span>
                             <span className="ml-2 text-[11px] text-body-text">
                               ({v.comisionTipo === "PORCENTAJE" ? `${Number(v.comisionValor).toFixed(2)}%` : "fijo"})
                             </span>
                           </td>
-                          <td className="px-4 py-3.5">
+                          <td className="hidden xl:table-cell px-4 py-3.5">
                             <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
                               v.estado === "ANULADA"
                                 ? "bg-light-100 text-body-text dark:bg-dark-600"
@@ -910,7 +931,7 @@ function PerfilComisionista() {
                                   : "Pendiente"}
                             </span>
                           </td>
-                          <td className="px-4 py-3.5">
+                          <td className="sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-4 py-3.5">
                             {!soloLectura && (
                             <div className="flex items-center justify-end gap-1.5">
                               <AccionTabla

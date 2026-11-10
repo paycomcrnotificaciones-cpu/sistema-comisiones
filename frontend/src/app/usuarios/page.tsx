@@ -216,14 +216,14 @@ export default function UsuariosPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full xl:min-w-[760px] text-left text-sm">
               <thead>
                 <tr className="bg-light-50 text-[10px] uppercase tracking-[1.5px] text-body-text dark:bg-dark-600">
                   <th className="px-6 py-3 font-semibold lg:px-7">Usuario</th>
-                  <th className="px-4 py-3 font-semibold">Rol</th>
-                  <th className="px-4 py-3 font-semibold">Estado</th>
-                  <th className="px-4 py-3 font-semibold">Comisionista</th>
-                  <th className="px-4 py-3 text-right font-semibold">Acciones</th>
+                  <th className="hidden xl:table-cell px-4 py-3 font-semibold">Rol</th>
+                  <th className="hidden xl:table-cell px-4 py-3 font-semibold">Estado</th>
+                  <th className="hidden xl:table-cell px-4 py-3 font-semibold">Comisionista</th>
+                  <th className="sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-4 py-3 text-right font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -232,8 +232,13 @@ export default function UsuariosPage() {
                 ) : (
                   usuarios.map((u) => (
                     <tr key={u.id} className="border-t border-light-100 dark:border-dark-600">
-                      <td className="px-6 py-3.5 font-medium text-zinc-900 dark:text-white lg:px-7">{u.email}</td>
-                      <td className="px-4 py-3.5">
+                      <td className="px-6 py-3.5 font-medium text-zinc-900 dark:text-white lg:px-7">
+                        <span className="flex items-center gap-2">
+                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full xl:hidden ${u.activo ? "bg-success-500" : "bg-body-text/60"}`} />
+                          <span className="truncate">{u.email}</span>
+                        </span>
+                      </td>
+                      <td className="hidden xl:table-cell px-4 py-3.5">
                         {puedeGestionar(u) && u.rol !== "COMISIONISTA" ? (
                           <select
                             value={u.rol}
@@ -250,13 +255,13 @@ export default function UsuariosPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3.5">
+                      <td className="hidden xl:table-cell px-4 py-3.5">
                         <span className={u.activo ? "text-success-600 dark:text-success-500" : "text-body-text"}>
                           {u.activo ? "Activo" : "Inactivo"}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-body-text">{u.comisionista?.nombre ?? "—"}</td>
-                      <td className="px-4 py-3.5">
+                      <td className="hidden xl:table-cell px-4 py-3.5 text-body-text">{u.comisionista?.nombre ?? "—"}</td>
+                      <td className="sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-4 py-3.5">
                         {puedeGestionar(u) && (
                           <div className="flex items-center justify-end gap-1.5">
                             {claveId === u.id ? (

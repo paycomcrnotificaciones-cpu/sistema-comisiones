@@ -258,14 +258,14 @@ export default function ComisionistasPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[680px] text-left text-sm">
+            <table className="w-full lg:min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="bg-light-50 text-[10px] uppercase tracking-[1.5px] text-body-text dark:bg-dark-600">
                   <th className="px-6 py-3 font-semibold lg:px-7">Comisionista</th>
-                  <th className="px-4 py-3 font-semibold">Código</th>
-                  <th className="px-4 py-3 font-semibold">Sucursal</th>
-                  <th className="px-4 py-3 font-semibold">Estado</th>
-                  <th className="px-4 py-3 text-right font-semibold">Acciones</th>
+                  <th className="hidden lg:table-cell px-4 py-3 font-semibold">Código</th>
+                  <th className="hidden lg:table-cell px-4 py-3 font-semibold">Sucursal</th>
+                  <th className="hidden lg:table-cell px-4 py-3 font-semibold">Estado</th>
+                  <th className="sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-4 py-3 text-right font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -291,17 +291,20 @@ export default function ComisionistasPage() {
                             <Link href={`/comisionistas/${c.id}`} className="font-medium text-zinc-900 hover:text-primary-600 dark:text-white dark:hover:text-primary-100">
                               {c.nombre}
                             </Link>
-                            <span className="text-[11px] text-body-text">{c.usuario?.email ?? "Sin acceso"}</span>
+                            <span className="flex items-center gap-1.5 text-[11px] text-body-text">
+                              <span className={`h-1.5 w-1.5 shrink-0 rounded-full lg:hidden ${c.activo ? "bg-success-500" : "bg-body-text/60"}`} />
+                              {c.usuario?.email ?? "Sin acceso"}
+                            </span>
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5">
+                      <td className="hidden lg:table-cell px-4 py-3.5">
                         <span className="rounded-md bg-light-50 px-2 py-1 font-mono text-[11px] text-body-text dark:bg-dark-600">
                           {c.codigo ?? "—"}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-body-text">{c.sucursal?.nombre ?? "—"}</td>
-                      <td className="px-4 py-3.5">
+                      <td className="hidden lg:table-cell px-4 py-3.5 text-body-text">{c.sucursal?.nombre ?? "—"}</td>
+                      <td className="hidden lg:table-cell px-4 py-3.5">
                         <span
                           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
                             c.activo
@@ -313,7 +316,7 @@ export default function ComisionistasPage() {
                           {c.activo ? "Activo" : "Inactivo"}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-right">
+                      <td className="sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-4 py-3.5 text-right">
                         <div className="flex items-center justify-end">
                           <AccionTabla
                             href={`/comisionistas/${c.id}`}

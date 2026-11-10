@@ -356,16 +356,16 @@ export default function SuscripcionesPage() {
             <p className="mt-1 text-[12px] text-body-text">{suscripciones.length} registros</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
+            <table className="w-full xl:min-w-[900px] text-left text-sm">
               <thead className="bg-light-50 text-[10px] uppercase tracking-[1.2px] text-body-text dark:bg-dark-600">
                 <tr>
                   <th className="px-6 py-3">Cliente</th>
-                  <th className="px-3 py-3">Comisionista</th>
-                  <th className="px-3 py-3 text-right">Cobro</th>
-                  <th className="px-3 py-3">Comisión</th>
-                  <th className="px-3 py-3">Vigencia</th>
-                  <th className="px-3 py-3">Estado</th>
-                  <th className="px-6 py-3 text-right">Acciones</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Comisionista</th>
+                  <th className="hidden xl:table-cell px-3 py-3 text-right">Cobro</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Comisión</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Vigencia</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Estado</th>
+                  <th className="sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-6 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -379,13 +379,16 @@ export default function SuscripcionesPage() {
                       <td className="px-6 py-3.5">
                         <p className="font-medium text-zinc-900 dark:text-white">{s.cliente}</p>
                         <p className="text-[11px] text-body-text">{s.producto ?? "—"}</p>
+                        <p className="mt-0.5 block text-[11px] font-semibold text-zinc-900 dark:text-white xl:hidden">
+                          {formatoDinero.format(Number(s.monto))} · {frecuenciaLabel[s.frecuenciaCobro]}
+                        </p>
                       </td>
-                      <td className="px-3 py-3.5 text-body-text">{s.comisionista.nombre}</td>
-                      <td className="px-3 py-3.5 text-right">
+                      <td className="hidden xl:table-cell px-3 py-3.5 text-body-text">{s.comisionista.nombre}</td>
+                      <td className="hidden xl:table-cell px-3 py-3.5 text-right">
                         <p className="font-medium text-zinc-900 dark:text-white">{formatoDinero.format(Number(s.monto))}</p>
                         <p className="text-[11px] text-body-text">{frecuenciaLabel[s.frecuenciaCobro]}</p>
                       </td>
-                      <td className="px-3 py-3.5">
+                      <td className="hidden xl:table-cell px-3 py-3.5">
                         <p className="text-zinc-900 dark:text-white">
                           {s.comisionTipo === "PORCENTAJE"
                             ? `${Number(s.comisionValor)} %`
@@ -393,10 +396,10 @@ export default function SuscripcionesPage() {
                         </p>
                         <p className="text-[11px] text-body-text">{frecuenciaLabel[s.comisionFrecuencia]}</p>
                       </td>
-                      <td className="px-3 py-3.5 text-[12px] text-body-text">
+                      <td className="hidden xl:table-cell px-3 py-3.5 text-[12px] text-body-text">
                         {s.inicio.slice(0, 10)} → {s.fin ? s.fin.slice(0, 10) : "indefinida"}
                       </td>
-                      <td className="px-3 py-3.5">
+                      <td className="hidden xl:table-cell px-3 py-3.5">
                         <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
                           s.estado === "ACTIVA"
                             ? "bg-success-500/10 text-success-600 dark:text-success-500"
@@ -407,7 +410,7 @@ export default function SuscripcionesPage() {
                           {s.estado === "ACTIVA" ? "Activa" : s.estado === "PAUSADA" ? "Pausada" : "Finalizada"}
                         </span>
                       </td>
-                      <td className="px-6 py-3.5 text-right">
+                      <td className="sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-6 py-3.5 text-right">
                         {puedeGestionar && s.estado !== "FINALIZADA" && (
                           <div className="flex items-center justify-end gap-1.5">
                             <AccionTabla

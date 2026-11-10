@@ -162,14 +162,14 @@ export default function HistorialPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full xl:min-w-[760px] text-left text-sm">
               <thead className="bg-light-50 text-[10px] uppercase tracking-[1.2px] text-body-text dark:bg-dark-600">
                 <tr>
                   <th className="px-5 py-3">Fecha</th>
-                  <th className="px-3 py-3">Usuario</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Usuario</th>
                   <th className="px-3 py-3">Acción</th>
-                  <th className="px-3 py-3">Entidad</th>
-                  <th className="px-5 py-3 text-right">Resultado</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Entidad</th>
+                  <th className="hidden xl:table-cell sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-5 py-3 text-right">Resultado</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,13 +181,18 @@ export default function HistorialPage() {
                   registros.map((r) => (
                     <tr key={r.id} className="table-row-hover border-t border-light-100 dark:border-dark-600">
                       <td className="px-5 py-3 whitespace-nowrap text-body-text">{formatoFecha.format(new Date(r.creadoEn))}</td>
-                      <td className="px-3 py-3">
+                      <td className="hidden xl:table-cell px-3 py-3">
                         <span className="font-medium text-zinc-900 dark:text-white">{r.usuario}</span>
                         {r.rol && <span className="ml-1.5 text-[11px] text-body-text">{r.rol}</span>}
                       </td>
-                      <td className="px-3 py-3 text-zinc-900 dark:text-white">{r.accion}</td>
-                      <td className="px-3 py-3 text-body-text">{r.entidad ?? "—"}</td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-3 py-3 text-zinc-900 dark:text-white">
+                        <span className="flex items-center gap-2">
+                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full xl:hidden ${r.estado < 400 ? "bg-success-500" : "bg-danger-500"}`} />
+                          {r.accion}
+                        </span>
+                      </td>
+                      <td className="hidden xl:table-cell px-3 py-3 text-body-text">{r.entidad ?? "—"}</td>
+                      <td className="hidden xl:table-cell sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-5 py-3 text-right">
                         <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
                           r.estado < 400
                             ? "bg-success-500/10 text-success-600 dark:text-success-500"

@@ -241,21 +241,21 @@ export default function ResumenPage() {
   return (
     <AppShell titulo="Resumen">
       <div className="space-y-8">
-        <section className="hero-panel p-6 lg:p-8">
-          <div className="relative z-10 flex flex-wrap items-end justify-between gap-5">
+        <section className="hero-panel p-5 sm:p-6 lg:p-8">
+          <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[2.4px] text-brand-cyan-500">
                 Panel del mes
               </p>
-              <h1 className="mt-2 font-display text-[34px] font-bold leading-none tracking-[-0.5px] text-white">
+              <h1 className="mt-2 font-display text-[30px] font-bold leading-none tracking-[-0.5px] text-white sm:text-[34px]">
                 Resumen
               </h1>
               <p className="mt-3 max-w-xl text-[14px] text-white/70">
                 {mes ? tituloMes(mes) : "Cargando…"} · ventas, comisiones y desempeño del equipo.
               </p>
             </div>
-            <div className="flex items-end gap-3">
-              <label className="flex flex-col gap-1.5 text-sm">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
+              <label className="flex w-full flex-col gap-1.5 text-sm sm:w-auto">
                 <span className="text-[10px] font-semibold uppercase tracking-[1.5px] text-white/50">
                   Mes
                 </span>
@@ -263,14 +263,14 @@ export default function ResumenPage() {
                   type="month"
                   value={mes}
                   onChange={(e) => setMes(e.target.value)}
-                  className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none backdrop-blur transition focus:border-brand-cyan-500 focus:ring-2 focus:ring-brand-cyan-500/20 [color-scheme:dark]"
+                  className="w-full rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none sm:w-auto backdrop-blur transition focus:border-brand-cyan-500 focus:ring-2 focus:ring-brand-cyan-500/20 [color-scheme:dark]"
                 />
               </label>
               <button
                 type="button"
                 onClick={exportarCsv}
                 disabled={exportando || !mes}
-                className="h-[38px] rounded-xl border border-white/20 bg-white/10 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+                className="h-[38px] w-full rounded-xl border border-white/20 bg-white/10 px-4 text-[13px] font-semibold text-white sm:w-auto transition-colors hover:bg-white/20 disabled:opacity-50"
               >
                 {exportando ? "Exportando…" : "Exportar CSV"}
               </button>
@@ -291,7 +291,7 @@ export default function ResumenPage() {
                   <IconoKpi tipo={kpi.tipo} />
                 </span>
               </div>
-              <p className={`mt-3 font-display text-[25px] font-bold tracking-[-0.3px] ${kpi.color}`}>
+              <p className={`mt-3 font-display text-[22px] font-bold tracking-[-0.3px] sm:text-[25px] ${kpi.color}`}>
                 {kpi.valor}
               </p>
             </div>
@@ -306,7 +306,7 @@ export default function ResumenPage() {
           {cargando ? (
             <p className="mt-4 text-sm text-body-text">Cargando…</p>
           ) : serieDias.length > 0 ? (
-            <div className="mt-5 flex h-40 items-end gap-1">
+            <div className="mt-5 flex h-36 items-end gap-[2px] sm:h-40 sm:gap-1">
               {serieDias.map((dia) => (
                 <div key={dia.fecha} className="group relative flex flex-1 flex-col items-center justify-end">
                   <div
@@ -318,7 +318,7 @@ export default function ResumenPage() {
                     style={{ height: dia.monto > 0 ? `${Math.max(6, (dia.monto / maxDia) * 140)}px` : "2px" }}
                     title={`${dia.fecha}: ${formatoDinero.format(dia.monto)}`}
                   />
-                  <span className="mt-1 text-[8px] text-body-text">{dia.fecha.slice(8, 10)}</span>
+                  <span className="mt-1 hidden text-[8px] text-body-text sm:block">{dia.fecha.slice(8, 10)}</span>
                 </div>
               ))}
             </div>
@@ -327,91 +327,156 @@ export default function ResumenPage() {
           )}
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-2">
-          <section className="surface overflow-hidden">
-            <div className="border-b border-light-100 p-5 dark:border-dark-600">
-              <h2 className="font-display text-[18px] font-bold text-zinc-900 dark:text-white">
-                Top comisionistas
-              </h2>
-              <p className="mt-1 text-[12px] text-body-text">Ordenados por comisión generada.</p>
+        <div className="grid gap-6 2xl:grid-cols-2">
+          <section className="surface min-w-0 overflow-hidden">
+            <div className="flex items-start justify-between gap-4 border-b border-light-100 p-4 dark:border-dark-600 sm:p-5">
+              <div className="min-w-0">
+                <h2 className="font-display text-[17px] font-bold text-zinc-900 dark:text-white sm:text-[18px]">
+                  Top comisionistas
+                </h2>
+                <p className="mt-1 text-[12px] text-body-text">Ordenados por comisión generada.</p>
+              </div>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-100">
+                <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M8 21h8M12 17v4" />
+                  <path d="M7 4h10v5a5 5 0 0 1-10 0V4z" />
+                  <path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" />
+                </svg>
+              </span>
             </div>
-            <table className="w-full text-left text-sm">
-              <thead className="bg-light-50 text-[10px] uppercase tracking-[1.2px] text-body-text dark:bg-dark-600">
-                <tr>
-                  <th className="px-5 py-2.5">Comisionista</th>
-                  <th className="px-3 py-2.5 text-right">Ventas</th>
-                  <th className="px-3 py-2.5 text-right">Vendido</th>
-                  <th className="px-3 py-2.5 text-right">Meta</th>
-                  <th className="px-3 py-2.5 text-right">Avance</th>
-                  <th className="px-5 py-2.5 text-right">Comisión</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data?.porComisionista.length ? (
-                  data.porComisionista.map((f) => (
-                    <tr key={f.id} className="table-row-hover border-t border-light-100 dark:border-dark-600">
-                      <td className="px-5 py-3 font-medium text-zinc-900 dark:text-white">{f.nombre}</td>
-                      <td className="px-3 py-3 text-right text-body-text">{f.ventas}</td>
-                      <td className="px-3 py-3 text-right text-body-text">{formatoDinero.format(f.montoVendido)}</td>
-                      <td className="px-3 py-3 text-right text-body-text">{f.meta ? formatoDinero.format(f.meta) : "—"}</td>
-                      <td className={`px-3 py-3 text-right font-semibold ${f.avance !== null && f.avance !== undefined && f.avance >= 100 ? "text-success-600 dark:text-success-500" : "text-body-text"}`}>
-                        {f.avance !== null && f.avance !== undefined ? `${f.avance}%` : "—"}
-                      </td>
-                      <td className="px-5 py-3 text-right font-semibold text-zinc-900 dark:text-white">{formatoDinero.format(f.comision)}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={6} className="px-5 py-6 text-center text-body-text">Sin datos</td></tr>
-                )}
-              </tbody>
-            </table>
+
+            <div className="divide-y divide-light-100 dark:divide-dark-600">
+              {data?.porComisionista.length ? (
+                data.porComisionista.map((f, indice) => {
+                  const avance = f.avance ?? null;
+                  const meta = f.meta ?? null;
+                  const colorPuesto =
+                    indice === 0
+                      ? "bg-primary-500 text-white"
+                      : indice === 1
+                        ? "bg-brand-cyan-500/20 text-brand-cyan-600 dark:text-brand-cyan-500"
+                        : "bg-light-100 text-body-text dark:bg-dark-600";
+                  return (
+                    <div
+                      key={f.id}
+                      className="px-4 py-4 transition-colors hover:bg-light-50/70 dark:hover:bg-dark-600/40 sm:px-5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${colorPuesto}`}>
+                          {indice + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[14px] font-semibold text-zinc-900 dark:text-white">
+                            {f.nombre}
+                          </p>
+                          <p className="text-[11px] text-body-text">
+                            {f.ventas} {f.ventas === 1 ? "venta" : "ventas"} ·{" "}
+                            {formatoDinero.format(f.montoVendido)}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-[10px] font-semibold uppercase tracking-[1.2px] text-body-text">
+                            Comisión
+                          </p>
+                          <p className="text-[14px] font-bold text-zinc-900 dark:text-white">
+                            {formatoDinero.format(f.comision)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex items-center gap-3">
+                        <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-light-100 dark:bg-dark-600">
+                          <div
+                            className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-brand-cyan-500),var(--color-primary-500))]"
+                            style={{ width: `${Math.min(100, Math.max(0, avance ?? 0))}%` }}
+                          />
+                        </div>
+                        <span
+                          className={`w-12 shrink-0 text-right text-[11px] font-semibold ${
+                            avance !== null && avance >= 100
+                              ? "text-success-600 dark:text-success-500"
+                              : "text-body-text"
+                          }`}
+                        >
+                          {avance !== null ? `${avance}%` : "—"}
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-[10px] text-body-text">
+                        {meta ? `Meta ${formatoDinero.format(meta)}` : "Sin meta asignada"}
+                      </p>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="px-5 py-8 text-center text-sm text-body-text">Sin datos</p>
+              )}
+            </div>
           </section>
 
-          <section className="surface overflow-hidden">
-            <div className="border-b border-light-100 p-5 dark:border-dark-600">
-              <h2 className="font-display text-[18px] font-bold text-zinc-900 dark:text-white">
-                Por sucursal
-              </h2>
-              <p className="mt-1 text-[12px] text-body-text">
-                Ventas por punto de venta frente al mes anterior.
-              </p>
+          <section className="surface min-w-0 overflow-hidden">
+            <div className="flex items-start justify-between gap-4 border-b border-light-100 p-4 dark:border-dark-600 sm:p-5">
+              <div className="min-w-0">
+                <h2 className="font-display text-[17px] font-bold text-zinc-900 dark:text-white sm:text-[18px]">
+                  Por sucursal
+                </h2>
+                <p className="mt-1 text-[12px] text-body-text">
+                  Ventas por punto de venta frente al mes anterior.
+                </p>
+              </div>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-cyan-500/10 text-brand-cyan-600 dark:text-brand-cyan-500">
+                <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 21V8l8-4 8 4v13" />
+                  <path d="M9 21v-5h6v5" />
+                </svg>
+              </span>
             </div>
-            <table className="w-full text-left text-sm">
-              <thead className="bg-light-50 text-[10px] uppercase tracking-[1.2px] text-body-text dark:bg-dark-600">
-                <tr>
-                  <th className="px-5 py-2.5">Sucursal</th>
-                  <th className="px-3 py-2.5 text-right">Ventas</th>
-                  <th className="px-3 py-2.5 text-right">Vendido</th>
-                  <th className="px-3 py-2.5 text-right">Mes anterior</th>
-                  <th className="px-5 py-2.5 text-right">Variación</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data?.porSucursal.length ? (
-                  data.porSucursal.map((f) => (
-                    <tr key={f.id} className="table-row-hover border-t border-light-100 dark:border-dark-600">
-                      <td className="px-5 py-3 font-medium text-zinc-900 dark:text-white">{f.nombre}</td>
-                      <td className="px-3 py-3 text-right text-body-text">{f.ventas}</td>
-                      <td className="px-3 py-3 text-right text-body-text">{formatoDinero.format(f.montoVendido)}</td>
-                      <td className="px-3 py-3 text-right text-body-text">{formatoDinero.format(f.montoAnterior ?? 0)}</td>
-                      <td className={`px-5 py-3 text-right font-semibold ${
-                        f.variacion === null || f.variacion === undefined
-                          ? "text-body-text"
-                          : f.variacion >= 0
-                            ? "text-success-600 dark:text-success-500"
-                            : "text-danger-500"
-                      }`}>
-                        {f.variacion === null || f.variacion === undefined
-                          ? "—"
-                          : `${f.variacion > 0 ? "+" : ""}${f.variacion}%`}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={5} className="px-5 py-6 text-center text-body-text">Sin datos</td></tr>
-                )}
-              </tbody>
-            </table>
+
+            <div className="divide-y divide-light-100 dark:divide-dark-600">
+              {data?.porSucursal.length ? (
+                data.porSucursal.map((f) => {
+                  const variacion = f.variacion ?? null;
+                  return (
+                    <div
+                      key={f.id}
+                      className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 transition-colors hover:bg-light-50/70 dark:hover:bg-dark-600/40 sm:px-5"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[14px] font-semibold text-zinc-900 dark:text-white">
+                          {f.nombre}
+                        </p>
+                        <p className="text-[11px] text-body-text">
+                          {f.ventas} {f.ventas === 1 ? "venta" : "ventas"} · mes anterior{" "}
+                          {formatoDinero.format(f.montoAnterior ?? 0)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-semibold uppercase tracking-[1.2px] text-body-text">
+                          Vendido
+                        </p>
+                        <p className="text-[14px] font-bold text-zinc-900 dark:text-white">
+                          {formatoDinero.format(f.montoVendido)}
+                        </p>
+                      </div>
+                      <span
+                        className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                          variacion === null
+                            ? "bg-light-100 text-body-text dark:bg-dark-600"
+                            : variacion > 0
+                              ? "bg-success-500/10 text-success-600 dark:text-success-500"
+                              : variacion < 0
+                                ? "bg-danger-500/10 text-danger-500"
+                                : "bg-light-100 text-body-text dark:bg-dark-600"
+                        }`}
+                      >
+                        {variacion === null ? "—" : `${variacion > 0 ? "▲ +" : ""}${variacion}%`}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="px-5 py-8 text-center text-sm text-body-text">Sin datos</p>
+              )}
+            </div>
           </section>
         </div>
       </div>

@@ -377,17 +377,17 @@ export default function ReglasPage() {
             </p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-sm">
+            <table className="w-full xl:min-w-[820px] text-left text-sm">
               <thead className="bg-light-50 text-[10px] uppercase tracking-[1.2px] text-body-text dark:bg-dark-600">
                 <tr>
-                  <th className="px-5 py-3">Prioridad</th>
+                  <th className="hidden xl:table-cell px-5 py-3">Prioridad</th>
                   <th className="px-3 py-3">Nombre</th>
-                  <th className="px-3 py-3">Tipo</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Tipo</th>
                   <th className="px-3 py-3 text-right">Valor</th>
-                  <th className="px-3 py-3">Ámbito</th>
-                  <th className="px-3 py-3">Vigencia</th>
-                  <th className="px-3 py-3">Estado</th>
-                  <th className="px-5 py-3 text-right">Acciones</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Ámbito</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Vigencia</th>
+                  <th className="hidden xl:table-cell px-3 py-3">Estado</th>
+                  <th className="sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-5 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -398,20 +398,23 @@ export default function ReglasPage() {
                 ) : (
                   reglas.map((r) => (
                     <tr key={r.id} className="table-row-hover border-t border-light-100 dark:border-dark-600">
-                      <td className="px-5 py-3 text-body-text">{r.prioridad}</td>
+                      <td className="hidden xl:table-cell px-5 py-3 text-body-text">{r.prioridad}</td>
                       <td className="px-3 py-3 font-medium text-zinc-900 dark:text-white">
                         {r.nombre}
                         {r.acumulable && <span className="ml-1.5 text-[11px] text-body-text">· acumulable</span>}
+                        <span className="mt-0.5 block text-[11px] font-normal text-body-text xl:hidden">
+                          {detalleAmbito(r)}
+                        </span>
                       </td>
-                      <td className="px-3 py-3 text-body-text">{r.tipo === "PORCENTAJE" ? "Porcentaje" : "Monto fijo"}</td>
+                      <td className="hidden xl:table-cell px-3 py-3 text-body-text">{r.tipo === "PORCENTAJE" ? "Porcentaje" : "Monto fijo"}</td>
                       <td className="px-3 py-3 text-right font-semibold text-zinc-900 dark:text-white">{valorTexto(r)}</td>
-                      <td className="px-3 py-3 text-body-text">{detalleAmbito(r)}</td>
-                      <td className="px-3 py-3 text-body-text">
+                      <td className="hidden xl:table-cell px-3 py-3 text-body-text">{detalleAmbito(r)}</td>
+                      <td className="hidden xl:table-cell px-3 py-3 text-body-text">
                         {r.vigenciaDesde || r.vigenciaHasta
                           ? `${r.vigenciaDesde?.slice(0, 10) ?? "—"} a ${r.vigenciaHasta?.slice(0, 10) ?? "—"}`
                           : "Siempre"}
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="hidden xl:table-cell px-3 py-3">
                         <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
                           r.activa
                             ? "bg-success-500/10 text-success-600 dark:text-success-500"
@@ -420,7 +423,7 @@ export default function ReglasPage() {
                           {r.activa ? "Activa" : "Inactiva"}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-5 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
