@@ -73,8 +73,10 @@ El mes se interpreta en hora de Costa Rica (UTC-6).
 | DELETE | `/reglas/:id` | — | `{ eliminada: true }` |
 
 La regla más específica (comisionista > producto > sucursal > global) y de
-menor prioridad se sugiere al registrar la venta. El formulario autocompleta
-el tipo y el valor; la venta conserva su propia comisión.
+menor prioridad se sugiere al registrar la venta. Las reglas marcadas como
+`acumulable` del mismo tipo se suman a la ganadora; la respuesta incluye
+`detalle` y `acumuladas`. El formulario autocompleta el tipo y el valor; la
+venta conserva su propia comisión.
 
 ## Metas
 

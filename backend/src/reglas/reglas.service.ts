@@ -187,13 +187,28 @@ export class ReglasService {
     const ganadora = aplicables[0]?.regla;
     if (!ganadora) return null;
 
+    const detalle = [
+      { nombre: ganadora.nombre, valor: Number(ganadora.valor), tipo: ganadora.tipo },
+    ];
+
+    for (const item of aplicables.slice(1)) {
+      const otra = item.regla;
+      if (!otra.acumulable) continue;
+      if (otra.tipo !== ganadora.tipo) continue;
+      detalle.push({ nombre: otra.nombre, valor: Number(otra.valor), tipo: otra.tipo });
+    }
+
+    const total = detalle.reduce((suma, parte) => suma + parte.valor, 0);
+
     return {
       id: ganadora.id,
       nombre: ganadora.nombre,
       tipo: ganadora.tipo,
-      valor: Number(ganadora.valor),
+      valor: total,
       ambito: ganadora.ambito,
       acumulable: ganadora.acumulable,
+      detalle,
+      acumuladas: detalle.length - 1,
     };
   }
 }

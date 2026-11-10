@@ -125,6 +125,7 @@ function PerfilComisionista() {
     nombre: string;
     tipo: "PORCENTAJE" | "MONTO_FIJO";
     valor: number;
+    detalle?: { nombre: string; valor: number }[];
   } | null>(null);
   const [ventaAnular, setVentaAnular] = useState<Venta | null>(null);
   const [anulando, setAnulando] = useState(false);
@@ -209,6 +210,7 @@ function PerfilComisionista() {
           nombre: string;
           tipo: "PORCENTAJE" | "MONTO_FIJO";
           valor: number;
+          detalle?: { nombre: string; valor: number }[];
         } | null>(`/reglas/sugerir?${params.toString()}`);
         setSugerencia(regla);
         if (regla && !editandoId) {
@@ -811,7 +813,10 @@ function PerfilComisionista() {
                 <div className="flex flex-col justify-end gap-1 pb-2 text-sm text-body-text sm:col-span-2">
                   {sugerencia && (
                     <span className="text-[12px] font-medium text-primary-600 dark:text-primary-100">
-                      Regla aplicada: {sugerencia.nombre}
+                      Regla aplicada:{" "}
+                      {sugerencia.detalle && sugerencia.detalle.length > 1
+                        ? `${sugerencia.detalle.map((parte) => `${parte.nombre} (${sugerencia.tipo === "PORCENTAJE" ? `${parte.valor}%` : formatoDinero.format(parte.valor)})`).join(" + ")} = ${sugerencia.tipo === "PORCENTAJE" ? `${sugerencia.valor}%` : formatoDinero.format(sugerencia.valor)}`
+                        : sugerencia.nombre}
                     </span>
                   )}
                   {comisionTipo === "PORCENTAJE"
