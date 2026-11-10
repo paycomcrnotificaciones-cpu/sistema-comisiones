@@ -14,3 +14,7 @@ test-results/
 .idea/
 .vscode/
 *.tsbuildinfo
+
+# datos locales
+backups/
+logs/
