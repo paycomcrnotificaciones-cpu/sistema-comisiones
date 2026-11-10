@@ -1,0 +1,394 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { Fragment, useCallback, useEffect, useState } from "react";
+
+import { AppShell } from "@/components/app-shell";
+import { apiFetch, getSesion, getToken } from "@/lib/api";
+
+interface Comisionista {
+  id: string;
+  nombre: string;
+}
+
+interface Liquidacion {
+  id: string;
+  periodo: string;
+  estado: "BORRADOR" | "PAGADA";
+  comisionTotal: string;
+  ventasCount: number;
+  nota: string | null;
+  creadaEn: string;
+  pagadaEn: string | null;
+  comisionista: { id: string; nombre: string };
+}
+
+interface VentaLiquidada {
+  id: string;
+  fecha: string;
+  producto: string | null;
+  neto: string;
+  comisionMonto: string;
+  sucursal: { nombre: string };
+}
+
+interface ComisionSuscripcion {
+  id: string;
+  periodo: string;
+  base: string;
+  monto: string;
+  suscripcion: { cliente: string; producto: string | null };
+}
+
+interface Detalle extends Liquidacion {
+  ventas: VentaLiquidada[];
+  comisiones: ComisionSuscripcion[];
+}
+
+const formatoDinero = new Intl.NumberFormat("es-CR", {
+  style: "currency",
+  currency: "CRC",
+  minimumFractionDigits: 2,
+});
+
+function mesActual(): string {
+  const ahora = new Date(Date.now() - 6 * 60 * 60 * 1000);
+  return `${ahora.getUTCFullYear()}-${String(ahora.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+const inputClass =
+  "rounded-md border border-light-100 bg-white px-3 py-1.5 text-sm dark:border-dark-600 dark:bg-dark-700 dark:text-white";
+
+export default function LiquidacionesPage() {
+  const router = useRouter();
+  const sesion = getSesion();
+  const puedeGestionar = sesion?.rol === "ADMIN" || sesion?.rol === "SUPER_ADMIN";
+
+  const [mes, setMes] = useState("");
+  const [estado, setEstado] = useState("");
+  const [liquidaciones, setLiquidaciones] = useState<Liquidacion[]>([]);
+  const [comisionistas, setComisionistas] = useState<Comisionista[]>([]);
+  const [comisionistaId, setComisionistaId] = useState("");
+  const [detalle, setDetalle] = useState<Detalle | null>(null);
+  const [abierta, setAbierta] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [trabajando, setTrabajando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mensaje, setMensaje] = useState<string | null>(null);
+
+  const cargar = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (mes) params.set("mes", mes);
+    if (estado) params.set("estado", estado);
+    const [lista, gente] = await Promise.all([
+      apiFetch<Liquidacion[]>(`/liquidaciones?${params.toString()}`),
+      apiFetch<Comisionista[]>("/comisionistas"),
+    ]);
+    setLiquidaciones(lista);
+    setComisionistas(gente);
+    setComisionistaId((actual) => actual || gente[0]?.id || "");
+  }, [mes, estado]);
+
+  useEffect(() => {
+    if (!getToken()) {
+      router.replace("/login");
+      return;
+    }
+    if (sesion?.rol === "COMISIONISTA") {
+      router.replace(
+        sesion.comisionistaId
+          ? `/comisionistas/${sesion.comisionistaId}`
+          : "/login",
+      );
+      return;
+    }
+    if (!mes) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMes(mesActual());
+      return;
+    }
+    let activo = true;
+    (async () => {
+      try {
+        await cargar();
+        if (activo) setError(null);
+      } catch (err) {
+        if (activo) setError(err instanceof Error ? err.message : "Error al cargar");
+      } finally {
+        if (activo) setCargando(false);
+      }
+    })();
+    return () => {
+      activo = false;
+    };
+  }, [cargar, mes, router, sesion?.rol, sesion?.comisionistaId]);
+
+  async function generar() {
+    if (!comisionistaId) return;
+    setError(null);
+    setMensaje(null);
+    setTrabajando(true);
+    try {
+      await apiFetch("/liquidaciones", {
+        method: "POST",
+        body: JSON.stringify({ comisionistaId, mes }),
+      });
+      setMensaje("Borrador generado con las ventas pendientes del mes");
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al generar");
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  async function generarTodos() {
+    setError(null);
+    setMensaje(null);
+    setTrabajando(true);
+    try {
+      const resumen = await apiFetch<{ porComisionista: { id: string }[] }>(
+        `/resumen?mes=${mes}`,
+      );
+      let creadas = 0;
+      for (const fila of resumen.porComisionista) {
+        try {
+          await apiFetch("/liquidaciones", {
+            method: "POST",
+            body: JSON.stringify({ comisionistaId: fila.id, mes }),
+          });
+          creadas += 1;
+        } catch {
+          // Ya existía una liquidación para ese comisionista.
+        }
+      }
+      setMensaje(
+        creadas > 0
+          ? `Se generaron ${creadas} borradores`
+          : "No hay ventas pendientes por liquidar",
+      );
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al generar");
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  async function pagar(id: string) {
+    if (!window.confirm("¿Marcar esta liquidación como pagada?")) return;
+    setError(null);
+    try {
+      await apiFetch(`/liquidaciones/${id}/pagar`, { method: "POST" });
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al pagar");
+    }
+  }
+
+  async function anular(id: string) {
+    if (!window.confirm("¿Anular el borrador? Las ventas volverán a quedar pendientes.")) return;
+    setError(null);
+    try {
+      await apiFetch(`/liquidaciones/${id}/anular`, { method: "POST" });
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al anular");
+    }
+  }
+
+  async function verDetalle(id: string) {
+    if (abierta === id) {
+      setAbierta(null);
+      setDetalle(null);
+      return;
+    }
+    setAbierta(id);
+    setDetalle(null);
+    try {
+      const data = await apiFetch<Detalle>(`/liquidaciones/${id}`);
+      setDetalle(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al cargar el detalle");
+    }
+  }
+
+  return (
+    <AppShell titulo="Liquidaciones">
+      <div className="space-y-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-100">
+              Pagos de comisión
+            </p>
+            <h1 className="mt-3 font-display text-[37px] font-bold leading-none tracking-[-0.4px] text-zinc-900 dark:text-white">
+              Liquidaciones
+            </h1>
+            <p className="mt-3 text-[14px] text-body-text">
+              Cierra el mes, revisa la comisión y márcala como pagada.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3 text-sm text-body-text">
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-[1.2px]">Mes</span>
+              <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} className={inputClass} />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-[1.2px]">Estado</span>
+              <select value={estado} onChange={(e) => setEstado(e.target.value)} className={inputClass}>
+                <option value="">Todos</option>
+                <option value="BORRADOR">Borradores</option>
+                <option value="PAGADA">Pagadas</option>
+              </select>
+            </label>
+            {puedeGestionar && (
+              <button
+                type="button"
+                onClick={generarTodos}
+                disabled={trabajando}
+                className="h-[36px] rounded-md bg-primary-500 px-3 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60"
+              >
+                Generar borradores del mes
+              </button>
+            )}
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-danger-500">{error}</p>}
+        {mensaje && <p className="text-sm text-success-600 dark:text-success-500">{mensaje}</p>}
+
+        {puedeGestionar && (
+          <section className="rounded-2xl border border-light-100 bg-white p-5 shadow-sm dark:border-dark-600 dark:bg-dark-700">
+            <h2 className="font-display text-[18px] font-bold text-zinc-900 dark:text-white">
+              Generar borrador individual
+            </h2>
+            <p className="mt-1 text-[12px] text-body-text">
+              Incluye las ventas activas del mes que aún no están liquidadas.
+            </p>
+            <div className="mt-4 flex flex-wrap items-end gap-3">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-[10px] uppercase tracking-[1.2px] text-body-text">Comisionista</span>
+                <select value={comisionistaId} onChange={(e) => setComisionistaId(e.target.value)} className={`${inputClass} min-w-[200px]`}>
+                  {comisionistas.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={generar}
+                disabled={trabajando || !comisionistaId}
+                className="h-[36px] rounded-md border border-primary-500 px-3 text-sm font-semibold text-primary-600 hover:bg-primary-500 hover:text-white disabled:opacity-60 dark:text-primary-100"
+              >
+                Generar borrador
+              </button>
+            </div>
+          </section>
+        )}
+
+        <section className="overflow-hidden rounded-2xl border border-light-100 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-700">
+          <div className="border-b border-light-100 p-5 dark:border-dark-600">
+            <h2 className="font-display text-[18px] font-bold text-zinc-900 dark:text-white">
+              Liquidaciones del período
+            </h2>
+            <p className="mt-1 text-[12px] text-body-text">{liquidaciones.length} registros</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] text-left text-sm">
+              <thead className="bg-light-50 text-[10px] uppercase tracking-[1.2px] text-body-text dark:bg-dark-600">
+                <tr>
+                  <th className="px-5 py-3">Comisionista</th>
+                  <th className="px-3 py-3">Período</th>
+                  <th className="px-3 py-3 text-right">Ventas</th>
+                  <th className="px-3 py-3 text-right">Comisión</th>
+                  <th className="px-3 py-3">Estado</th>
+                  <th className="px-3 py-3">Pago</th>
+                  <th className="px-5 py-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cargando ? (
+                  <tr><td colSpan={7} className="px-5 py-8 text-center text-body-text">Cargando…</td></tr>
+                ) : liquidaciones.length === 0 ? (
+                  <tr><td colSpan={7} className="px-5 py-8 text-center text-body-text">Sin liquidaciones en este período</td></tr>
+                ) : (
+                  liquidaciones.map((l) => (
+                    <Fragment key={l.id}>
+                      <tr className="border-t border-light-100 dark:border-dark-600">
+                        <td className="px-5 py-3 font-medium text-zinc-900 dark:text-white">{l.comisionista.nombre}</td>
+                        <td className="px-3 py-3 text-body-text">{l.periodo}</td>
+                        <td className="px-3 py-3 text-right text-body-text">{l.ventasCount}</td>
+                        <td className="px-3 py-3 text-right font-semibold text-zinc-900 dark:text-white">
+                          {formatoDinero.format(Number(l.comisionTotal))}
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                            l.estado === "PAGADA"
+                              ? "bg-success-500/10 text-success-600 dark:text-success-500"
+                              : "bg-warning-500/10 text-warning-600"
+                          }`}>
+                            {l.estado === "PAGADA" ? "Pagada" : "Borrador"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-body-text">
+                          {l.pagadaEn ? l.pagadaEn.slice(0, 10) : "—"}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <div className="flex flex-wrap justify-end gap-3">
+                            <button type="button" onClick={() => verDetalle(l.id)} className="text-[12px] font-semibold text-primary-600 dark:text-primary-100">
+                              {abierta === l.id ? "Ocultar" : "Detalle"}
+                            </button>
+                            {puedeGestionar && l.estado === "BORRADOR" && (
+                              <>
+                                <button type="button" onClick={() => pagar(l.id)} className="text-[12px] font-semibold text-success-600 dark:text-success-500">
+                                  Pagar
+                                </button>
+                                <button type="button" onClick={() => anular(l.id)} className="text-[12px] font-semibold text-danger-500">
+                                  Anular
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {abierta === l.id && (
+                        <tr className="bg-light-50 dark:bg-dark-600">
+                          <td colSpan={7} className="px-5 py-4">
+                            {!detalle ? (
+                              <p className="text-[12px] text-body-text">Cargando ventas…</p>
+                            ) : (
+                              <div className="space-y-1.5">
+                                {detalle.ventas.length > 0 && (
+                                  <p className="text-[10px] font-bold uppercase tracking-[1.2px] text-body-text">Ventas</p>
+                                )}
+                                {detalle.ventas.map((v) => (
+                                  <div key={v.id} className="flex flex-wrap justify-between gap-2 text-[12px] text-body-text">
+                                    <span>{v.fecha.slice(0, 10)} · {v.producto ?? "Sin producto"} · {v.sucursal.nombre}</span>
+                                    <span>Monto {formatoDinero.format(Number(v.neto))} · Comisión {formatoDinero.format(Number(v.comisionMonto))}</span>
+                                  </div>
+                                ))}
+                                {detalle.comisiones.length > 0 && (
+                                  <p className="pt-2 text-[10px] font-bold uppercase tracking-[1.2px] text-body-text">Suscripciones</p>
+                                )}
+                                {detalle.comisiones.map((c) => (
+                                  <div key={c.id} className="flex flex-wrap justify-between gap-2 text-[12px] text-body-text">
+                                    <span>{c.periodo} · {c.suscripcion.cliente} · {c.suscripcion.producto ?? "Suscripción"}</span>
+                                    <span>Base {formatoDinero.format(Number(c.base))} · Comisión {formatoDinero.format(Number(c.monto))}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </AppShell>
+  );
+}

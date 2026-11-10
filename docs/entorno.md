@@ -53,7 +53,7 @@ El archivo de configuración de Prisma es `prisma7.config.ts` (Prisma 7 lo gener
 
 ## Demo
 
-Usuario: `admin@demo.com` · Contraseña: `Clave1234`
+Usuarios: `super@demo.com` (super admin), `admin@demo.com` (admin), `supervisor@demo.com` (supervisor) y `laura@demo.com` (comisionista) · Contraseña: `Clave1234`
 
 Endpoints: `GET /api/health`, `POST /api/auth/login`, `GET|POST /api/comisionistas`, `GET /api/sucursales`.
 

@@ -12,6 +12,7 @@ export interface UsuarioJwt {
   email: string;
   empresaId: string;
   rol: string;
+  comisionistaId?: string | null;
 }
 
 export interface RequestConUsuario extends Request {

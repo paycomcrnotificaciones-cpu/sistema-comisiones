@@ -15,14 +15,18 @@ enum Rol {
 }
 
 model Empresa {
-  id        String   @id @default(uuid())
-  nombre    String
-  creadoEn  DateTime @default(now()) @map("creado_en")
+  id       String   @id @default(uuid())
+  nombre   String
+  creadoEn DateTime @default(now()) @map("creado_en")
 
-  sucursales   Sucursal[]
-  usuarios     Usuario[]
+  usuarios      Usuario[]
+  sucursales    Sucursal[]
   comisionistas Comisionista[]
-  monedas      Moneda[]
+  monedas       Moneda[]
+  ventas        Venta[]
+  liquidaciones Liquidacion[]
+  suscripciones Suscripcion[]
+  comisionesSuscripcion ComisionSuscripcion[]
 
   @@map("empresas")
 }
@@ -34,12 +38,13 @@ model Sucursal {
   codigo    String?
   creadoEn  DateTime @default(now()) @map("creado_en")
 
-  empresa       Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresa       Empresa        @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   comisionistas Comisionista[]
 
   @@unique([empresaId, codigo])
   @@index([empresaId])
   @@map("sucursales")
+  ventas Venta[]
 }
 
 model Usuario {
@@ -47,11 +52,13 @@ model Usuario {
   empresaId    String   @map("empresa_id")
   email        String   @unique
   passwordHash String   @map("password_hash")
-  rol          Rol      @default(COMISIONISTA)
-  activo       Boolean  @default(true)
-  creadoEn     DateTime @default(now()) @map("creado_en")
+  rol            Rol      @default(COMISIONISTA)
+  activo         Boolean  @default(true)
+  comisionistaId String?  @unique @map("comisionista_id")
+  creadoEn       DateTime @default(now()) @map("creado_en")
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  comisionista Comisionista? @relation(fields: [comisionistaId], references: [id], onDelete: SetNull)
 
   @@index([empresaId])
   @@map("usuarios")
@@ -66,13 +73,18 @@ model Comisionista {
   activo     Boolean  @default(true)
   creadoEn   DateTime @default(now()) @map("creado_en")
 
-  empresa  Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   sucursal Sucursal @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
 
   @@unique([empresaId, codigo])
   @@index([empresaId])
   @@index([sucursalId])
   @@map("comisionistas")
+  ventas Venta[]
+  usuario Usuario?
+  liquidaciones Liquidacion[]
+  suscripciones Suscripcion[]
+  comisionesSuscripcion ComisionSuscripcion[]
 }
 
 model Moneda {
@@ -88,3 +100,137 @@ model Moneda {
   @@index([empresaId])
   @@map("monedas")
 }
+
+enum EstadoVenta {
+  ACTIVA
+  ANULADA
+}
+
+enum TipoComision {
+  PORCENTAJE
+  MONTO_FIJO
+}
+
+enum EstadoLiquidacion {
+  BORRADOR
+  PAGADA
+}
+
+enum Frecuencia {
+  MENSUAL
+  TRIMESTRAL
+  SEMESTRAL
+  ANUAL
+  UNICA
+}
+
+enum EstadoSuscripcion {
+  ACTIVA
+  PAUSADA
+  FINALIZADA
+}
+
+model Liquidacion {
+  id             String            @id @default(uuid())
+  empresaId      String            @map("empresa_id")
+  comisionistaId String            @map("comisionista_id")
+  periodo        String
+  estado         EstadoLiquidacion @default(BORRADOR)
+  comisionTotal  Decimal           @default(0) @db.Decimal(18, 4) @map("comision_total")
+  ventasCount    Int               @default(0) @map("ventas_count")
+  nota           String?
+  creadaEn       DateTime          @default(now()) @map("creada_en")
+  pagadaEn       DateTime?         @map("pagada_en")
+
+  empresa      Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  comisionista Comisionista @relation(fields: [comisionistaId], references: [id], onDelete: Restrict)
+  ventas       Venta[]
+  comisiones   ComisionSuscripcion[]
+  comisionesCount Int @default(0) @map("comisiones_count")
+
+  @@unique([empresaId, comisionistaId, periodo])
+  @@index([empresaId, periodo])
+  @@map("liquidaciones")
+}
+
+model Suscripcion {
+  id             String            @id @default(uuid())
+  empresaId      String            @map("empresa_id")
+  comisionistaId String            @map("comisionista_id")
+  cliente        String
+  producto       String?
+  monto          Decimal           @db.Decimal(18, 4)
+  frecuenciaCobro Frecuencia       @map("frecuencia_cobro")
+  comisionTipo   TipoComision      @default(PORCENTAJE) @map("comision_tipo")
+  comisionValor  Decimal           @db.Decimal(18, 4) @map("comision_valor")
+  comisionFrecuencia Frecuencia    @map("comision_frecuencia")
+  inicio         DateTime
+  fin            DateTime?
+  estado         EstadoSuscripcion @default(ACTIVA)
+  creadoEn       DateTime          @default(now()) @map("creado_en")
+
+  empresa      Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  comisionista Comisionista @relation(fields: [comisionistaId], references: [id], onDelete: Restrict)
+  comisiones   ComisionSuscripcion[]
+
+  @@index([empresaId, estado])
+  @@index([empresaId, comisionistaId])
+  @@map("suscripciones")
+}
+
+model ComisionSuscripcion {
+  id             String   @id @default(uuid())
+  empresaId      String   @map("empresa_id")
+  suscripcionId  String   @map("suscripcion_id")
+  comisionistaId String   @map("comisionista_id")
+  periodo        String
+  base           Decimal  @db.Decimal(18, 4)
+  monto          Decimal  @db.Decimal(18, 4)
+  liquidacionId  String?  @map("liquidacion_id")
+  creadoEn       DateTime @default(now()) @map("creado_en")
+
+  empresa      Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  suscripcion  Suscripcion  @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
+  comisionista Comisionista @relation(fields: [comisionistaId], references: [id], onDelete: Restrict)
+  liquidacion  Liquidacion? @relation(fields: [liquidacionId], references: [id], onDelete: SetNull)
+
+  @@unique([suscripcionId, periodo])
+  @@index([empresaId, periodo])
+  @@index([liquidacionId])
+  @@map("comisiones_suscripcion")
+}
+
+model Venta {
+
+  id String @id @default(uuid())
+  empresaId String @map("empresa_id")
+  sucursalId String @map("sucursal_id")
+  comisionistaId String @map("comisionista_id")
+  fecha DateTime
+  documento String?
+  cliente String?
+  producto String?
+  categoria String?
+  bruto Decimal @db.Decimal(18, 4)
+  neto Decimal @db.Decimal(18, 4)
+  costo Decimal @default(0) @db.Decimal(18, 4)
+  comisionTipo TipoComision @default(PORCENTAJE) @map("comision_tipo")
+  comisionValor Decimal @default(0) @db.Decimal(18, 4) @map("comision_valor")
+  comisionMonto Decimal @default(0) @db.Decimal(18, 4) @map("comision_monto")
+  estado EstadoVenta @default (ACTIVA)
+  liquidacionId String? @map("liquidacion_id")
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  sucursal Sucursal @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  comisionista Comisionista @relation(fields: [comisionistaId], references: [id], onDelete: Restrict)
+  liquidacion Liquidacion? @relation(fields: [liquidacionId], references: [id], onDelete: SetNull)
+
+
+  @@unique([empresaId, documento])
+  @@index([empresaId, fecha])
+  @@index([empresaId, comisionistaId])
+  @@index([liquidacionId])
+  @@map("ventas")
+}
+

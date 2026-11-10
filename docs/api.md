@@ -1,41 +1,155 @@
 # Contrato de API
 
-Una tabla por módulo. Se completa antes de implementar el endpoint.
+API REST con prefijo `/api`. Autenticación por JWT en la cabecera
+`Authorization: Bearer <token>`.
 
-Formato de fila: método · ruta · rol mínimo · request → response.
+Formato de fila: método · ruta · request → response.
 
 ## Autenticación
-| Método | Ruta | Rol | Request | Response |
-|---|---|---|---|---|
-| POST | /auth/login | público | email, password | accessToken |
-| POST | /auth/refresh | público | cookie | accessToken |
-| POST | /auth/logout | autenticado | — | — |
+
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| POST | `/auth/login` | `{ email, password }` | `{ accessToken, usuario }` |
+
+El token incluye `sub`, `email`, `empresaId` y `rol`. Todos los endpoints de
+negocio filtran los datos por el `empresaId` del token.
+
+## Comisionistas
+
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| GET | `/comisionistas` | — | `Comisionista[]` |
+| GET | `/comisionistas/:id` | — | `Comisionista` |
+| POST | `/comisionistas` | `{ nombre, codigo?, sucursalId, email?, password? }` | `Comisionista` |
+| PATCH | `/comisionistas/:id` | `{ nombre?, codigo?, sucursalId?, activo?, email?, password? }` | `Comisionista` |
+
+`POST` y `PATCH` requieren rol `ADMIN` o `SUPER_ADMIN`.
+El `SUPERVISOR` solo puede leer.
+Un usuario con rol `COMISIONISTA` solo puede leer su propio perfil
+(`GET /comisionistas` devuelve únicamente el suyo).
+
+## Usuarios
+
+Solo para `ADMIN` y `SUPER_ADMIN`.
+
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| GET | `/usuarios` | — | `Usuario[]` |
+| POST | `/usuarios` | `{ email, password, rol }` | `Usuario` |
+| PATCH | `/usuarios/:id` | `{ email?, password?, rol?, activo? }` | `Usuario` |
+
+El `SUPER_ADMIN` puede asignar `SUPERVISOR`, `ADMIN` y `SUPER_ADMIN`.
+El `ADMIN` solo puede asignar `SUPERVISOR` y no puede editar a un `SUPER_ADMIN`.
+Nunca se permite cambiar el rol propio ni dejar la empresa sin un
+`SUPER_ADMIN` activo.
+
+## Resumen (panel del mes)
+
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| GET | `/resumen` | query: `mes` (`YYYY-MM`, opcional) | Totales del mes |
+
+Devuelve `totalVentas`, `montoVendido`, `totalComision`,
+`comisionistasActivos`, `comisionPendiente`, `comisionPagada`,
+`comisionVentas`, `comisionSuscripciones`, `ingresoRecurrente`,
+`porComisionista`, `porSucursal` y `porDia`.
+Si el usuario es `COMISIONISTA`, solo se calculan sus propios datos.
+El mes se interpreta en hora de Costa Rica (UTC-6).
+
+## Sucursales
+
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| GET | `/sucursales` | — | `Sucursal[]` |
 
 ## Ventas
-| Método | Ruta | Rol | Request | Response |
-|---|---|---|---|---|
-| GET | /ventas | COMISIONISTA | pagina, limite, filtros | Venta[] |
-| POST | /ventas | SUPERVISOR | venta | Venta |
-| PATCH | /ventas/:id | SUPERVISOR | campos | Venta |
-| POST | /ventas/:id/anular | SUPERVISOR | — | Venta |
 
-## Comisiones
-| Método | Ruta | Rol | Request | Response |
-|---|---|---|---|---|
-| GET | /comisiones | COMISIONISTA | filtros | Comision[] |
-| POST | /comisiones/recalcular | SUPERVISOR | desde, hasta | resumen |
-| POST | /comisiones/aprobar | SUPERVISOR | ids | resultado |
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| GET | `/ventas` | query: `pagina`, `limite`, `desde`, `hasta`, `comisionistaId`, `sucursalId`, `estado` | `{ total, pagina, limite, datos, montoVendido, totalComision, comisionPendiente, comisionPagada }` |
+| POST | `/ventas` | datos de la venta + comisión | `Venta` |
+| PATCH | `/ventas/:id` | campos de la venta a modificar | `Venta` |
+| POST | `/ventas/:id/anular` | — | `Venta` con estado `ANULADA` (409 si está liquidada) |
+| GET | `/ventas/export` | mismos filtros que `/ventas` | CSV (`text/csv`) |
 
-## Liquidaciones
-| Método | Ruta | Rol | Request | Response |
-|---|---|---|---|---|
-| GET | /liquidaciones | COMISIONISTA | filtros | Liquidacion[] |
-| POST | /liquidaciones | ADMIN | comisionistaId, período | Liquidacion |
-| POST | /liquidaciones/:id/aprobar | ADMIN | — | Liquidacion |
-| POST | /liquidaciones/:id/pagar | ADMIN | — | Liquidacion |
+### Crear venta
+
+```json
+{
+  "sucursalId": "uuid",
+  "comisionistaId": "uuid",
+  "fecha": "2026-10-29",
+  "documento": "FAC-001",
+  "cliente": "Cliente",
+  "producto": "Producto",
+  "categoria": "Categoría",
+  "bruto": "12000",
+  "neto": "10000",
+  "costo": "2000",
+  "comisionTipo": "PORCENTAJE",
+  "comisionValor": "5"
+}
+```
+
+- `comisionTipo`: `PORCENTAJE` o `MONTO_FIJO`.
+- `comisionValor`: porcentaje (0–100) o monto fijo en colones.
+- `comisionMonto`: calculado por el servidor y guardado con la venta.
+  - `PORCENTAJE`: `neto * comisionValor / 100`.
+  - `MONTO_FIJO`: `comisionValor`.
 
 ## Convenciones
+
 - Errores: `{ statusCode, message }`.
-- Paginación: `pagina` (1..n), `limite`.
-- Fechas en ISO 8601.
-- Dinero como string decimal.
+- Paginación: `pagina` (1..n) y `limite`.
+- Fechas en ISO 8601 (`YYYY-MM-DD`).
+- Dinero como string decimal (se guarda con 4 decimales, se muestra con 2).
+- Zona horaria: las fechas se interpretan en UTC-6 (Costa Rica).
+
+## Liquidaciones
+
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| GET | `/liquidaciones` | query: `mes`, `estado`, `comisionistaId` | `Liquidacion[]` |
+| GET | `/liquidaciones/:id` | — | `Liquidacion` con `ventas` |
+| POST | `/liquidaciones` | `{ comisionistaId, mes, nota? }` | `Liquidacion` en `BORRADOR` |
+| POST | `/liquidaciones/:id/pagar` | — | `Liquidacion` en `PAGADA` |
+| POST | `/liquidaciones/:id/anular` | — | Libera las ventas y elimina el borrador |
+
+Al generar un borrador se incluyen las ventas activas del mes que aún no
+estén liquidadas. Una venta incluida no se puede editar ni anular (`409`).
+No se puede anular una liquidación pagada.
+El `COMISIONISTA` solo ve sus propias liquidaciones.
+
+## Suscripciones
+
+| Método | Ruta | Request | Response |
+|---|---|---|---|
+| GET | `/suscripciones` | query: `estado`, `comisionistaId` | `Suscripcion[]` |
+| GET | `/suscripciones/:id` | — | `Suscripcion` |
+| POST | `/suscripciones` | datos de la suscripción | `Suscripcion` |
+| PATCH | `/suscripciones/:id` | campos a modificar | `Suscripcion` |
+| POST | `/suscripciones/:id/pausar` | — | `Suscripcion` en `PAUSADA` |
+| POST | `/suscripciones/:id/finalizar` | — | `Suscripcion` en `FINALIZADA` |
+| POST | `/suscripciones/:id/reactivar` | — | `Suscripcion` en `ACTIVA` |
+
+```json
+{
+  "comisionistaId": "uuid",
+  "cliente": "Restaurante La Esquina",
+  "producto": "Factelec",
+  "monto": "30000",
+  "frecuenciaCobro": "MENSUAL",
+  "comisionTipo": "PORCENTAJE",
+  "comisionValor": "10",
+  "comisionFrecuencia": "MENSUAL",
+  "inicio": "2026-11-01",
+  "fin": null
+}
+```
+
+Frecuencias: `MENSUAL`, `TRIMESTRAL`, `SEMESTRAL`, `ANUAL`, `UNICA`.
+La comisión de cada período se calcula como `monto × mesesComisión ÷
+mesesCobro` y se genera una sola vez por período. Al generar una liquidación
+se incluyen automáticamente las comisiones del mes.
+Solo `ADMIN` y `SUPER_ADMIN` pueden crear, editar o cambiar el estado.
+El `COMISIONISTA` solo ve sus propias suscripciones.

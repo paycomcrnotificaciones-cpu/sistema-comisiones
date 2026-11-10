@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { apiFetch, clearToken, getToken } from "@/lib/api";
+import { AppShell } from "@/components/app-shell";
+import { apiFetch, getSesion } from "@/lib/api";
 
 interface Sucursal {
   id: string;
@@ -16,40 +18,67 @@ interface Comisionista {
   codigo: string | null;
   activo: boolean;
   sucursal: { id: string; nombre: string } | null;
+  usuario: { email: string; activo: boolean } | null;
 }
 
-const inputClass = "w-full rounded-md border border-zinc-300 px-3 py-2";
+const PAGE_SIZE = 8;
+
+const inputClass =
+  "w-full rounded-xl border border-light-100 bg-light-50 px-3 py-2.5 text-sm text-zinc-900 placeholder:text-body-text/60 focus-visible:border-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/25 dark:border-dark-600 dark:bg-dark-600 dark:text-white";
+
+function iniciales(nombre: string): string {
+  return nombre
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 export default function ComisionistasPage() {
   const router = useRouter();
+  const esComisionista = getSesion()?.rol === "COMISIONISTA";
+  const esSupervisor = getSesion()?.rol === "SUPERVISOR";
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [comisionistas, setComisionistas] = useState<Comisionista[]>([]);
   const [nombre, setNombre] = useState("");
   const [codigo, setCodigo] = useState("");
   const [sucursalId, setSucursalId] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+  const [pagina, setPagina] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
 
-  async function cargar(seleccionar?: string) {
-    const [s, c] = await Promise.all([
-      apiFetch<Sucursal[]>("/sucursales"),
-      apiFetch<Comisionista[]>("/comisionistas"),
-    ]);
-    setSucursales(s);
-    setComisionistas(c);
-    setSucursalId((actual) => actual || seleccionar || s[0]?.id || "");
-  }
-
   useEffect(() => {
-    if (!getToken()) {
-      router.replace("/login");
+    if (esComisionista) {
+      const propio = getSesion()?.comisionistaId;
+      router.replace(propio ? `/comisionistas/${propio}` : "/resumen");
       return;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    cargar()
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Error"))
-      .finally(() => setCargando(false));
-  }, [router]);
+    let activo = true;
+    (async () => {
+      try {
+        const [s, c] = await Promise.all([
+          apiFetch<Sucursal[]>("/sucursales"),
+          apiFetch<Comisionista[]>("/comisionistas"),
+        ]);
+        if (!activo) return;
+        setSucursales(s);
+        setComisionistas(c);
+        setSucursalId((actual) => actual || s[0]?.id || "");
+        setCargando(false);
+      } catch (err) {
+        if (!activo) return;
+        setError(err instanceof Error ? err.message : "Error al cargar");
+        setCargando(false);
+      }
+    })();
+    return () => {
+      activo = false;
+    };
+  }, [esComisionista, router]);
 
   async function crear(event: React.FormEvent) {
     event.preventDefault();
@@ -57,99 +86,269 @@ export default function ComisionistasPage() {
     try {
       await apiFetch("/comisionistas", {
         method: "POST",
-        body: JSON.stringify({ nombre, codigo: codigo || undefined, sucursalId }),
+        body: JSON.stringify({
+          nombre,
+          codigo: codigo || undefined,
+          sucursalId,
+          email: email || undefined,
+          password: password || undefined,
+        }),
       });
       setNombre("");
       setCodigo("");
-      await cargar();
+      setEmail("");
+      setPassword("");
+      const c = await apiFetch<Comisionista[]>("/comisionistas");
+      setComisionistas(c);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar");
     }
   }
 
+  const filtrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return comisionistas;
+    return comisionistas.filter(
+      (c) =>
+        c.nombre.toLowerCase().includes(q) ||
+        (c.codigo ?? "").toLowerCase().includes(q) ||
+        (c.sucursal?.nombre ?? "").toLowerCase().includes(q),
+    );
+  }, [comisionistas, busqueda]);
+
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE));
+  const visibles = filtrados.slice((pagina - 1) * PAGE_SIZE, pagina * PAGE_SIZE);
+  const activos = comisionistas.filter((c) => c.activo).length;
+
+  if (esComisionista) return null;
+
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 p-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-zinc-900">Comisionistas</h1>
-        <button
-          onClick={() => {
-            clearToken();
-            router.push("/login");
-          }}
-          className="text-sm text-zinc-500 hover:text-zinc-900"
-        >
-          Salir
-        </button>
-      </header>
+    <AppShell titulo="Comisionistas">
+      <div className="space-y-8">
+        <div className="flex flex-wrap items-start justify-between gap-6">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-100">
+              Equipo comercial
+            </p>
+            <h1 className="mt-3 font-display text-[37px] font-bold leading-none tracking-[-0.4px] text-zinc-900 dark:text-white">
+              Comisionistas
+            </h1>
+            <p className="mt-3 text-[14px] text-body-text">
+              Administra tu equipo y mantén sus datos siempre al día.
+            </p>
+          </div>
 
-      <form
-        onSubmit={crear}
-        className="grid gap-3 rounded-xl border border-zinc-200 bg-white p-4 sm:grid-cols-4"
-      >
-        <label className="space-y-1 text-sm">
-          <span className="font-medium text-zinc-700">Nombre</span>
-          <input required value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputClass} />
-        </label>
-        <label className="space-y-1 text-sm">
-          <span className="font-medium text-zinc-700">Código</span>
-          <input value={codigo} onChange={(e) => setCodigo(e.target.value)} className={inputClass} />
-        </label>
-        <label className="space-y-1 text-sm">
-          <span className="font-medium text-zinc-700">Sucursal</span>
-          <select value={sucursalId} onChange={(e) => setSucursalId(e.target.value)} className={inputClass}>
-            {sucursales.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="submit"
-          className="mt-6 h-10 rounded-md bg-zinc-900 px-3 text-sm font-medium text-white"
-        >
-          Agregar
-        </button>
-      </form>
+          <div className="flex items-center gap-3 rounded-2xl border border-light-100 bg-white px-4 py-3 shadow-sm dark:border-dark-600 dark:bg-dark-700">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-100">
+              <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" />
+                <circle cx="9.5" cy="7.5" r="3.5" />
+                <path d="M17 11l2 2 3-4" />
+              </svg>
+            </span>
+            <div className="min-w-[92px]">
+              <p className="text-[10px] font-semibold uppercase tracking-[1.5px] text-body-text">Activos</p>
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-2xl font-bold text-zinc-900 dark:text-white">{activos}</span>
+                <span className="text-[11px] font-medium text-success-600 dark:text-success-500">en total</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+        {!esSupervisor && (
+        <section className="rounded-2xl border border-light-100 bg-white p-6 shadow-sm dark:border-dark-600 dark:bg-dark-700 lg:p-7">
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div className="flex gap-3">
+              <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">01</span>
+              <div>
+                <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
+                  Nuevo comisionista
+                </h2>
+                <p className="mt-1 text-[12px] text-body-text">Completa los datos para añadirlo al equipo.</p>
+              </div>
+            </div>
+            <p className="text-[10px] uppercase tracking-[1.5px] text-body-text/70">Email y contraseña crean el acceso del comisionista</p>
+          </div>
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
-            <tr>
-              <th className="px-4 py-3">Nombre</th>
-              <th className="px-4 py-3">Código</th>
-              <th className="px-4 py-3">Sucursal</th>
-              <th className="px-4 py-3">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cargando ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-zinc-500">
-                  Cargando…
-                </td>
-              </tr>
-            ) : comisionistas.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-zinc-500">
-                  Sin comisionistas registrados
-                </td>
-              </tr>
-            ) : (
-              comisionistas.map((c) => (
-                <tr key={c.id} className="border-t border-zinc-100">
-                  <td className="px-4 py-3 font-medium text-zinc-900">{c.nombre}</td>
-                  <td className="px-4 py-3 text-zinc-600">{c.codigo ?? "—"}</td>
-                  <td className="px-4 py-3 text-zinc-600">{c.sucursal?.nombre ?? "—"}</td>
-                  <td className="px-4 py-3 text-zinc-600">{c.activo ? "Activo" : "Inactivo"}</td>
+          <form onSubmit={crear} className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <label className="space-y-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Nombre completo</span>
+              <input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Laura Méndez" className={inputClass} />
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Código</span>
+              <input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="C-005" className={`${inputClass} font-mono`} />
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Sucursal</span>
+              <select value={sucursalId} onChange={(e) => setSucursalId(e.target.value)} className={inputClass}>
+                {sucursales.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Email de acceso</span>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="laura@empresa.com" className={inputClass} />
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Contraseña</span>
+              <input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" className={inputClass} />
+            </label>
+
+            <button
+              type="submit"
+              className="flex h-[46px] items-center justify-center gap-2 rounded-xl bg-primary-500 px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(66,84,186,0.25)] transition-colors hover:bg-primary-600"
+            >
+              <span className="text-lg leading-none">+</span>
+              Agregar comisionista
+            </button>
+          </form>
+
+          {error && <p className="mt-4 text-sm text-danger-500">{error}</p>}
+        </section>
+        )}
+
+        <section className="rounded-2xl border border-light-100 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-700">
+          <div className="flex flex-wrap items-start justify-between gap-4 p-6 lg:p-7">
+            <div className="flex gap-3">
+              <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">02</span>
+              <div>
+                <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
+                  Equipo actual
+                </h2>
+                <p className="mt-1 text-[12px] text-body-text">
+                  {comisionistas.length} comisionistas registrados
+                </p>
+              </div>
+            </div>
+
+            <label className="relative block w-full sm:w-[220px]">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-body-text">
+                <svg width={16} height={16} viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M20 20l-3.5-3.5" />
+                </svg>
+              </span>
+              <input
+                value={busqueda}
+                onChange={(e) => {
+                  setBusqueda(e.target.value);
+                  setPagina(1);
+                }}
+                placeholder="Buscar comisionista..."
+                className={`${inputClass} pl-9`}
+              />
+            </label>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[680px] text-left text-sm">
+              <thead>
+                <tr className="bg-light-50 text-[10px] uppercase tracking-[1.5px] text-body-text dark:bg-dark-600">
+                  <th className="px-6 py-3 font-semibold lg:px-7">Comisionista</th>
+                  <th className="px-4 py-3 font-semibold">Código</th>
+                  <th className="px-4 py-3 font-semibold">Sucursal</th>
+                  <th className="px-4 py-3 font-semibold">Estado</th>
+                  <th className="px-4 py-3" />
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {cargando ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-body-text">Cargando…</td>
+                  </tr>
+                ) : visibles.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-body-text">
+                      {busqueda ? "Sin resultados para esa búsqueda" : "Sin comisionistas registrados"}
+                    </td>
+                  </tr>
+                ) : (
+                  visibles.map((c) => (
+                    <tr key={c.id} className="border-t border-light-100 dark:border-dark-600">
+                      <td className="px-6 py-3.5 lg:px-7">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-[11px] font-bold text-primary-700 dark:bg-primary-500/20 dark:text-primary-100">
+                            {iniciales(c.nombre)}
+                          </span>
+                          <span className="flex flex-col">
+                            <Link href={`/comisionistas/${c.id}`} className="font-medium text-zinc-900 hover:text-primary-600 dark:text-white dark:hover:text-primary-100">
+                              {c.nombre}
+                            </Link>
+                            <span className="text-[11px] text-body-text">{c.usuario?.email ?? "Sin acceso"}</span>
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="rounded-md bg-light-50 px-2 py-1 font-mono text-[11px] text-body-text dark:bg-dark-600">
+                          {c.codigo ?? "—"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-body-text">{c.sucursal?.nombre ?? "—"}</td>
+                      <td className="px-4 py-3.5">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                            c.activo
+                              ? "bg-success-500/10 text-success-600 dark:text-success-500"
+                              : "bg-light-100 text-body-text dark:bg-dark-600"
+                          }`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${c.activo ? "bg-success-500" : "bg-body-text/60"}`} />
+                          {c.activo ? "Activo" : "Inactivo"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        <Link
+                          href={`/comisionistas/${c.id}`}
+                          aria-label={`${esSupervisor ? "Ver" : "Editar"} perfil de ${c.nombre}`}
+                          className="rounded-md px-2 py-1 text-body-text/60 hover:bg-light-50 hover:text-body-text dark:hover:bg-dark-600"
+                        >
+                          {esSupervisor ? "Ver" : "Editar"}
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-light-100 px-6 py-4 dark:border-dark-600 lg:px-7">
+            <span className="text-[11px] text-body-text">
+              Mostrando {visibles.length} de {filtrados.length}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={pagina <= 1}
+                onClick={() => setPagina((p) => p - 1)}
+                className="rounded-lg border border-light-100 px-3 py-1.5 text-[11px] text-body-text disabled:opacity-40 dark:border-dark-600"
+              >
+                Anterior
+              </button>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-500 text-[11px] font-semibold text-white">
+                {pagina}
+              </span>
+              <button
+                type="button"
+                disabled={pagina >= totalPaginas}
+                onClick={() => setPagina((p) => p + 1)}
+                className="rounded-lg border border-light-100 px-3 py-1.5 text-[11px] text-body-text disabled:opacity-40 dark:border-dark-600"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
-    </main>
+    </AppShell>
   );
 }

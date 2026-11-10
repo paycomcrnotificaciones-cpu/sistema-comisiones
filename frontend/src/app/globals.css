@@ -1,26 +1,83 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
+  --background: #EEEEF1;
   --foreground: #171717;
+  --body-text: #6C757D;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-body-text: var(--body-text);
+
+  --color-primary-50: #f0f2fa;
+  --color-primary-100: #e1e5f5;
+  --color-primary-500: #4254BA;
+  --color-primary-600: #38479E;
+  --color-primary-700: #2f3b88;
+  --color-primary-900: #212a5c;
+
+  --color-secondary-500: #5E6EC4;
+  --color-secondary-600: #4d5bb3;
+
+  --color-success-500: #17A497;
+  --color-success-600: #138d83;
+
+  --color-info-500: #299BF6;
+  --color-info-600: #1a8be6;
+
+  --color-warning-500: #FEC20D;
+  --color-warning-600: #e6b00c;
+
+  --color-danger-500: #F7473A;
+  --color-danger-600: #e63d31;
+
+  --color-dark-500: #49526B;
+  --color-dark-600: #3f465b;
+  --color-dark-700: #353b4d;
+
+  --color-light-50: #F2F2F7;
+  --color-light-100: #e7e7ec;
+
+  --color-brand-cyan-500: #4AC4F3;
+  --color-brand-cyan-600: #2fb9f0;
+
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-manrope);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #2D333C;
+  --foreground: #ededed;
+  --body-text: #AAB8C5;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+
+
+
+svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app-bg {
+  background:
+    radial-gradient(
+      circle at 92% 6%,
+      color-mix(in srgb, var(--color-primary-500) 10%, transparent) 0%,
+      transparent 24rem
+    ),
+    var(--background);
 }

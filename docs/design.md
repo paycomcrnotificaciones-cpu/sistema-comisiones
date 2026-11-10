@@ -1,148 +1,120 @@
 # Diseño — Sistema de Comisiones
 
-> Borrador vivo. Se completa antes de escribir código.
-> Marca con `[x]` lo decidido y enlaza la decisión en `docs/decisiones.md`.
+Documento de diseño del sistema implementado. Describe el alcance del MVP,
+los actores, el modelo de datos y las reglas de negocio.
 
 ## 1. Alcance
 
-### MVP (primera versión usable)
-- [ ] Ventas (registro manual e importación)
-- [ ] Reglas de comisión
-- [ ] Cálculo de comisiones
-- [ ] Aprobación de comisiones
-- [ ] Liquidaciones
-- [ ] Reportes básicos
+### MVP implementado
+- [x] Inicio de sesión con JWT.
+- [x] Gestión de comisionistas y sucursales.
+- [x] Registro y consulta de ventas.
+- [x] Comisión por venta (porcentaje sobre el neto o monto fijo).
+- [x] Anulación de ventas.
+- [x] Interfaz con modo claro/oscuro y diseño responsive.
 
 ### Fuera del MVP (después)
-- [ ] Control de tiempos
-- [ ] Catálogos de producto/categoría
-- [ ] Bonos y penalizaciones
-- [ ] 2FA
-- [ ] Exportaciones avanzadas
-
-**Preguntas**
-- ¿Quién usa el sistema el primer día y para qué tarea exacta?
-- ¿Qué se puede dejar manual en el MVP?
+- [ ] Liquidaciones y pagos.
+- [ ] Aprobación de comisiones.
+- [ ] Reportes y resumen mensual.
+- [ ] Catálogos de producto/categoría.
+- [ ] Importación de ventas.
+- [ ] Bonos y penalizaciones.
+- [ ] 2FA y exportaciones avanzadas.
 
 ## 2. Actores y permisos
 
-Roles: SUPER_ADMIN, ADMIN, SUPERVISOR, COMISIONISTA.
-
-Matriz rol × acción (completar):
+Roles: `SUPER_ADMIN`, `ADMIN`, `SUPERVISOR`, `COMISIONISTA`.
 
 | Acción | SUPER_ADMIN | ADMIN | SUPERVISOR | COMISIONISTA |
 |---|---|---|---|---|
-| Ver ventas | | | | |
-| Crear ventas | | | | |
-| Ver comisiones | | | | |
-| Aprobar comisiones | | | | |
-| Liquidar | | | | |
-| Ver reportes | | | | |
-| Administrar usuarios | | | | |
-| Ver auditoría | | | | |
+| Iniciar sesión | ✓ | ✓ | ✓ | ✓ |
+| Ver comisionistas | ✓ | ✓ | ✓ | ✓ |
+| Crear comisionistas | ✓ | ✓ | | |
+| Ver ventas | ✓ | ✓ | ✓ | ✓ |
+| Crear ventas | ✓ | ✓ | | |
+| Anular ventas | ✓ | ✓ | | |
+| Ver comisiones | ✓ | ✓ | ✓ | ✓ |
 
-**Preguntas**
-- ¿Un COMISIONISTA solo ve lo suyo? ¿Un SUPERVISOR ve su sucursal o toda la empresa?
-- ¿Quién puede cambiar reglas?
+Todo endpoint de negocio valida el JWT y filtra por el `empresaId` del token
+(aislamiento por empresa / tenant).
 
 ## 3. Modelo de datos
 
-Entidades propuestas (ajustar):
-
 - **Empresa** 1—N **Sucursal** 1—N **Comisionista**
-- **Usuario** N—1 **Empresa**; Usuario 1—1 Comisionista (opcional)
-- **Moneda**, **TipoCambio** (par, tasa, fecha)
-- **Puesto** (agrupación de comisionistas)
-- **Regla** 1—N **ReglaRango**
-- **Venta**, **Tiempo**
-- **ComisionCalculada**
-- **Liquidacion**, **AjusteComision**
-- **Auditoria**
+- **Usuario** N—1 **Empresa**
+- **Moneda** N—1 **Empresa**
+- **Venta** N—1 **Empresa**, **Sucursal** y **Comisionista**
+
+### Venta
+
+Campos principales:
+
+- `fecha`, `documento`, `cliente`, `producto`, `categoria`
+- `bruto`, `neto`, `costo` (decimal, 4 decimales)
+- `estado`: `ACTIVA` o `ANULADA`
+- Comisión:
+  - `comisionTipo`: `PORCENTAJE` o `MONTO_FIJO`
+  - `comisionValor`: porcentaje (0–100) o monto fijo
+  - `comisionMonto`: resultado calculado y guardado con la venta
+
+Guardar `comisionMonto` con la venta deja un histórico: si mañana cambia una
+regla de negocio, las ventas anteriores conservan su comisión.
 
 ### Estados
-- ComisionCalculada: `PENDIENTE → APROBADA → PAGADA` | `RECHAZADA`
-- Liquidacion: `BORRADOR → APROBADA → PAGADA`
-- AjusteComision: `PENDIENTE → aplicado a liquidación`
 
-### Invariantes (escribir las tuyas)
+- `Venta`: `ACTIVA → ANULADA`.
+- Una venta anulada no se toma en cuenta para el pago de comisiones.
+
+### Invariantes
+
 - Toda fila de negocio pertenece a una empresa.
-- Una comisión pagada no se recalcula.
-- Un ajuste aplicado no se elimina.
-- La suma de comisiones de una liquidación = `totalBase`; `total = totalBase + ajustes`.
-
-**Preguntas**
-- ¿Una venta puede generar varias comisiones (varias reglas acumulables)?
-- ¿Se guarda el histórico de reglas o se versiona?
+- El `neto` no puede ser mayor que el `bruto`.
+- El porcentaje de comisión debe estar entre 0 y 100.
+- La comisión se calcula sobre el **neto**.
+- Dinero: se guarda con 4 decimales y se muestra con 2.
 
 ## 4. Reglas de negocio
 
-Dimensiones de una regla:
-- **Base de cálculo**: BRUTO / NETO / MARGEN
-- **Tipo**: PORCENTAJE / FIJO / ESCALONADO
-- **Ámbito**: GLOBAL / COMISIONISTA / PUESTO / PRODUCTO / CATEGORÍA
-- **Prioridad**, **acumulable**, **vigencia desde/hasta**
+### Cálculo de la comisión
 
-**Preguntas**
-- Precedencia: ¿la regla más específica gana, o se suman las acumulables?
-- ¿Qué pasa si dos reglas del mismo ámbito y prioridad aplican?
-- Redondeo: ¿por comisión o al total? ¿cuántos decimales?
-- Moneda: ¿se calcula en moneda de la venta y se convierte, o al revés?
+Al registrar una venta, el administrador elige el tipo de comisión y su valor:
 
-## 5. Multi-tenant y seguridad
+- **Porcentaje**: `comisionMonto = neto * comisionValor / 100`.
+- **Monto fijo**: `comisionMonto = comisionValor`.
 
-- [ ] `empresa_id` en toda tabla de negocio
-- [ ] RLS en base de datos con rol de aplicación separado
-- [ ] Bypass explícito para SUPER_ADMIN
-- [ ] Auditoría de toda escritura
+La comisión puede ser `0` y es obligatoria en el formulario.
 
-**Preguntas**
-- ¿Aislamiento por RLS, por filtro en código, o ambos?
-- ¿El SUPER_ADMIN puede escribir en cualquier empresa?
-- ¿Qué datos son sensibles y cómo se protegen?
+### Zona horaria
 
-## 6. Dinero y fechas
+Las fechas se interpretan en UTC-6 (Costa Rica). El backend convierte las
+fechas del formulario a `T06:00:00Z` para que el día coincida con la hora local.
 
-- Decimales: `Decimal(18,4)` (sugerido)
-- Zona horaria de negocio: ____
-- Definición de período de liquidación: ____
-- Tasa de cambio: se guarda el valor usado en cada venta (sugerido)
+### Fechas y dinero
 
-## 7. Arquitectura
+- Fechas en formato `YYYY-MM-DD` en la API.
+- Dinero como string decimal para evitar errores de punto flotante.
 
-- Stack: ____ (sugerido: NestJS + Next.js + PostgreSQL + Prisma)
-- Capas: controller → service → prisma
-- Validación: esquemas compartidos (sugerido: Zod)
-- Errores: formato único `{ statusCode, message }`
-- Paginación: `pagina` / `limite`
-- Auditoría: transversal en escritura
+## 5. API
 
-## 8. API
+Ver `docs/api.md`. Todo endpoint declara método, ruta y contrato.
 
-Ver `docs/api.md`. Regla: todo endpoint declara método, ruta, rol y contrato.
+## 6. UI
 
-## 9. UI
-
-Rutas por rol (completar):
-
-| Ruta | Pantalla | Roles |
+| Ruta | Pantalla | Descripción |
 |---|---|---|
-| /dashboard | Resumen | todos |
-| /ventas | Ventas | |
-| /comisiones | Comisiones | |
-| /liquidaciones | Liquidaciones | |
-| /reportes | Reportes | |
-| /reglas | Reglas | |
-| /usuarios | Usuarios | |
-| /auditoria | Auditoría | |
+| `/login` | Inicio de sesión | Acceso con email y contraseña |
+| `/comisionistas` | Comisionistas | Listado, creación y búsqueda |
+| `/ventas` | Redirección | Lleva a `/comisionistas`; las ventas se registran en el perfil |
+| `/` | Redirección | Lleva a `/comisionistas` |
 
-## 10. Pruebas y definición de terminado
+La interfaz usa DM Sans para texto, Manrope para títulos, modo claro/oscuro y
+un layout responsive con sidebar en escritorio.
+
+## 7. Pruebas y definición de terminado
 
 Un módulo está terminado cuando:
-- [ ] Migración aplicada y reversible
-- [ ] Validación de entrada
-- [ ] Permisos por rol probados
-- [ ] Aislamiento entre empresas probado
-- [ ] Tests unitarios de la lógica crítica
-- [ ] E2E del flujo principal
-- [ ] Typecheck y lint limpios
-- [ ] Documentado en `docs/api.md`
+
+- Compila (`pnpm build`) y pasa el análisis estático (`pnpm lint`).
+- El contrato de API está documentado en `docs/api.md`.
+- Se probó el flujo principal de punta a punta.

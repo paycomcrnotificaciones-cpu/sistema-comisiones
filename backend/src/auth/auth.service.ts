@@ -27,6 +27,7 @@ export class AuthService {
       email: usuario.email,
       empresaId: usuario.empresaId,
       rol: usuario.rol,
+      comisionistaId: usuario.comisionistaId,
     };
 
     return {
@@ -36,6 +37,7 @@ export class AuthService {
         email: usuario.email,
         rol: usuario.rol,
         empresaId: usuario.empresaId,
+        comisionistaId: usuario.comisionistaId,
       },
     };
   }
