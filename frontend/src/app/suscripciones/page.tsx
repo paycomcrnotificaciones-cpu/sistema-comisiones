@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { apiFetch, getSesion, getToken, type SesionJwt } from "@/lib/api";
 
 type Frecuencia = "MENSUAL" | "TRIMESTRAL" | "SEMESTRAL" | "ANUAL" | "UNICA";
@@ -66,6 +67,15 @@ export default function SuscripcionesPage() {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmacion, setConfirmacion] = useState<{
+    id: string;
+    accion: "pausar" | "finalizar" | "reactivar";
+    cliente: string;
+    titulo: string;
+    mensaje: string;
+    texto: string;
+  } | null>(null);
+  const [cambiando, setCambiando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
 
   const [comisionistaId, setComisionistaId] = useState("");
@@ -181,21 +191,46 @@ export default function SuscripcionesPage() {
     }
   }
 
-  async function cambiarEstado(id: string, accion: "pausar" | "finalizar" | "reactivar") {
-    const texto =
-      accion === "pausar"
-        ? "¿Pausar esta suscripción? Dejará de generar comisiones."
-        : accion === "finalizar"
-          ? "¿Finalizar esta suscripción definitivamente?"
-          : "¿Reactivar esta suscripción?";
-    if (!window.confirm(texto)) return;
+  async function cambiarEstado() {
+    if (!confirmacion) return;
     setError(null);
+    setCambiando(true);
     try {
-      await apiFetch(`/suscripciones/${id}/${accion}`, { method: "POST" });
+      await apiFetch(`/suscripciones/${confirmacion.id}/${confirmacion.accion}`, {
+        method: "POST",
+      });
+      setConfirmacion(null);
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al actualizar");
+    } finally {
+      setCambiando(false);
     }
+  }
+
+  function pedirCambio(
+    id: string,
+    accion: "pausar" | "finalizar" | "reactivar",
+    cliente: string,
+  ) {
+    setConfirmacion({
+      id,
+      accion,
+      cliente,
+      titulo:
+        accion === "pausar"
+          ? "¿Pausar la suscripción?"
+          : accion === "finalizar"
+            ? "¿Finalizar la suscripción?"
+            : "¿Reactivar la suscripción?",
+      mensaje:
+        accion === "pausar"
+          ? "Dejará de generar comisiones mientras esté pausada."
+          : accion === "finalizar"
+            ? "Se cerrará definitivamente y no volverá a generar comisiones."
+            : "Volverá a generar comisiones recurrentes.",
+      texto: accion === "pausar" ? "Pausar" : accion === "finalizar" ? "Finalizar" : "Reactivar",
+    });
   }
 
   return (
@@ -376,11 +411,11 @@ export default function SuscripcionesPage() {
                           <div className="flex flex-wrap justify-end gap-3">
                             <button type="button" onClick={() => editar(s)} className="text-[12px] font-semibold text-primary-600 dark:text-primary-100">Editar</button>
                             {s.estado === "ACTIVA" ? (
-                              <button type="button" onClick={() => cambiarEstado(s.id, "pausar")} className="text-[12px] font-semibold text-warning-600">Pausar</button>
+                              <button type="button" onClick={() => pedirCambio(s.id, "pausar", s.cliente)} className="text-[12px] font-semibold text-warning-600">Pausar</button>
                             ) : (
-                              <button type="button" onClick={() => cambiarEstado(s.id, "reactivar")} className="text-[12px] font-semibold text-success-600 dark:text-success-500">Reactivar</button>
+                              <button type="button" onClick={() => pedirCambio(s.id, "reactivar", s.cliente)} className="text-[12px] font-semibold text-success-600 dark:text-success-500">Reactivar</button>
                             )}
-                            <button type="button" onClick={() => cambiarEstado(s.id, "finalizar")} className="text-[12px] font-semibold text-danger-500">Finalizar</button>
+                            <button type="button" onClick={() => pedirCambio(s.id, "finalizar", s.cliente)} className="text-[12px] font-semibold text-danger-500">Finalizar</button>
                           </div>
                         )}
                       </td>
@@ -392,6 +427,17 @@ export default function SuscripcionesPage() {
           </div>
         </section>
       </div>
+      <ConfirmDialog
+        abierto={confirmacion !== null}
+        titulo={confirmacion?.titulo ?? ""}
+        mensaje={confirmacion?.mensaje ?? ""}
+        detalle={confirmacion?.cliente ?? null}
+        textoConfirmar={confirmacion?.texto ?? "Confirmar"}
+        variante={confirmacion?.accion === "reactivar" ? "primary" : "danger"}
+        cargando={cambiando}
+        onConfirmar={cambiarEstado}
+        onCancelar={() => setConfirmacion(null)}
+      />
     </AppShell>
   );
 }

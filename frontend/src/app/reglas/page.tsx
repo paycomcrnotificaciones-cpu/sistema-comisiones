@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { apiFetch, getSesion, getToken, type SesionJwt } from "@/lib/api";
 
 type Ambito = "GLOBAL" | "PRODUCTO" | "COMISIONISTA" | "SUCURSAL";
@@ -74,6 +75,8 @@ export default function ReglasPage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [trabajando, setTrabajando] = useState(false);
+  const [porEliminar, setPorEliminar] = useState<Regla | null>(null);
+  const [eliminando, setEliminando] = useState(false);
 
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nombre, setNombre] = useState("");
@@ -216,14 +219,18 @@ export default function ReglasPage() {
     }
   }
 
-  async function eliminar(r: Regla) {
-    if (!window.confirm(`¿Eliminar la regla "${r.nombre}"?`)) return;
+  async function eliminar() {
+    if (!porEliminar) return;
     setError(null);
+    setEliminando(true);
     try {
-      await apiFetch(`/reglas/${r.id}`, { method: "DELETE" });
+      await apiFetch(`/reglas/${porEliminar.id}`, { method: "DELETE" });
+      setPorEliminar(null);
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo eliminar");
+    } finally {
+      setEliminando(false);
     }
   }
 
@@ -284,6 +291,11 @@ export default function ReglasPage() {
                   <option key={a.valor} value={a.valor}>{a.texto}</option>
                 ))}
               </select>
+              {ambito === "GLOBAL" && (
+                <span className="block text-[11px] font-normal normal-case tracking-normal text-body-text">
+                  Aplica a cualquier venta. Si es para un producto, usa “Por producto”.
+                </span>
+              )}
             </label>
             {ambito === "PRODUCTO" && (
               <label className={`${labelClass} sm:col-span-2`}>
@@ -404,7 +416,7 @@ export default function ReglasPage() {
                           <button type="button" onClick={() => alternar(r)} className="text-[12px] font-semibold text-body-text">
                             {r.activa ? "Desactivar" : "Activar"}
                           </button>
-                          <button type="button" onClick={() => eliminar(r)} className="text-[12px] font-semibold text-danger-500">
+                          <button type="button" onClick={() => setPorEliminar(r)} className="text-[12px] font-semibold text-danger-500">
                             Eliminar
                           </button>
                         </div>
@@ -417,6 +429,17 @@ export default function ReglasPage() {
           </div>
         </section>
       </div>
+
+      <ConfirmDialog
+        abierto={porEliminar !== null}
+        titulo="¿Eliminar la regla?"
+        mensaje="Esta acción no se puede deshacer. Las ventas ya registradas conservan su comisión."
+        detalle={porEliminar ? `${porEliminar.nombre} · ${valorTexto(porEliminar)}` : null}
+        textoConfirmar="Eliminar"
+        cargando={eliminando}
+        onConfirmar={eliminar}
+        onCancelar={() => setPorEliminar(null)}
+      />
     </AppShell>
   );
 }

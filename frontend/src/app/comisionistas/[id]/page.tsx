@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { apiFetch, descargarArchivo, getSesion, type SesionJwt } from "@/lib/api";
 
 interface Sucursal {
@@ -125,6 +126,8 @@ function PerfilComisionista() {
     tipo: "PORCENTAJE" | "MONTO_FIJO";
     valor: number;
   } | null>(null);
+  const [ventaAnular, setVentaAnular] = useState<Venta | null>(null);
+  const [anulando, setAnulando] = useState(false);
   const [totales, setTotales] = useState({
     montoVendido: 0,
     totalComision: 0,
@@ -404,13 +407,18 @@ function PerfilComisionista() {
     }
   }
 
-  async function anularVenta(ventaId: string) {
-    if (!window.confirm("¿Anular esta venta?")) return;
+  async function anularVenta() {
+    if (!ventaAnular) return;
+    setError(null);
+    setAnulando(true);
     try {
-      await apiFetch(`/ventas/${ventaId}/anular`, { method: "POST" });
+      await apiFetch(`/ventas/${ventaAnular.id}/anular`, { method: "POST" });
+      setVentaAnular(null);
       await cargarVentas(periodo, desde, hasta, estadoFiltro, busqueda);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo anular");
+    } finally {
+      setAnulando(false);
     }
   }
 
@@ -903,7 +911,7 @@ function PerfilComisionista() {
                                 Editar
                               </button>
                               {v.estado === "ACTIVA" && (
-                                <button type="button" onClick={() => anularVenta(v.id)} className="rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-danger-500">
+                                <button type="button" onClick={() => setVentaAnular(v)} className="rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-danger-500">
                                   Anular
                                 </button>
                               )}
@@ -920,6 +928,21 @@ function PerfilComisionista() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        abierto={ventaAnular !== null}
+        titulo="¿Anular esta venta?"
+        mensaje="La venta dejará de contar para el monto vendido y la comisión del período."
+        detalle={
+          ventaAnular
+            ? `${ventaAnular.producto ?? "Venta"} · ${formatoDinero.format(Number(ventaAnular.neto))}`
+            : null
+        }
+        textoConfirmar="Anular venta"
+        cargando={anulando}
+        onConfirmar={anularVenta}
+        onCancelar={() => setVentaAnular(null)}
+      />
     </AppShell>
   );
 }

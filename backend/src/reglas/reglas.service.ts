@@ -7,19 +7,43 @@ import type {
 } from '../common/validators.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
-const especificidad: Record<string, number> = {
-  COMISIONISTA: 4,
-  PRODUCTO: 3,
-  SUCURSAL: 2,
-  GLOBAL: 1,
-};
-
 function normalizar(texto: string): string {
   return texto
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .toLowerCase();
+}
+
+function distancia(a: string, b: string): number {
+  const filas = a.length + 1;
+  const columnas = b.length + 1;
+  let previa = Array.from({ length: columnas }, (_, i) => i);
+  for (let i = 1; i < filas; i++) {
+    const actual = [i];
+    for (let j = 1; j < columnas; j++) {
+      const costo = a[i - 1] === b[j - 1] ? 0 : 1;
+      actual[j] = Math.min(
+        actual[j - 1] + 1,
+        previa[j] + 1,
+        previa[j - 1] + costo,
+      );
+    }
+    previa = actual;
+  }
+  return previa[columnas - 1];
+}
+
+function coincide(a: string, b: string): boolean {
+  const textoA = normalizar(a);
+  const textoB = normalizar(b);
+  if (!textoA || !textoB) return false;
+  if (textoA === textoB) return true;
+  const corto = Math.min(textoA.length, textoB.length);
+  if (corto >= 4 && (textoA.includes(textoB) || textoB.includes(textoA))) {
+    return true;
+  }
+  return corto >= 5 && distancia(textoA, textoB) <= 2;
 }
 
 function aFecha(valor?: string | null): Date | null | undefined {
@@ -129,30 +153,38 @@ export class ReglasService {
       orderBy: [{ prioridad: 'asc' }],
     });
 
-    const producto = query.producto ? normalizar(query.producto) : null;
+    const producto = query.producto?.trim() ?? '';
 
-    const aplicables = reglas.filter((r) => {
-      if (r.ambito === 'GLOBAL') return true;
-      if (r.ambito === 'PRODUCTO') {
-        return !!producto && !!r.producto && normalizar(r.producto) === producto;
-      }
-      if (r.ambito === 'COMISIONISTA') {
-        return !!query.comisionistaId && r.comisionistaId === query.comisionistaId;
-      }
-      if (r.ambito === 'SUCURSAL') {
-        return !!query.sucursalId && r.sucursalId === query.sucursalId;
-      }
-      return false;
+    const conPuntaje = reglas
+      .map((r) => {
+        let puntaje = 0;
+        if (r.ambito === 'COMISIONISTA') {
+          if (query.comisionistaId && r.comisionistaId === query.comisionistaId) {
+            puntaje = 100;
+          }
+        } else if (r.ambito === 'PRODUCTO') {
+          if (producto && r.producto && coincide(r.producto, producto)) {
+            puntaje = 90;
+          }
+        } else if (r.ambito === 'SUCURSAL') {
+          if (query.sucursalId && r.sucursalId === query.sucursalId) {
+            puntaje = 80;
+          }
+        } else if (r.ambito === 'GLOBAL') {
+          puntaje = producto && coincide(r.nombre, producto) ? 60 : 10;
+        }
+        return { regla: r, puntaje };
+      })
+      .filter((item) => item.puntaje > 0);
+
+    conPuntaje.sort((a, b) => {
+      if (a.puntaje !== b.puntaje) return b.puntaje - a.puntaje;
+      return a.regla.prioridad - b.regla.prioridad;
     });
 
-    aplicables.sort((a, b) => {
-      const especificidadA = especificidad[a.ambito] ?? 0;
-      const especificidadB = especificidad[b.ambito] ?? 0;
-      if (especificidadA !== especificidadB) return especificidadB - especificidadA;
-      return a.prioridad - b.prioridad;
-    });
+    const aplicables = conPuntaje;
 
-    const ganadora = aplicables[0];
+    const ganadora = aplicables[0]?.regla;
     if (!ganadora) return null;
 
     return {

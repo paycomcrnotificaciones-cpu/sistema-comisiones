@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { apiFetch, getSesion, getToken, type SesionJwt } from "@/lib/api";
 
 interface Comisionista {
@@ -91,6 +92,8 @@ export default function LiquidacionesPage() {
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [pagoId, setPagoId] = useState<string | null>(null);
+  const [liqAnular, setLiqAnular] = useState<Liquidacion | null>(null);
+  const [anulando, setAnulando] = useState(false);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("EFECTIVO");
   const [notaPago, setNotaPago] = useState("");
   const [pagando, setPagando] = useState(false);
@@ -215,14 +218,18 @@ export default function LiquidacionesPage() {
     }
   }
 
-  async function anular(id: string) {
-    if (!window.confirm("¿Anular el borrador? Las ventas volverán a quedar pendientes.")) return;
+  async function anular() {
+    if (!liqAnular) return;
     setError(null);
+    setAnulando(true);
     try {
-      await apiFetch(`/liquidaciones/${id}/anular`, { method: "POST" });
+      await apiFetch(`/liquidaciones/${liqAnular.id}/anular`, { method: "POST" });
+      setLiqAnular(null);
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al anular");
+    } finally {
+      setAnulando(false);
     }
   }
 
@@ -377,7 +384,7 @@ export default function LiquidacionesPage() {
                                 <button type="button" onClick={() => setPagoId(l.id)} className="text-[12px] font-semibold text-success-600 dark:text-success-500">
                                   Pagar
                                 </button>
-                                <button type="button" onClick={() => anular(l.id)} className="text-[12px] font-semibold text-danger-500">
+                                <button type="button" onClick={() => setLiqAnular(l)} className="text-[12px] font-semibold text-danger-500">
                                   Anular
                                 </button>
                               </>
@@ -423,6 +430,21 @@ export default function LiquidacionesPage() {
           </div>
         </section>
       </div>
+
+      <ConfirmDialog
+        abierto={liqAnular !== null}
+        titulo="¿Anular el borrador?"
+        mensaje="Las ventas incluidas volverán a quedar pendientes de liquidar."
+        detalle={
+          liqAnular
+            ? `${liqAnular.comisionista.nombre} · ${liqAnular.periodo} · ${formatoDinero.format(Number(liqAnular.comisionTotal))}`
+            : null
+        }
+        textoConfirmar="Anular borrador"
+        cargando={anulando}
+        onConfirmar={anular}
+        onCancelar={() => setLiqAnular(null)}
+      />
 
       {pagoId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
