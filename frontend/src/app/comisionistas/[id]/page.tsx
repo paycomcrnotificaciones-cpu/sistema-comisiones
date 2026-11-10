@@ -544,17 +544,17 @@ function PerfilComisionista() {
                   <span>Monto de la venta</span>
                   <input required inputMode="decimal" placeholder="0.00" value={monto} onChange={(e) => setMonto(e.target.value)} className={inputClass} />
                 </label>
-                <div className="sm:col-span-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">¿Cómo se le paga?</span>
-                  <div className="mt-1.5 grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => setComisionTipo("PORCENTAJE")} className={`h-[42px] rounded-xl border text-sm font-semibold transition-colors ${comisionTipo === "PORCENTAJE" ? "border-primary-500 bg-primary-500 text-white" : "border-light-100 bg-light-50 text-body-text dark:border-dark-600 dark:bg-dark-600"}`}>
-                      Porcentaje (%)
-                    </button>
-                    <button type="button" onClick={() => setComisionTipo("MONTO_FIJO")} className={`h-[42px] rounded-xl border text-sm font-semibold transition-colors ${comisionTipo === "MONTO_FIJO" ? "border-primary-500 bg-primary-500 text-white" : "border-light-100 bg-light-50 text-body-text dark:border-dark-600 dark:bg-dark-600"}`}>
-                      Monto fijo (₡)
-                    </button>
-                  </div>
-                </div>
+                <label className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
+                  <span>¿Cómo se le paga?</span>
+                  <select
+                    value={comisionTipo}
+                    onChange={(e) => setComisionTipo(e.target.value as "PORCENTAJE" | "MONTO_FIJO")}
+                    className={inputClass}
+                  >
+                    <option value="PORCENTAJE">Porcentaje (%)</option>
+                    <option value="MONTO_FIJO">Monto fijo (₡)</option>
+                  </select>
+                </label>
                 <label className={labelClass}>
                   <span>{comisionTipo === "PORCENTAJE" ? "Porcentaje de comisión (%)" : "Monto fijo de comisión (₡)"}</span>
                   <input required inputMode="decimal" placeholder={comisionTipo === "PORCENTAJE" ? "5" : "0.00"} value={comisionValor} onChange={(e) => setComisionValor(e.target.value)} className={inputClass} />
