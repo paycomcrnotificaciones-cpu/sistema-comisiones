@@ -16,6 +16,7 @@ interface NavItem {
 
 const enlaces: NavItem[] = [
   { href: "/comisionistas", texto: "Comisionistas" },
+  { href: "/sucursales", texto: "Sucursales" },
   { href: "/liquidaciones", texto: "Liquidaciones" },
   { href: "/suscripciones", texto: "Suscripciones" },
   { href: "/reglas", texto: "Reglas" },
@@ -90,8 +91,17 @@ function UsersIcon() {
   );
 }
 
-function SalesIcon() {
+function StoreIcon() {
   return (
+    <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 9h16l-1.2-4.2A2 2 0 0 0 16.9 3H7.1a2 2 0 0 0-1.9 1.8L4 9z" />
+      <path d="M5 9v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9" />
+      <path d="M9.5 21v-6h5v6" />
+    </svg>
+  );
+}
+
+function SalesIcon() {  return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 19V5" />
       <path d="M4 19h16" />
@@ -234,6 +244,7 @@ export function AppShell({
       .filter((e) => !(esComisionista && e.href === "/liquidaciones"))
       .filter((e) => !(esComisionista && e.href === "/comisionistas"))
       .filter((e) => e.href !== "/usuarios" || esGestor)
+      .filter((e) => e.href !== "/sucursales" || esGestor)
       .filter((e) => e.href !== "/historial" || esGestor)
       .filter((e) => e.href !== "/reglas" || esGestor)
       .map((e) => ({
@@ -242,6 +253,8 @@ export function AppShell({
         icono:
           e.href === "/comisionistas" ? (
             <UsersIcon />
+          ) : e.href === "/sucursales" ? (
+            <StoreIcon />
           ) : e.href === "/usuarios" ? (
             <KeyIcon />
           ) : e.href === "/liquidaciones" ? (

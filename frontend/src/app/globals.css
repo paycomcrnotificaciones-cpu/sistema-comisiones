@@ -135,7 +135,9 @@ svg {
 }
 
 .fade-rise {
-  animation: rise 0.45s ease-out both;
+  /* sin fill-mode "both": al terminar, el transform vuelve a none y los
+     modales (position: fixed) cubren toda la pantalla */
+  animation: rise 0.45s ease-out backwards;
 }
 
 @keyframes rise {
@@ -145,7 +147,7 @@ svg {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 

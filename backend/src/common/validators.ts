@@ -133,6 +133,20 @@ export const usuarioUpdateSchema = z.object({
 
 export type UsuarioUpdateInput = z.infer<typeof usuarioUpdateSchema>;
 
+export const sucursalCreateSchema = z.object({
+  nombre: z.string().trim().min(1).max(120),
+  codigo: z.string().trim().max(40).optional(),
+});
+
+export type SucursalCreateInput = z.infer<typeof sucursalCreateSchema>;
+
+export const sucursalUpdateSchema = z.object({
+  nombre: z.string().trim().min(1).max(120).optional(),
+  codigo: z.string().trim().max(40).nullable().optional(),
+});
+
+export type SucursalUpdateInput = z.infer<typeof sucursalUpdateSchema>;
+
 const periodo = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mes inválido (YYYY-MM)');
 
 export const liquidacionCreateSchema = z.object({
