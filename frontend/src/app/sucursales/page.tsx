@@ -11,7 +11,7 @@ import { apiFetch, getSesion, type SesionJwt } from "@/lib/api";
 interface Sucursal {
   id: string;
   nombre: string;
-  codigo: string | null;
+  lugar: string | null;
   _count?: { comisionistas: number; ventas: number; reglas: number };
 }
 
@@ -38,7 +38,7 @@ export default function SucursalesPage() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nombre, setNombre] = useState("");
-  const [codigo, setCodigo] = useState("");
+  const [lugar, setLugar] = useState("");
   const [guardando, setGuardando] = useState(false);
 
   const [porEliminar, setPorEliminar] = useState<Sucursal | null>(null);
@@ -75,7 +75,7 @@ export default function SucursalesPage() {
   function abrirNueva() {
     setEditandoId(null);
     setNombre("");
-    setCodigo("");
+    setLugar("");
     setError(null);
     setMensaje(null);
     setModalAbierto(true);
@@ -84,7 +84,7 @@ export default function SucursalesPage() {
   function abrirEdicion(s: Sucursal) {
     setEditandoId(s.id);
     setNombre(s.nombre);
-    setCodigo(s.codigo ?? "");
+    setLugar(s.lugar ?? "");
     setError(null);
     setMensaje(null);
     setModalAbierto(true);
@@ -95,7 +95,7 @@ export default function SucursalesPage() {
     setError(null);
     setGuardando(true);
     try {
-      const cuerpo = { nombre, codigo: codigo.trim() || null };
+      const cuerpo = { nombre, lugar: lugar.trim() || null };
       if (editandoId) {
         await apiFetch(`/sucursales/${editandoId}`, {
           method: "PATCH",
@@ -186,7 +186,7 @@ export default function SucursalesPage() {
               <thead>
                 <tr className="bg-light-50 text-[10px] uppercase tracking-[1.5px] text-body-text dark:bg-dark-600">
                   <th className="px-4 py-3 font-semibold sm:px-6">Sucursal</th>
-                  <th className="hidden xl:table-cell px-4 py-3 font-semibold">Código</th>
+                  <th className="hidden xl:table-cell px-4 py-3 font-semibold">Lugar</th>
                   <th className="hidden xl:table-cell px-4 py-3 text-right font-semibold">Comisionistas</th>
                   <th className="hidden xl:table-cell px-4 py-3 text-right font-semibold">Ventas</th>
                   <th className="hidden xl:table-cell px-4 py-3 text-right font-semibold">Reglas</th>
@@ -217,13 +217,13 @@ export default function SucursalesPage() {
                       <td className="px-4 py-3.5 sm:px-6">
                         <p className="font-medium text-zinc-900 dark:text-white">{s.nombre}</p>
                         <p className="mt-0.5 text-[11px] text-body-text xl:hidden">
-                          {s.codigo ?? "Sin código"} ·{" "}
+                          {s.lugar ?? "Sin lugar"} ·{" "}
                           {s._count?.comisionistas ?? 0} comisionistas ·{" "}
                           {s._count?.ventas ?? 0} ventas
                         </p>
                       </td>
                       <td className="hidden xl:table-cell px-4 py-3.5 text-body-text">
-                        {s.codigo ?? "—"}
+                        {s.lugar ?? "—"}
                       </td>
                       <td className="hidden xl:table-cell px-4 py-3.5 text-right text-body-text">
                         {s._count?.comisionistas ?? 0}
@@ -279,7 +279,7 @@ export default function SucursalesPage() {
               {editandoId ? "Editar sucursal" : "Nueva sucursal"}
             </h2>
             <p className="mt-1 text-[12px] text-body-text">
-              El código es opcional y debe ser único.
+              El lugar es opcional y sirve para ubicarla.
             </p>
 
             <div className="mt-5 space-y-4">
@@ -296,12 +296,12 @@ export default function SucursalesPage() {
                 />
               </label>
               <label className="block space-y-1.5">
-                <span className={etiquetaClass}>Código</span>
+                <span className={etiquetaClass}>Lugar</span>
                 <input
-                  maxLength={40}
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value)}
-                  placeholder="CARTAGO"
+                  maxLength={120}
+                  value={lugar}
+                  onChange={(e) => setLugar(e.target.value)}
+                  placeholder="Cartago centro"
                   className={inputClass}
                 />
               </label>

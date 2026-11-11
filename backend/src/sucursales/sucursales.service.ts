@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -14,7 +13,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 const seleccion = {
   id: true,
   nombre: true,
-  codigo: true,
+  lugar: true,
   creadoEn: true,
   _count: { select: { comisionistas: true, ventas: true, reglas: true } },
 } as const;
@@ -31,14 +30,12 @@ export class SucursalesService {
     });
   }
 
-  async crear(empresaId: string, data: SucursalCreateInput) {
-    await this.validarCodigo(empresaId, data.codigo ?? null);
-
+  crear(empresaId: string, data: SucursalCreateInput) {
     return this.prisma.sucursal.create({
       data: {
         empresaId,
         nombre: data.nombre,
-        codigo: data.codigo?.trim() || null,
+        lugar: data.lugar?.trim() || null,
       },
       select: seleccion,
     });
@@ -47,20 +44,16 @@ export class SucursalesService {
   async actualizar(empresaId: string, id: string, data: SucursalUpdateInput) {
     const actual = await this.prisma.sucursal.findFirst({
       where: { id, empresaId },
-      select: { id: true, codigo: true },
+      select: { id: true },
     });
     if (!actual) throw new NotFoundException('Sucursal no encontrada');
-
-    if (data.codigo !== undefined && data.codigo !== actual.codigo) {
-      await this.validarCodigo(empresaId, data.codigo, id);
-    }
 
     return this.prisma.sucursal.update({
       where: { id },
       data: {
         ...(data.nombre !== undefined ? { nombre: data.nombre } : {}),
-        ...(data.codigo !== undefined
-          ? { codigo: data.codigo?.trim() || null }
+        ...(data.lugar !== undefined
+          ? { lugar: data.lugar?.trim() || null }
           : {}),
       },
       select: seleccion,
@@ -93,24 +86,5 @@ export class SucursalesService {
 
     await this.prisma.sucursal.delete({ where: { id } });
     return { eliminada: true };
-  }
-
-  private async validarCodigo(
-    empresaId: string,
-    codigo: string | null,
-    excluirId?: string,
-  ) {
-    if (!codigo) return;
-    const existente = await this.prisma.sucursal.findFirst({
-      where: {
-        empresaId,
-        codigo,
-        ...(excluirId ? { id: { not: excluirId } } : {}),
-      },
-      select: { id: true },
-    });
-    if (existente) {
-      throw new ConflictException(`Ya existe una sucursal con el código ${codigo}`);
-    }
   }
 }

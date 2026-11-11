@@ -135,14 +135,14 @@ export type UsuarioUpdateInput = z.infer<typeof usuarioUpdateSchema>;
 
 export const sucursalCreateSchema = z.object({
   nombre: z.string().trim().min(1).max(120),
-  codigo: z.string().trim().max(40).optional(),
+  lugar: z.string().trim().max(120).optional(),
 });
 
 export type SucursalCreateInput = z.infer<typeof sucursalCreateSchema>;
 
 export const sucursalUpdateSchema = z.object({
   nombre: z.string().trim().min(1).max(120).optional(),
-  codigo: z.string().trim().max(40).nullable().optional(),
+  lugar: z.string().trim().max(120).nullable().optional(),
 });
 
 export type SucursalUpdateInput = z.infer<typeof sucursalUpdateSchema>;

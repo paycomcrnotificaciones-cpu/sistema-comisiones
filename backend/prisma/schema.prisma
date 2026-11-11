@@ -38,7 +38,7 @@ model Sucursal {
   id        String   @id @default(uuid())
   empresaId String   @map("empresa_id")
   nombre    String
-  codigo    String?
+  lugar     String?
   creadoEn  DateTime @default(now()) @map("creado_en")
 
   empresa       Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
@@ -46,7 +46,6 @@ model Sucursal {
   reglas        ReglaComision[]
   ventas        Venta[]
 
-  @@unique([empresaId, codigo])
   @@index([empresaId])
   @@map("sucursales")
 }
