@@ -7,6 +7,8 @@ import Image from "next/image";
 import logo from "../../../public/logo.png";
 import { login } from "@/lib/api";
 
+// Pantalla de entrada. Valida el correo y la contraseña contra la API y,
+// según el rol, manda al resumen o directo al perfil del comisionista.
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -14,6 +16,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
+  // Envía el formulario. Si el usuario es comisionista, entra a su propio
+  // perfil; cualquier otro rol empieza en el resumen.
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setCargando(true);

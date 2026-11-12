@@ -14,6 +14,8 @@ interface NavItem {
   texto: string;
 }
 
+// Menú lateral. Algunas entradas se ocultan según el rol:
+// usuarios, sucursales, reglas e historial son solo para administradores.
 const enlaces: NavItem[] = [
   { href: "/comisionistas", texto: "Comisionistas" },
   { href: "/sucursales", texto: "Sucursales" },
@@ -37,6 +39,8 @@ const rolLabel: Record<string, string> = {
   COMISIONISTA: "Comisionista",
 };
 
+// Lee el nombre, el rol y el comisionista desde el token guardado,
+// para mostrar el menú correcto sin pedir nada al servidor.
 function leerUsuario(): {
   nombre: string;
   rol: string;
@@ -178,6 +182,9 @@ function LogoutIcon() {
   );
 }
 
+// Envoltura de las pantallas privadas: menú lateral en computadora,
+// barra superior con el botón Inicio y menú deslizable en celular.
+// También cierra la sesión si no hay token.
 export function AppShell({
   children,
   titulo,

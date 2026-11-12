@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
+// Decide el tema al abrir la página: se respeta lo último que eligió el
+// usuario y, si nunca eligió, se usa el tema del sistema operativo.
 function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "light";
   const stored = window.localStorage.getItem("theme") as Theme | null;
@@ -11,6 +13,8 @@ function getInitialTheme(): Theme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+// Botón para cambiar entre modo claro y oscuro. La elección se guarda
+// en el navegador para que se mantenga la próxima vez.
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme | null>(null);
 

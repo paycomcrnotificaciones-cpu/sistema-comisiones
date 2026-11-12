@@ -14,6 +14,9 @@ interface ConfirmDialogProps {
   onCancelar: () => void;
 }
 
+// Ventana de confirmación que se usa en toda la app (borrar, anular, pagar).
+// Evita el window.confirm del navegador y se puede cerrar con Escape
+// o tocando el fondo. Mientras "cargando" está activo no deja cerrarla.
 export function ConfirmDialog({
   abierto,
   titulo,

@@ -101,6 +101,9 @@ interface AccionTablaProps {
   disabled?: boolean;
 }
 
+// Botón pequeño de acción para las tablas (editar, ver, pagar, anular...).
+// Todos usan el mismo tamaño para que las filas se vean parejas;
+// cambia el color según la acción y muestra el nombre al pasar el mouse.
 export function AccionTabla(props: AccionTablaProps) {
   const { etiqueta, icono, variante = "neutro", onClick, href, disabled } = props;
 
