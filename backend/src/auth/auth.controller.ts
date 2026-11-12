@@ -8,6 +8,8 @@ import { AuthService } from './auth.service.js';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // POST /api/auth/login
+  // Recibe correo y contraseña, los valida y devuelve el token de acceso.
   @Post('login')
   login(@Body(new ZodValidationPipe(loginSchema)) body: LoginInput) {
     return this.authService.login(body.email, body.password);

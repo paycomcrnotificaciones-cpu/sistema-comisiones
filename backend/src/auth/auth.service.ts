@@ -11,6 +11,9 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
+  // Revisa el correo y la contraseña y devuelve un token.
+  // El token guarda quién es el usuario, de qué empresa es y qué rol tiene,
+  // para no tener que consultar la base en cada pedido.
   async login(email: string, password: string) {
     const usuario = await this.prisma.usuario.findUnique({ where: { email } });
     if (!usuario || !usuario.activo) {

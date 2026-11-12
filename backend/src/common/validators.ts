@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+// Aquí se definen las reglas de lo que se puede recibir en cada endpoint.
+// Si un dato no cumple, la petición se rechaza antes de tocar la base.
+// También sirve para limpiar: quita espacios, pasa correos a minúscula, etc.
+
+// --- Login ---
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
@@ -7,6 +12,7 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+// --- Comisionistas ---
 export const comisionistaCreateSchema = z
   .object({
     nombre: z.string().trim().min(1).max(120),
@@ -33,6 +39,8 @@ export const comisionistaUpdateSchema = z.object({
 
 export type ComisionistaUpdateInput = z.infer<typeof comisionistaUpdateSchema>;
 
+// --- Ventas ---
+// Los montos llegan como texto para no perder decimales.
 const dinero = z.string().regex(/^\d+(\.\d{1,4})?$/, 'Monto Invalido');
 
 export const ventaCreateSchema = z.object({
@@ -103,6 +111,7 @@ export const ventaQuerySchema = z.object({
 export type VentaQueryInput = z.infer<typeof ventaQuerySchema>;
 
 
+// --- Usuarios ---
 export const rolSchema = z.enum([
   'SUPER_ADMIN',
   'ADMIN',
@@ -133,6 +142,7 @@ export const usuarioUpdateSchema = z.object({
 
 export type UsuarioUpdateInput = z.infer<typeof usuarioUpdateSchema>;
 
+// --- Sucursales ---
 export const sucursalCreateSchema = z.object({
   nombre: z.string().trim().min(1).max(120),
   lugar: z.string().trim().max(120).optional(),
@@ -147,6 +157,7 @@ export const sucursalUpdateSchema = z.object({
 
 export type SucursalUpdateInput = z.infer<typeof sucursalUpdateSchema>;
 
+// --- Liquidaciones ---
 const periodo = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mes inválido (YYYY-MM)');
 
 export const liquidacionCreateSchema = z.object({
@@ -174,6 +185,7 @@ export const liquidacionPagarSchema = z.object({
 
 export type LiquidacionPagarInput = z.infer<typeof liquidacionPagarSchema>;
 
+// --- Suscripciones ---
 export const frecuenciaSchema = z.enum([
   'MENSUAL',
   'TRIMESTRAL',
@@ -213,6 +225,7 @@ export const suscripcionQuerySchema = z.object({
 
 export type SuscripcionQueryInput = z.infer<typeof suscripcionQuerySchema>;
 
+// --- Metas ---
 export const metaQuerySchema = z.object({
   mes: periodo,
 });
@@ -227,6 +240,9 @@ export const metaUpsertSchema = z.object({
 
 export type MetaUpsertInput = z.infer<typeof metaUpsertSchema>;
 
+// --- Reglas de comisión ---
+// Cada ámbito exige su dato: una regla de producto necesita el producto,
+// una de comisionista necesita el comisionista, y así.
 const fechaOpcional = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)

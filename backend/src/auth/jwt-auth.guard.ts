@@ -19,6 +19,9 @@ export interface RequestConUsuario extends Request {
   usuario?: UsuarioJwt;
 }
 
+// Guardián de las rutas privadas. Antes de dejar pasar un pedido revisa que
+// venga el token en el encabezado (Authorization: Bearer ...), lo valida y
+// guarda los datos del usuario en la petición para que el controlador los use.
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly jwt: JwtService) {}

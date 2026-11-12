@@ -15,6 +15,9 @@ import { SuscripcionesModule } from './suscripciones/suscripciones.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
 import { VentasModule } from './ventas/ventas.module.js';
 
+// Módulo principal: aquí se conectan todas las partes de la aplicación.
+// Cada módulo agrupa una cosa (ventas, liquidaciones, reglas, etc.) y expone
+// sus propias rutas. PrismaModule va primero porque casi todo lo necesita.
 @Module({
   imports: [
     PrismaModule,

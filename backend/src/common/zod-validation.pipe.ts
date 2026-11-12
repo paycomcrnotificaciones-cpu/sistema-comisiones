@@ -6,6 +6,9 @@ import {
 } from '@nestjs/common';
 import type { ZodType } from 'zod';
 
+// Revisa lo que llega del navegador antes de que entre al controlador.
+// Si no cumple las reglas del esquema, devuelve un error con el detalle;
+// si cumple, entrega los datos ya limpios (sin espacios de más, en minúscula, etc.).
 @Injectable()
 export class ZodValidationPipe implements PipeTransform {
   constructor(private readonly schema: ZodType) {}

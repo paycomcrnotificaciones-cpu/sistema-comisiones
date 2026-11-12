@@ -5,6 +5,8 @@ import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 
+// Configuración del login y de los tokens.
+// El token dura 8 horas: pasado ese tiempo hay que volver a entrar.
 @Global()
 @Module({
   imports: [
