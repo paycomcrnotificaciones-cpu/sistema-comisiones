@@ -52,6 +52,8 @@ function fechaHoy(): string {
   return new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+// Suscripciones: clientes que pagan cada cierto tiempo y dejan una comisión
+// recurrente. Cada mes se genera sola la comisión que corresponde.
 export default function SuscripcionesPage() {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
@@ -90,6 +92,7 @@ export default function SuscripcionesPage() {
   const [inicio, setInicio] = useState("");
   const [fin, setFin] = useState("");
 
+  // Trae las suscripciones según el filtro de estado.
   const cargar = useCallback(async () => {
     const params = new URLSearchParams();
     if (estadoFiltro) params.set("estado", estadoFiltro);
@@ -138,6 +141,7 @@ export default function SuscripcionesPage() {
     setInicio(fechaHoy());
   }
 
+  // Pone una suscripción en el formulario para editarla.
   function editar(s: Suscripcion) {
     setEditandoId(s.id);
     setComisionistaId(s.comisionista.id);
@@ -153,6 +157,7 @@ export default function SuscripcionesPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  // Crea o actualiza la suscripción.
   async function guardar(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -192,6 +197,7 @@ export default function SuscripcionesPage() {
     }
   }
 
+  // Pausa, reactiva o finaliza la suscripción elegida.
   async function cambiarEstado() {
     if (!confirmacion) return;
     setError(null);

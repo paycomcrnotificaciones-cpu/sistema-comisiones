@@ -64,6 +64,8 @@ function valorTexto(r: Regla): string {
 }
 
 
+// Pantalla de reglas de comisión. Sirven para que el formulario de venta
+// proponga un porcentaje o monto fijo según el producto, la persona o la sucursal.
 export default function ReglasPage() {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
@@ -97,6 +99,7 @@ export default function ReglasPage() {
     setSesion(getSesion());
   }, []);
 
+  // Trae todas las reglas de la empresa.
   const cargar = useCallback(async () => {
     const [lista, gente, sedes] = await Promise.all([
       apiFetch<Regla[]>("/reglas"),
@@ -134,6 +137,7 @@ export default function ReglasPage() {
     };
   }, [cargar, esGestor, router, sesion]);
 
+  // Deja el formulario en blanco para crear una regla nueva.
   function limpiar() {
     setEditandoId(null);
     setNombre("");
@@ -150,6 +154,7 @@ export default function ReglasPage() {
     setVigenciaHasta("");
   }
 
+  // Carga una regla existente en el formulario para modificarla.
   function editar(r: Regla) {
     setEditandoId(r.id);
     setNombre(r.nombre);
@@ -167,6 +172,7 @@ export default function ReglasPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  // Guarda la regla: crea una nueva o actualiza la que se está editando.
   async function guardar(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -206,6 +212,7 @@ export default function ReglasPage() {
     }
   }
 
+  // Activa o desactiva la regla sin borrarla.
   async function alternar(r: Regla) {
     setError(null);
     try {
@@ -219,6 +226,7 @@ export default function ReglasPage() {
     }
   }
 
+  // Borra la regla elegida, después de confirmar en el modal.
   async function eliminar() {
     if (!porEliminar) return;
     setError(null);

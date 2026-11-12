@@ -63,6 +63,10 @@ const labelClass =
 
 type Periodo = "mes" | "anterior" | "todos" | "rango";
 
+// La libreta del comisionista: su perfil, sus ventas, su meta y el registro
+// de ventas nuevas. Es la pantalla principal para quien vende.
+
+// Fecha de hoy en formato AAAA-MM-DD (usando la hora de Costa Rica).
 function fechaHoy(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -73,6 +77,7 @@ function fechaCorta(d: Date): string {
   return `${d.getFullYear()}-${mes}-${dia}`;
 }
 
+// Devuelve el mes que corresponde al filtro elegido (este mes o el anterior).
 function mesDePeriodo(periodo: Periodo): string | null {
   if (periodo === "todos" || periodo === "rango") return null;
   const hoy = new Date();
@@ -84,6 +89,7 @@ function mesDePeriodo(periodo: Periodo): string | null {
   return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, "0")}`;
 }
 
+// Devuelve las fechas desde/hasta según el filtro, incluido el rango manual.
 function rangoDePeriodo(periodo: Periodo, desde: string, hasta: string) {
   if (periodo === "todos") return {};
   if (periodo === "rango") return { desde, hasta };
@@ -97,6 +103,10 @@ function rangoDePeriodo(periodo: Periodo, desde: string, hasta: string) {
   return { desde: fechaCorta(base), hasta: fechaCorta(fin) };
 }
 
+// Pantalla completa del perfil. Incluye:
+// - resumen de ventas y comisión del período
+// - formulario para registrar o editar una venta
+// - tabla de ventas con filtros, estados y exportación
 function PerfilComisionista() {
   const params = useParams<{ id: string }>();
   const id = params.id;
@@ -225,6 +235,7 @@ function PerfilComisionista() {
     return () => clearTimeout(timer);
   }, [producto, ventaSucursalId, id, editandoId]);
 
+  // Fija la meta mensual del comisionista (solo administradores).
   async function guardarMeta(monto: number | null) {
     if (!mesMeta) return;
     setMetaGuardando(true);
@@ -265,6 +276,7 @@ function PerfilComisionista() {
     [id],
   );
 
+  // Carga las ventas del período y la comisión acumulada.
   const cargarVentas = useCallback(
     async (
       periodoAct: Periodo,
@@ -321,6 +333,7 @@ function PerfilComisionista() {
     };
   }, [id, cargarVentas]);
 
+  // Guarda los cambios del perfil: nombre, sucursal y estado.
   async function guardarPerfil(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -351,6 +364,7 @@ function PerfilComisionista() {
     }
   }
 
+  // Deja el formulario de venta listo para registrar una nueva.
   function resetVenta() {
     setEditandoId(null);
     setFecha(fechaHoy());
@@ -360,6 +374,7 @@ function PerfilComisionista() {
     setComisionValor("");
   }
 
+  // Carga una venta existente en el formulario para corregirla.
   function editarVenta(v: Venta) {
     setEditandoId(v.id);
     setFecha(v.fecha.slice(0, 10));
@@ -370,6 +385,8 @@ function PerfilComisionista() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  // Registra o actualiza la venta. Antes de guardar, si el producto coincide
+  // con una regla, se sugiere el porcentaje o monto de comisión.
   async function guardarVenta(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -410,6 +427,7 @@ function PerfilComisionista() {
     }
   }
 
+  // Anula la venta elegida. Queda en el historial, no se borra.
   async function anularVenta() {
     if (!ventaAnular) return;
     setError(null);
@@ -460,6 +478,7 @@ function PerfilComisionista() {
     void cargarVentas(periodo, desde, hasta, estadoFiltro, busqueda);
   }
 
+  // Descarga las ventas del filtro actual en CSV.
   async function exportarCsv() {
     setExportando(true);
     try {
@@ -980,6 +999,8 @@ function PerfilComisionista() {
   );
 }
 
+// Envoltura de la página. Suspense es necesario porque adentro se leen
+// parámetros de la dirección (el id del comisionista).
 export default function PerfilComisionistaPage() {
   return (
     <Suspense fallback={null}>

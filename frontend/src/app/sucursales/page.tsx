@@ -20,6 +20,8 @@ const inputClass =
 const etiquetaClass =
   "text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text";
 
+// Sucursales: puntos de venta. Cada una agrupa comisionistas, ventas y
+// reglas propias, y es lo que usa el resumen para comparar.
 export default function SucursalesPage() {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
@@ -45,6 +47,7 @@ export default function SucursalesPage() {
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
 
+  // Trae las sucursales con la cantidad de comisionistas, ventas y reglas.
   const cargar = useCallback(async () => {
     const data = await apiFetch<Sucursal[]>("/sucursales");
     setSucursales(data);
@@ -72,6 +75,7 @@ export default function SucursalesPage() {
     };
   }, [cargar, esGestor, router, sesion]);
 
+  // Abre el formulario vacío para crear una sucursal.
   function abrirNueva() {
     setEditandoId(null);
     setNombre("");
@@ -81,6 +85,7 @@ export default function SucursalesPage() {
     setModalAbierto(true);
   }
 
+  // Abre el formulario con los datos de una sucursal para editarla.
   function abrirEdicion(s: Sucursal) {
     setEditandoId(s.id);
     setNombre(s.nombre);
@@ -90,6 +95,7 @@ export default function SucursalesPage() {
     setModalAbierto(true);
   }
 
+  // Guarda la sucursal: crea una nueva o actualiza la que se está editando.
   async function guardar(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -118,6 +124,7 @@ export default function SucursalesPage() {
     }
   }
 
+  // Elimina la sucursal si no tiene comisionistas, ventas ni reglas.
   async function confirmarEliminar() {
     if (!porEliminar) return;
     setErrorEliminar(null);

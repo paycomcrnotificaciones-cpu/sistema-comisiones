@@ -36,6 +36,8 @@ function iniciales(nombre: string): string {
     .join("");
 }
 
+// Listado del equipo. Muestra a cada comisionista con su sucursal, su estado
+// y un botón para abrir su libreta. Permite buscar y filtrar por sucursal.
 export default function ComisionistasPage() {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
@@ -87,6 +89,7 @@ export default function ComisionistasPage() {
     };
   }, [esComisionista, router]);
 
+  // Da de alta un comisionista y, si se indica, su acceso al sistema.
   async function crear(event: React.FormEvent) {
     event.preventDefault();
     setError(null);

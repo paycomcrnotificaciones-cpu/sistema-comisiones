@@ -32,6 +32,8 @@ const rolClass: Record<string, string> = {
 const inputClass =
   "w-full rounded-xl border border-light-100 bg-light-50 px-3 py-2.5 text-sm text-zinc-900 placeholder:text-body-text/60 focus-visible:border-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-dark-600 dark:bg-dark-700 dark:text-white";
 
+// Usuarios del sistema: quién puede entrar y con qué rol.
+// Un admin solo maneja supervisores; el super admin maneja también admins.
 export default function UsuariosPage() {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
@@ -53,6 +55,7 @@ export default function UsuariosPage() {
   const [claveId, setClaveId] = useState<string | null>(null);
   const [nuevaClave, setNuevaClave] = useState("");
 
+  // Trae la lista de usuarios de la empresa.
   const cargar = useCallback(async () => {
     const data = await apiFetch<Usuario[]>("/usuarios");
     setUsuarios(data);
@@ -80,6 +83,7 @@ export default function UsuariosPage() {
     };
   }, [cargar, esGestor, router, sesion]);
 
+  // Crea un usuario nuevo con su correo, contraseña y rol.
   async function crear(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -98,6 +102,8 @@ export default function UsuariosPage() {
     }
   }
 
+  // Indica si el usuario de la sesión puede modificar a esta persona.
+  // Nadie puede modificarse a sí mismo.
   function puedeGestionar(u: Usuario): boolean {
     if (u.id === sesion?.sub) return false;
     if (esSuperAdmin) return true;
@@ -119,6 +125,7 @@ export default function UsuariosPage() {
     }
   }
 
+  // Activa o desactiva el acceso de un usuario sin borrarlo.
   async function alternarActivo(u: Usuario) {
     setError(null);
     setMensaje(null);
@@ -133,6 +140,7 @@ export default function UsuariosPage() {
     }
   }
 
+  // Cambia la contraseña de un usuario.
   async function cambiarPassword(id: string) {
     setError(null);
     setMensaje(null);

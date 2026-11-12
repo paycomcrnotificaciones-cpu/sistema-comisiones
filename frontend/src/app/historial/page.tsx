@@ -50,6 +50,8 @@ const inputClass =
 
 const PAGE_SIZE = 30;
 
+// Historial: registro de lo que hizo cada usuario (ventas, pagos, cambios).
+// Sirve para revisar quién hizo qué y cuándo.
 export default function HistorialPage() {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
@@ -68,6 +70,7 @@ export default function HistorialPage() {
     setSesion(getSesion());
   }, []);
 
+  // Pide una página del historial con el filtro de búsqueda actual.
   const cargar = useCallback(async (pag: number) => {
     const params = new URLSearchParams({ pagina: String(pag), limite: String(PAGE_SIZE) });
     if (accion) params.set("accion", accion);
@@ -106,6 +109,7 @@ export default function HistorialPage() {
     };
   }, [cargar, esGestor, router, sesion]);
 
+  // Cambia de página sin perder el filtro.
   async function irPagina(nueva: number) {
     try {
       await cargar(nueva);

@@ -71,6 +71,8 @@ const metodosPago: { valor: MetodoPago; texto: string }[] = [
   { valor: "OTRO", texto: "Otro" },
 ];
 
+// Liquidaciones: cerrar el mes y registrar el pago al comisionista.
+// Desde aquí se genera la liquidación, se marca como pagada o se anula.
 export default function LiquidacionesPage() {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
@@ -99,6 +101,7 @@ export default function LiquidacionesPage() {
   const [notaPago, setNotaPago] = useState("");
   const [pagando, setPagando] = useState(false);
 
+  // Carga las liquidaciones que cumplen el filtro de mes y estado.
   const cargar = useCallback(async () => {
     const params = new URLSearchParams();
     if (mes) params.set("mes", mes);
@@ -146,6 +149,7 @@ export default function LiquidacionesPage() {
     };
   }, [cargar, mes, router, sesion?.rol, sesion?.comisionistaId]);
 
+  // Genera la liquidación de un comisionista para el mes elegido.
   async function generar() {
     if (!comisionistaId) return;
     setError(null);
@@ -165,6 +169,7 @@ export default function LiquidacionesPage() {
     }
   }
 
+  // Genera de una vez la liquidación de todos los comisionistas del mes.
   async function generarTodos() {
     setError(null);
     setMensaje(null);
@@ -198,6 +203,7 @@ export default function LiquidacionesPage() {
     }
   }
 
+  // Marca la liquidación como pagada y guarda el método de pago.
   async function pagar(event: React.FormEvent) {
     event.preventDefault();
     if (!pagoId) return;
@@ -219,6 +225,7 @@ export default function LiquidacionesPage() {
     }
   }
 
+  // Anula una liquidación sin pagar y devuelve sus ventas a pendientes.
   async function anular() {
     if (!liqAnular) return;
     setError(null);
@@ -234,6 +241,7 @@ export default function LiquidacionesPage() {
     }
   }
 
+  // Abre el detalle con las ventas y comisiones que incluye la liquidación.
   async function verDetalle(id: string) {
     if (abierta === id) {
       setAbierta(null);

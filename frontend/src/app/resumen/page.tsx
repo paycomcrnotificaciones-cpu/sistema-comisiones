@@ -96,6 +96,8 @@ function IconoKpi({ tipo }: { tipo: string }) {
   );
 }
 
+// Panel del mes: tarjetas con los totales, ranking de comisionistas,
+// comparación por sucursal y gráfica de ventas por día.
 export default function ResumenPage() {
   const router = useRouter();
   const [mes, setMes] = useState("");
@@ -104,6 +106,7 @@ export default function ResumenPage() {
   const [exportando, setExportando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Descarga las ventas del mes filtrado en un archivo CSV.
   async function exportarCsv() {
     if (!mes) return;
     setExportando(true);
