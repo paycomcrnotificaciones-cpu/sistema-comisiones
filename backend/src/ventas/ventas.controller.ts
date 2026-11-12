@@ -27,11 +27,15 @@ import {
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { VentasService } from './ventas.service.js';
 
+// Rutas de ventas. Todas piden token.
+// Si quien entra es COMISIONISTA, solo ve y toca sus propias ventas:
+// el id se toma del token, nunca de lo que mande el navegador.
 @Controller('ventas')
 @UseGuards(JwtAuthGuard)
 export class VentasController {
   constructor(private readonly ventas: VentasService) {}
 
+  // GET /api/ventas — listado con filtros, totales y paginación.
   @Get()
   listar(
     @Req() req: RequestConUsuario,
@@ -45,6 +49,7 @@ export class VentasController {
     );
   }
 
+  // GET /api/ventas/export — descarga las ventas filtradas en CSV.
   @Get('export')
   async exportar(
     @Req() req: RequestConUsuario,
@@ -79,6 +84,7 @@ export class VentasController {
     return this.ventas.crear(usuario.empresaId, body);
   }
 
+  // PATCH /api/ventas/:id — edita una venta (solo admin).
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
@@ -94,6 +100,7 @@ export class VentasController {
     return this.ventas.actualizar(usuario.empresaId, id, body);
   }
 
+  // POST /api/ventas/:id/anular — deja la venta marcada como anulada.
   @Post(':id/anular')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')

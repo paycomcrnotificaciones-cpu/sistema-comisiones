@@ -7,6 +7,8 @@ import type {
 } from '../common/validators.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
+// Quita tildes, espacios de los extremos y pasa a minúscula,
+// para comparar "Aguacate" con "aguacate " sin que falle.
 function normalizar(texto: string): string {
   return texto
     .normalize('NFD')
@@ -15,6 +17,9 @@ function normalizar(texto: string): string {
     .toLowerCase();
 }
 
+// Distancia de Levenshtein: cuenta cuántas letras hay que cambiar para
+// convertir un texto en otro. Sirve para tolerar errores de escritura
+// ("aguacate" / "aguacatee") sin aceptar cualquier cosa.
 function distancia(a: string, b: string): number {
   const filas = a.length + 1;
   const columnas = b.length + 1;
@@ -34,6 +39,9 @@ function distancia(a: string, b: string): number {
   return previa[columnas - 1];
 }
 
+// Decide si dos textos se refieren a lo mismo: iguales, uno dentro del otro
+// o con hasta dos letras de diferencia. Exige un mínimo de longitud para
+// que palabras muy cortas no coincidan por casualidad.
 function coincide(a: string, b: string): boolean {
   const textoA = normalizar(a);
   const textoB = normalizar(b);
@@ -52,10 +60,14 @@ function aFecha(valor?: string | null): Date | null | undefined {
   return new Date(`${valor}T06:00:00Z`);
 }
 
+// Reglas de comisión: son una sugerencia para llenar el formulario de venta.
+// No cambian liquidaciones ya hechas ni reemplazan el cálculo de la venta.
 @Injectable()
 export class ReglasService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lista todas las reglas de la empresa, de mayor a menor prioridad
+  // (prioridad menor = se revisa primero).
   listar(empresaId: string) {
     return this.prisma.reglaComision.findMany({
       where: { empresaId },
@@ -67,6 +79,8 @@ export class ReglasService {
     });
   }
 
+  // Crea una regla y deja vacíos los datos que no corresponden a su ámbito:
+  // una regla global no guarda producto, comisionista ni sucursal.
   crear(empresaId: string, input: ReglaComisionInput) {
     return this.prisma.reglaComision.create({
       data: {
@@ -89,6 +103,7 @@ export class ReglasService {
     });
   }
 
+  // Actualiza solo los campos que llegan; el resto se queda como estaba.
   async actualizar(
     empresaId: string,
     id: string,
@@ -130,6 +145,7 @@ export class ReglasService {
     });
   }
 
+  // Borra la regla. No afecta ventas ni liquidaciones anteriores.
   async eliminar(empresaId: string, id: string) {
     const regla = await this.prisma.reglaComision.findFirst({
       where: { id, empresaId },
@@ -139,6 +155,11 @@ export class ReglasService {
     return { eliminada: true };
   }
 
+  // Busca la mejor regla para una venta según el producto, el comisionista
+  // y la sucursal. Primero descarta las vencidas; luego puntúa cada regla
+  // (comisionista 100 > producto 90 > sucursal 80 > global 60) y, si hay
+  // empate, gana la de menor prioridad. Las reglas "acumulables" del mismo
+  // tipo que la ganadora se suman; las de otro tipo se ignoran.
   async sugerir(empresaId: string, query: ReglaSugerirInput) {
     const ahora = new Date();
     const reglas = await this.prisma.reglaComision.findMany({

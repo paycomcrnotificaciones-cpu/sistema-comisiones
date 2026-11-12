@@ -24,16 +24,20 @@ import {
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { ReglasService } from './reglas.service.js';
 
+// Rutas de reglas de comisión. La sugerencia la puede pedir cualquiera
+// (la usa el formulario de venta); crear, editar y borrar es solo de admin.
 @Controller('reglas')
 @UseGuards(JwtAuthGuard)
 export class ReglasController {
   constructor(private readonly reglas: ReglasService) {}
 
+  // GET /api/reglas — todas las reglas de la empresa.
   @Get()
   listar(@Req() req: RequestConUsuario) {
     return this.reglas.listar(req.usuario!.empresaId);
   }
 
+  // GET /api/reglas/sugerir — la regla que mejor calza con una venta.
   @Get('sugerir')
   sugerir(
     @Req() req: RequestConUsuario,
@@ -52,6 +56,7 @@ export class ReglasController {
     return this.reglas.crear(req.usuario!.empresaId, body);
   }
 
+  // PATCH /api/reglas/:id — actualiza una regla (solo admin).
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
@@ -64,6 +69,7 @@ export class ReglasController {
     return this.reglas.actualizar(req.usuario!.empresaId, id, body);
   }
 
+  // DELETE /api/reglas/:id — borra una regla (solo admin).
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')

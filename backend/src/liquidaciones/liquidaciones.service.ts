@@ -18,6 +18,9 @@ const incluir = {
   comisionista: { select: { id: true, nombre: true } },
 } as const;
 
+// Liquidaciones: cerrar un mes y pagarle al comisionista lo que ganó.
+// Una liquidación junta las ventas activas del mes y las comisiones de
+// suscripciones, y las marca para que no se vuelvan a cobrar.
 @Injectable()
 export class LiquidacionesService {
   constructor(
@@ -25,6 +28,8 @@ export class LiquidacionesService {
     private readonly comisiones: ComisionesSuscripcionService,
   ) {}
 
+  // Lista las liquidaciones de la empresa, con filtros por mes y estado.
+  // Si viene soloComisionistaId, únicamente devuelve las de esa persona.
   async listar(
     empresaId: string,
     query: LiquidacionQueryInput,
@@ -42,6 +47,8 @@ export class LiquidacionesService {
     });
   }
 
+  // Devuelve una liquidación con el detalle: las ventas y las comisiones
+  // que incluye, para poder revisarla o imprimirla.
   async obtener(
     empresaId: string,
     id: string,
@@ -77,6 +84,11 @@ export class LiquidacionesService {
     return liquidacion;
   }
 
+  // Crea la liquidación de un comisionista para un mes.
+  // Pasos: verifica que no exista otra igual, genera las comisiones de
+  // suscripciones de ese mes y suma todo lo pendiente. Al final guarda la
+  // liquidación y marca esas ventas y comisiones como incluidas, todo dentro
+  // de una transacción: si algo falla, no se guarda nada a medias.
   async crear(empresaId: string, data: LiquidacionCreateInput) {
     const comisionista = await this.prisma.comisionista.findFirst({
       where: { id: data.comisionistaId, empresaId },
@@ -165,6 +177,8 @@ export class LiquidacionesService {
     });
   }
 
+  // Marca la liquidación como pagada y guarda la fecha y el método de pago.
+  // Una vez pagada ya no se puede anular.
   async pagar(
     empresaId: string,
     id: string,
@@ -192,6 +206,8 @@ export class LiquidacionesService {
     });
   }
 
+  // Deshace una liquidación que todavía no se pagó: suelta las ventas y las
+  // comisiones para que vuelvan a quedar pendientes, y borra la liquidación.
   async anular(empresaId: string, id: string) {
     const liquidacion = await this.prisma.liquidacion.findFirst({
       where: { id, empresaId },

@@ -7,6 +7,9 @@ import type {
 } from '../common/validators.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
+// Calcula cuánto gana el comisionista por una venta.
+// Si la comisión es en porcentaje se aplica sobre el neto; si es monto fijo,
+// se paga ese monto tal cual. Se guardan 4 decimales para no perder centavos.
 function calcularComisionMonto(
   tipo: 'PORCENTAJE' | 'MONTO_FIJO',
   neto: string,
@@ -19,10 +22,16 @@ function calcularComisionMonto(
   return resultado.toFixed(4);
 }
 
+// Toda la lógica de las ventas: listar con filtros, crear, editar,
+// exportar a CSV y anular. Solo se puede editar o anular mientras la venta
+// no haya entrado en una liquidación.
 @Injectable()
 export class VentasService {
     constructor(private readonly prisma: PrismaService){}
 
+    // Arma el filtro de búsqueda que comparten el listado y la exportación.
+    // Las fechas se toman desde las 6 de la mañana (hora de Costa Rica) para
+    // que una venta del día cuente en el día correcto.
     private construirWhere(
         empresaId: string,
         query: VentaQueryInput,
@@ -57,6 +66,10 @@ export class VentasService {
         };
     }
 
+    // Lista las ventas con paginación y devuelve, además, los totales del
+    // filtro: monto vendido, comisión generada, pagada y pendiente.
+    // Las cuatro consultas van juntas en una transacción para que los totales
+    // correspondan exactamente a la misma información.
     async listar(
         empresaId: string,
         query: VentaQueryInput,
@@ -116,6 +129,8 @@ export class VentasService {
         };
     }
 
+    // Registra una venta nueva. Revisa que la sucursal y el comisionista
+    // existan en la empresa y calcula la comisión en el momento de guardar.
     async crear(empresaId: string, data: VentaCreateInput) {
     const [sucursal, comisionista] = await Promise.all([
       this.prisma.sucursal.findFirst({ where: { id: data.sucursalId, empresaId } }),
@@ -158,6 +173,8 @@ export class VentasService {
     }
   }
 
+  // Edita una venta. Si cambia el monto o el porcentaje, se vuelve a calcular
+  // la comisión. No se permite tocar una venta que ya está en una liquidación.
   async actualizar(
     empresaId: string,
     id: string,
@@ -242,6 +259,8 @@ export class VentasService {
     });
   }
 
+  // Devuelve todas las ventas del filtro en formato CSV.
+  // Se agrega el BOM al inicio para que Excel muestre bien las tildes.
   async exportar(
     empresaId: string,
     query: VentaQueryInput,
@@ -282,6 +301,8 @@ export class VentasService {
     );
   }
 
+  // Anula una venta: no se borra, queda marcada como ANULADA para conservar
+  // el historial. Tampoco se puede anular si ya fue liquidada.
   async anular(empresaId: string, id: string) {
     const venta = await this.prisma.venta.findFirst({ where: { id, empresaId } });
     if (!venta) throw new NotFoundException('Venta no encontrada');

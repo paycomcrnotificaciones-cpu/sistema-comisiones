@@ -4,6 +4,7 @@ import type { Frecuencia } from '../generated/prisma/enums.js';
 import { rangoMes } from '../common/periodo.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
+// Cuántos meses abarca cada frecuencia de cobro (UNICA solo ocurre una vez).
 const MESES: Record<Frecuencia, number> = {
   MENSUAL: 1,
   TRIMESTRAL: 3,
@@ -12,15 +13,19 @@ const MESES: Record<Frecuencia, number> = {
   UNICA: 0,
 };
 
+// Convierte una fecha en un número de mes continuo (año * 12 + mes).
+// Así se puede restar y saber cuántos meses hay entre dos fechas.
 function indiceMes(fecha: Date): number {
   return fecha.getUTCFullYear() * 12 + fecha.getUTCMonth();
 }
 
+// Lo mismo que indiceMes, pero partiendo de un texto AAAA-MM.
 function indiceDePeriodo(periodo: string): number {
   const [anio, mes] = periodo.split('-').map(Number);
   return anio * 12 + (mes - 1);
 }
 
+// Guarda 4 decimales para no perder centavos al calcular porcentajes.
 function redondear(valor: number): string {
   return valor.toFixed(4);
 }

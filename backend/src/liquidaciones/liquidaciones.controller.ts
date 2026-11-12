@@ -22,11 +22,14 @@ import {
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { LiquidacionesService } from './liquidaciones.service.js';
 
+// Rutas de liquidaciones. Crear, pagar y anular es solo para ADMIN y
+// SUPER_ADMIN; consultar lo puede hacer cualquier usuario con token.
 @Controller('liquidaciones')
 @UseGuards(JwtAuthGuard)
 export class LiquidacionesController {
   constructor(private readonly liquidaciones: LiquidacionesService) {}
 
+  // GET /api/liquidaciones — listado por mes y estado.
   @Get()
   listar(
     @Req() req: RequestConUsuario,
@@ -41,6 +44,7 @@ export class LiquidacionesController {
     );
   }
 
+  // GET /api/liquidaciones/:id — detalle con ventas y comisiones incluidas.
   @Get(':id')
   obtener(@Req() req: RequestConUsuario, @Param('id') id: string) {
     const usuario = req.usuario!;
@@ -62,6 +66,7 @@ export class LiquidacionesController {
     return this.liquidaciones.crear(req.usuario!.empresaId, body);
   }
 
+  // POST /api/liquidaciones/:id/pagar — marca como pagada.
   @Post(':id/pagar')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
@@ -74,6 +79,7 @@ export class LiquidacionesController {
     return this.liquidaciones.pagar(req.usuario!.empresaId, id, body);
   }
 
+  // POST /api/liquidaciones/:id/anular — deshace una liquidación sin pagar.
   @Post(':id/anular')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
