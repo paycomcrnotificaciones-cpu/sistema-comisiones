@@ -10,8 +10,11 @@ import { throwError } from 'rxjs';
 import type { RequestConUsuario } from '../auth/jwt-auth.guard.js';
 import { AuditoriaService } from './auditoria.service.js';
 
+// Solo se auditan los cambios (crear, editar, borrar); las consultas no.
 const MUTACIONES = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+// Traduce la ruta y el método HTTP a una frase entendible,
+// por ejemplo POST /api/ventas -> "Registró una venta".
 function describir(
   metodo: string,
   ruta: string,
@@ -71,6 +74,8 @@ function describir(
   };
 }
 
+// Interceptor global: pasa por aquí cada petición y, si es un cambio,
+// guarda el movimiento en la tabla de auditoría (haya salido bien o mal).
 @Injectable()
 export class AuditoriaInterceptor implements NestInterceptor {
   constructor(private readonly auditoria: AuditoriaService) {}

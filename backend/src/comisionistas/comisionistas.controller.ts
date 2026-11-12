@@ -22,6 +22,8 @@ import {
 } from '../common/validators.js';
 import { ComisionistasService } from './comisionistas.service.js';
 
+// Rutas de comisionistas. Cualquiera con token puede consultar;
+// crear y editar es solo para ADMIN y SUPER_ADMIN.
 @Controller('comisionistas')
 @UseGuards(JwtAuthGuard)
 export class ComisionistasController {

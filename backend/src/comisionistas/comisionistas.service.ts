@@ -17,10 +17,15 @@ const incluir = {
   usuario: { select: { email: true, activo: true } },
 } as const;
 
+// Comisionistas: personas que venden y ganan comisión.
+// Cada uno pertenece a una sucursal y puede tener (o no) un usuario para
+// entrar al sistema.
 @Injectable()
 export class ComisionistasService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lista los comisionistas de la empresa con su sucursal y su usuario.
+  // Si llega soloId, devuelve únicamente ese (lo usa el propio comisionista).
   listar(empresaId: string, soloId?: string | null) {
     return this.prisma.comisionista.findMany({
       where: {
@@ -32,6 +37,7 @@ export class ComisionistasService {
     });
   }
 
+  // Trae un comisionista con todos sus datos para la pantalla de perfil.
   async obtener(empresaId: string, id: string) {
     const comisionista = await this.prisma.comisionista.findFirst({
       where: { id, empresaId },
@@ -43,6 +49,8 @@ export class ComisionistasService {
     return comisionista;
   }
 
+  // Crea el comisionista y, si viene correo y contraseña, también su usuario
+  // de acceso con rol COMISIONISTA. Las dos cosas se guardan juntas.
   async crear(empresaId: string, data: ComisionistaCreateInput) {
     const sucursal = await this.prisma.sucursal.findFirst({
       where: { id: data.sucursalId, empresaId },
@@ -87,6 +95,8 @@ export class ComisionistasService {
     }
   }
 
+  // Edita los datos del comisionista y, si se indica, su correo o contraseña.
+  // Nunca deja que un comisionista quede con datos de otra empresa.
   async actualizar(
     empresaId: string,
     id: string,
@@ -181,6 +191,7 @@ export class ComisionistasService {
     }
   }
 
+  // Traduce el error de "dato repetido" de la base a un mensaje entendible.
   private manejarConflicto(error: unknown): void {
     if (
       typeof error === 'object' &&

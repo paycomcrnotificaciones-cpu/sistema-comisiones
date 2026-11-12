@@ -15,10 +15,13 @@ const incluir = {
   comisionista: { select: { id: true, nombre: true } },
 } as const;
 
+// Suscripciones: clientes que pagan cada cierto tiempo (mensual, anual, etc.)
+// y generan comisión de forma recurrente.
 @Injectable()
 export class SuscripcionesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lista las suscripciones con filtros por estado y comisionista.
   listar(
     empresaId: string,
     query: SuscripcionQueryInput,
@@ -35,6 +38,7 @@ export class SuscripcionesService {
     });
   }
 
+  // Trae una suscripción con su comisionista y las comisiones generadas.
   async obtener(empresaId: string, id: string) {
     const suscripcion = await this.prisma.suscripcion.findFirst({
       where: { id, empresaId },
@@ -46,6 +50,7 @@ export class SuscripcionesService {
     return suscripcion;
   }
 
+  // Registra una suscripción nueva y calcula cuándo toca la próxima cobranza.
   async crear(empresaId: string, data: SuscripcionCreateInput) {
     const comisionista = await this.prisma.comisionista.findFirst({
       where: { id: data.comisionistaId, empresaId },
@@ -78,6 +83,8 @@ export class SuscripcionesService {
     });
   }
 
+  // Edita los datos de la suscripción. Si cambia el monto o el porcentaje,
+  // se vuelve a calcular la comisión de los meses que aún no se han liquidado.
   async actualizar(
     empresaId: string,
     id: string,
@@ -124,6 +131,7 @@ export class SuscripcionesService {
     });
   }
 
+  // Pausa, reactiva o finaliza una suscripción sin borrarla.
   async cambiarEstado(
     empresaId: string,
     id: string,

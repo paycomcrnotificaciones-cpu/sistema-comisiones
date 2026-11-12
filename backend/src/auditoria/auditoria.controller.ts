@@ -15,6 +15,7 @@ const auditoriaQuerySchema = z.object({
 
 type AuditoriaQuery = z.infer<typeof auditoriaQuerySchema>;
 
+// Historial de movimientos. Solo ADMIN y SUPER_ADMIN pueden verlo.
 @Controller('auditoria')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'SUPER_ADMIN')

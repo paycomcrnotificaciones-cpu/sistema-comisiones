@@ -15,12 +15,16 @@ interface RegistroAuditoria {
   estado: number;
 }
 
+// Auditoría: guarda un registro de lo que hace cada usuario
+// (quién, qué acción, en qué ruta y si salió bien o mal).
 @Injectable()
 export class AuditoriaService {
   private readonly logger = new Logger(AuditoriaService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
+  // Guarda un movimiento. Si falla el registro no se rompe la petición:
+  // solo se avisa en el log, porque la auditoría no debe tumbar la app.
   async registrar(datos: RegistroAuditoria) {
     try {
       await this.prisma.auditoria.create({ data: datos });
@@ -29,6 +33,7 @@ export class AuditoriaService {
     }
   }
 
+  // Lista los movimientos con paginación y búsqueda por usuario, acción o entidad.
   async listar(
     empresaId: string,
     opciones: { pagina: number; limite: number; accion?: string; q?: string },

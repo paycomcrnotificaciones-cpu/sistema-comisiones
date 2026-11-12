@@ -23,10 +23,13 @@ const seleccion = {
   comisionista: { select: { id: true, nombre: true } },
 } as const;
 
+// Usuarios: quién puede entrar al sistema y con qué rol.
+// Un usuario puede estar ligado a un comisionista (rol COMISIONISTA).
 @Injectable()
 export class UsuariosService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lista los usuarios de la empresa sin datos sensibles (sin contraseña).
   listar(empresaId: string) {
     return this.prisma.usuario.findMany({
       where: { empresaId },
@@ -35,6 +38,8 @@ export class UsuariosService {
     });
   }
 
+  // Crea un usuario. Revisa que el rol se pueda asignar y que el comisionista
+  // elegido exista y no tenga ya un acceso.
   async crear(
     empresaId: string,
     actor: { sub: string; rol: string },
@@ -75,6 +80,8 @@ export class UsuariosService {
     }
   }
 
+  // Actualiza correo, contraseña, rol o estado.
+  // Si se desactiva o cambia de rol, protege que quede al menos un super admin.
   async actualizar(
     empresaId: string,
     actor: { sub: string; rol: string },
@@ -147,6 +154,8 @@ export class UsuariosService {
     }
   }
 
+  // Un admin solo puede crear supervisores y comisionistas;
+  // solo un super admin puede crear otros administradores.
   private validarRolAsignable(actorRol: string, rol: string): void {
     if (actorRol === 'SUPER_ADMIN') return;
     if (rol === 'ADMIN' || rol === 'SUPER_ADMIN') {
@@ -156,6 +165,7 @@ export class UsuariosService {
     }
   }
 
+  // Evita que la empresa se quede sin ningún super admin activo.
   private async protegerUltimoSuperAdmin(
     empresaId: string,
     exceptoId: string,
@@ -175,6 +185,7 @@ export class UsuariosService {
     }
   }
 
+  // Convierte el error de correo repetido en un mensaje claro.
   private manejarConflicto(error: unknown): void {
     if (
       typeof error === 'object' &&

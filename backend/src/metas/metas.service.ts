@@ -3,10 +3,12 @@ import { Injectable } from '@nestjs/common';
 import type { MetaUpsertInput } from '../common/validators.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
+// Metas: el monto que se espera vender en un mes, general o por comisionista.
 @Injectable()
 export class MetasService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lista las metas del mes junto con lo vendido, para ver el avance.
   async listar(
     empresaId: string,
     mes: string,
@@ -36,6 +38,7 @@ export class MetasService {
     };
   }
 
+  // Crea o actualiza una meta. Si no se indica comisionista, es la meta general.
   async fijar(empresaId: string, input: MetaUpsertInput) {
     const comisionistaId = input.comisionistaId ?? null;
     const existente = await this.prisma.meta.findFirst({
@@ -66,6 +69,7 @@ export class MetasService {
     });
   }
 
+  // Devuelve las metas del mes en un mapa listo para usar en el resumen.
   async mapaMes(empresaId: string, mes: string) {
     const metas = await this.prisma.meta.findMany({
       where: { empresaId, periodo: mes },

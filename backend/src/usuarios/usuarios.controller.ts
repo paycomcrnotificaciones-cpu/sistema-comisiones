@@ -20,6 +20,7 @@ import {
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { UsuariosService } from './usuarios.service.js';
 
+// Rutas de usuarios. Todo este controlador es solo para ADMIN y SUPER_ADMIN.
 @Controller('usuarios')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'SUPER_ADMIN')

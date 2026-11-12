@@ -21,6 +21,8 @@ import {
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { SucursalesService } from './sucursales.service.js';
 
+// Rutas de sucursales. La lista la puede ver cualquiera con token
+// (la usan los formularios de venta); crear, editar y borrar es de admin.
 @Controller('sucursales')
 @UseGuards(JwtAuthGuard)
 export class SucursalesController {

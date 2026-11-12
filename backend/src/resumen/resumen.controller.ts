@@ -3,6 +3,8 @@ import { BadRequestException, Controller, Get, Query, Req, UseGuards } from '@ne
 import { JwtAuthGuard, type RequestConUsuario } from '../auth/jwt-auth.guard.js';
 import { ResumenService } from './resumen.service.js';
 
+// GET /api/resumen — todos los números del panel del mes.
+// El comisionista recibe solo su propio resumen.
 @Controller('resumen')
 @UseGuards(JwtAuthGuard)
 export class ResumenController {

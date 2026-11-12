@@ -23,6 +23,8 @@ import {
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { SuscripcionesService } from './suscripciones.service.js';
 
+// Rutas de suscripciones. Consultar es libre con token;
+// crear, editar y cambiar estado es solo para ADMIN y SUPER_ADMIN.
 @Controller('suscripciones')
 @UseGuards(JwtAuthGuard)
 export class SuscripcionesController {

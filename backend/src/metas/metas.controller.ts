@@ -11,6 +11,7 @@ import {
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { MetasService } from './metas.service.js';
 
+// Rutas de metas mensuales. Consultar con token; fijarlas es solo de admin.
 @Controller('metas')
 @UseGuards(JwtAuthGuard)
 export class MetasController {

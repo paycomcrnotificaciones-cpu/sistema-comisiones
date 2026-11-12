@@ -5,18 +5,24 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { MetasService } from '../metas/metas.service.js';
 import { ComisionesSuscripcionService } from '../suscripciones/comisiones-suscripcion.service.js';
 
+// Recibe un mes AAAA-MM y devuelve el anterior (2026-01 -> 2025-12).
+// Se usa para comparar las ventas de este mes contra las del mes pasado.
 function mesAnterior(mes: string): string {
   const [anio, numero] = mes.split('-').map(Number);
   const fecha = new Date(Date.UTC(anio, numero - 2, 1));
   return `${fecha.getUTCFullYear()}-${String(fecha.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
+// Los montos llegan de la base como Decimal, por eso se tipan como unknown
+// y se convierten con Number() al hacer las sumas.
 interface FilaVenta {
   fecha: Date;
   neto: unknown;
   comisionMonto: unknown;
 }
 
+// Arma el panel del mes: totales, ranking de comisionistas, ventas por
+// sucursal (comparadas con el mes anterior), ventas por día y avance de metas.
 @Injectable()
 export class ResumenService {
   constructor(
@@ -25,6 +31,10 @@ export class ResumenService {
     private readonly metasSvc: MetasService,
   ) {}
 
+  // Devuelve todo lo que muestra la pantalla de Resumen para un mes.
+  // Si viene soloComisionistaId, el resumen se limita a esa persona
+  // (es el caso del comisionista que entra con su usuario).
+  // Las consultas se lanzan todas a la vez con Promise.all para que sea rápido.
   async obtener(
     empresaId: string,
     mesParam: string | undefined,
@@ -130,6 +140,7 @@ export class ResumenService {
         this.metasSvc.mapaMes(empresaId, mes),
       ]);
 
+    // Los groupBy devuelven solo ids; aquí se buscan los nombres para mostrarlos.
     const idsComisionistas = [
       ...new Set([
         ...porComisionista.map((f) => f.comisionistaId),
@@ -154,6 +165,7 @@ export class ResumenService {
     );
     const nombreSucursal = new Map(sucursales.map((s) => [s.id, s.nombre]));
 
+    // Agrupa las ventas del mes por día para dibujar la gráfica de barras.
     const porDia = new Map<string, { monto: number; comision: number }>();
     for (const venta of ventas as FilaVenta[]) {
       const dia = venta.fecha.toISOString().slice(0, 10);
@@ -166,6 +178,8 @@ export class ResumenService {
     const comisionVentas = Number(totales._sum.comisionMonto ?? 0);
     const comisionSuscripciones = Number(comisiones._sum.monto ?? 0);
 
+    // Une las comisiones de ventas con las de suscripciones en una sola fila
+    // por comisionista, para que el ranking muestre el total real.
     const filas = new Map<
       string,
       { ventas: number; montoVendido: number; comision: number }
@@ -188,6 +202,9 @@ export class ResumenService {
       filas.set(f.comisionistaId, actual);
     }
 
+    // Respuesta final que consume el frontend.
+    // "comisionPendiente" suma tres cosas: ventas sin liquidar, liquidaciones
+    // en borrador y comisiones de suscripciones que aún no se liquidan.
     return {
       mes,
       mesAnterior: mesAnterior(mes),
