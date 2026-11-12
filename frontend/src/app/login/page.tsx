@@ -46,7 +46,9 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-brand-cyan-500/20 blur-3xl" />
 
       <div className="relative grid w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/10 bg-white shadow-[0_30px_90px_-30px_rgba(0,0,0,0.65)] dark:border-dark-600 lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="hero-panel relative hidden flex-col justify-between p-10 lg:flex">
+        {/* El panel no lleva su propio redondeo: lo recorta la tarjeta de
+            arriba, así no queda una franja blanca en las esquinas. */}
+        <section className="hero-panel relative hidden flex-col justify-between p-10 lg:flex lg:rounded-none">
           <div className="relative z-10">
             <Image src={logo} alt="Factelec Comisiones" width={130} height={130} className="h-auto w-28 rounded-2xl bg-white p-2.5 shadow-lg" priority />
             <p className="mt-8 text-[11px] font-bold uppercase tracking-[2.4px] text-brand-cyan-500">

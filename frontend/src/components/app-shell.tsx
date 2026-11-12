@@ -418,6 +418,20 @@ export function AppShell({
 
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
+            {/* En celular la barra lateral no se ve, así que el botón de salir
+                se pone aquí. En escritorio se oculta porque ya está abajo. */}
+            <button
+              type="button"
+              onClick={() => {
+                clearToken();
+                router.push("/login");
+              }}
+              aria-label="Cerrar sesión"
+              title="Cerrar sesión"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-light-100 bg-white text-body-text shadow-sm transition-colors hover:border-danger-500 hover:text-danger-500 dark:border-dark-600 dark:bg-dark-700 dark:text-light-100 dark:hover:border-danger-500 dark:hover:text-danger-500 lg:hidden"
+            >
+              <LogoutIcon />
+            </button>
             <div className="flex items-center gap-3 rounded-2xl border border-light-100 bg-white px-2 py-1.5 shadow-sm dark:border-dark-600 dark:bg-dark-700">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--color-primary-500),var(--color-brand-cyan-500))] text-xs font-bold text-white shadow-sm">
                 {usuario?.iniciales ?? "US"}
