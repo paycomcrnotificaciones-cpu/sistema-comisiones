@@ -124,6 +124,12 @@ svg {
   box-shadow: 0 24px 60px -32px rgba(20, 29, 56, 0.75);
 }
 
+/* Variante para el login: el panel va pegado a la tarjeta, así que no lleva
+   redondeo propio. Se usan dos clases juntas para que gane sobre .hero-panel. */
+.hero-panel.hero-panel-recto {
+  border-radius: 0;
+}
+
 .hero-panel::after {
   content: "";
   position: absolute;
