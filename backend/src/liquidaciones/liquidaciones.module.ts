@@ -4,6 +4,7 @@ import { LiquidacionesController } from './liquidaciones.controller.js';
 import { LiquidacionesService } from './liquidaciones.service.js';
 import { SuscripcionesModule } from '../suscripciones/suscripciones.module.js';
 
+// Módulo de liquidaciones: cerrar el mes, pagar y anular.
 @Module({
   imports: [SuscripcionesModule],
   controllers: [LiquidacionesController],

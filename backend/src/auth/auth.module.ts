@@ -8,6 +8,7 @@ import { JwtAuthGuard } from './jwt-auth.guard.js';
 // Configuración del login y de los tokens.
 // El token dura 8 horas: pasado ese tiempo hay que volver a entrar.
 @Global()
+// Módulo de autenticación: login, firma del token y guardianes de acceso.
 @Module({
   imports: [
     JwtModule.register({

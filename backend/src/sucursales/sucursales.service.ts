@@ -10,6 +10,11 @@ import type {
 } from '../common/validators.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
+// Sucursales: puntos de venta de la empresa.
+// Se pueden crear y editar libremente; borrar solo si no tienen nada asociado.
+
+// Campos que se devuelven siempre, con los conteos para saber cuánto depende
+// de cada sucursal antes de intentar borrarla.
 const seleccion = {
   id: true,
   nombre: true,
@@ -22,6 +27,8 @@ const seleccion = {
 export class SucursalesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lista las sucursales de la empresa con cuántos comisionistas, ventas
+  // y reglas tiene cada una.
   listar(empresaId: string) {
     return this.prisma.sucursal.findMany({
       where: { empresaId },
@@ -30,6 +37,7 @@ export class SucursalesService {
     });
   }
 
+  // Crea una sucursal. El lugar (dirección o referencia) es opcional.
   crear(empresaId: string, data: SucursalCreateInput) {
     return this.prisma.sucursal.create({
       data: {
@@ -41,6 +49,7 @@ export class SucursalesService {
     });
   }
 
+  // Edita el nombre o el lugar de una sucursal existente.
   async actualizar(empresaId: string, id: string, data: SucursalUpdateInput) {
     const actual = await this.prisma.sucursal.findFirst({
       where: { id, empresaId },
@@ -60,6 +69,9 @@ export class SucursalesService {
     });
   }
 
+  // Borra una sucursal solo si está vacía. Si tiene comisionistas, ventas o
+  // reglas se rechaza con un mensaje que dice qué hay que reasignar primero,
+  // para no dejar registros apuntando a algo que ya no existe.
   async eliminar(empresaId: string, id: string) {
     const sucursal = await this.prisma.sucursal.findFirst({
       where: { id, empresaId },

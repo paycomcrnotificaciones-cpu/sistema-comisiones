@@ -7,10 +7,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { clearToken } from "@/lib/api";
 import { ThemeToggle } from "./theme-toggle";
 
+// Menú superior viejo. Hoy la navegación la hace AppShell; este componente
+// quedó sin uso y se conserva por si se necesita una barra simple.
 const enlaces = [
   { href: "/comisionistas", texto: "Comisionistas" },
 ];
 
+// Barra superior con logo, enlaces, botón de tema y Salir.
 export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -40,6 +43,7 @@ export function Navbar() {
       </div>
       <div className="flex items-center gap-1">
         <ThemeToggle />
+        {/* Cierra la sesión: borra el token y vuelve al login. */}
         <button
           onClick={() => {
             clearToken();
