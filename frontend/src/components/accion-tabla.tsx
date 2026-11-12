@@ -30,6 +30,7 @@ const variantes: Record<Variante, string> = {
     "hover:border-dark-500/40 hover:bg-light-50 hover:text-zinc-900 dark:hover:bg-dark-600 dark:hover:text-white",
 };
 
+// Dibujo de cada icono según la acción que representa.
 function trazos(nombre: IconoAccion): ReactNode {
   switch (nombre) {
     case "editar":

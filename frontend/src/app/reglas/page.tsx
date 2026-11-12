@@ -50,6 +50,7 @@ const ambitos: { valor: Ambito; texto: string }[] = [
   { valor: "SUCURSAL", texto: "Por sucursal" },
 ];
 
+// Texto corto que dice a qué aplica la regla (producto, persona o sucursal).
 function detalleAmbito(r: Regla): string {
   if (r.ambito === "PRODUCTO") return r.producto ?? "—";
   if (r.ambito === "COMISIONISTA") return r.comisionista?.nombre ?? "—";
@@ -57,6 +58,7 @@ function detalleAmbito(r: Regla): string {
   return "Todas las ventas";
 }
 
+// Muestra el valor de la regla: porcentaje o monto en colones.
 function valorTexto(r: Regla): string {
   return r.tipo === "PORCENTAJE"
     ? `${Number(r.valor)}%`

@@ -54,6 +54,7 @@ const formatoDinero = new Intl.NumberFormat("es-CR", {
   minimumFractionDigits: 2,
 });
 
+// Mes actual en formato AAAA-MM, con la hora de Costa Rica.
 function mesActual(): string {
   const ahora = new Date(Date.now() - 6 * 60 * 60 * 1000);
   return `${ahora.getUTCFullYear()}-${String(ahora.getUTCMonth() + 1).padStart(2, "0")}`;

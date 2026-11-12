@@ -10,6 +10,7 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
+  // Toma la dirección de la base desde el archivo .env.
   constructor() {
     super({ adapter: new PrismaPg(process.env.DATABASE_URL ?? '') });
   }

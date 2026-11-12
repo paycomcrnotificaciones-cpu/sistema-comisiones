@@ -30,6 +30,7 @@ export class ComisionistasController {
   constructor(private readonly comisionistasService: ComisionistasService) {}
 
   @Get()
+  // GET /api/comisionistas — el comisionista solo se ve a sí mismo.
   listar(@Req() req: RequestConUsuario) {
     const usuario = req.usuario!;
     const soloId =
@@ -40,6 +41,7 @@ export class ComisionistasController {
   }
 
   @Get(':id')
+  // GET /api/comisionistas/:id — perfil con sus datos y su sucursal.
   obtener(@Req() req: RequestConUsuario, @Param('id') id: string) {
     const usuario = req.usuario!;
     if (usuario.rol === 'COMISIONISTA' && usuario.comisionistaId !== id) {

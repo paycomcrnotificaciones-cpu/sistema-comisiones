@@ -41,6 +41,7 @@ const formatoDinero = new Intl.NumberFormat("es-CR", {
   minimumFractionDigits: 2,
 });
 
+// Mes actual en formato AAAA-MM, con la hora de Costa Rica.
 function mesActual(): string {
   const ahora = new Date(Date.now() - 6 * 60 * 60 * 1000);
   return `${ahora.getUTCFullYear()}-${String(ahora.getUTCMonth() + 1).padStart(2, "0")}`;
@@ -52,12 +53,14 @@ const nombreMes = new Intl.DateTimeFormat("es-CR", {
   timeZone: "UTC",
 });
 
+// Primer y último día del mes, para los filtros de la pantalla.
 function rangoMes(mes: string): { desde: string; hasta: string } {
   const [anio, numero] = mes.split("-").map(Number);
   const dias = new Date(anio, numero, 0).getDate();
   return { desde: `${mes}-01`, hasta: `${mes}-${String(dias).padStart(2, "0")}` };
 }
 
+// Convierte 2026-11 en "noviembre de 2026" para mostrarlo bonito.
 function tituloMes(mes: string): string {
   const [anio, numero] = mes.split("-").map(Number);
   return nombreMes.format(new Date(Date.UTC(anio, numero - 1, 15)));
@@ -86,6 +89,7 @@ const trazosKpi: Record<string, string[]> = {
   meta: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18", "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10", "M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2"],
 };
 
+// Icono que acompaña a cada tarjeta de totales.
 function IconoKpi({ tipo }: { tipo: string }) {
   return (
     <svg width={18} height={18} viewBox="0 0 24 24" aria-hidden="true">

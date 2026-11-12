@@ -28,6 +28,7 @@ export class UsuariosController {
   constructor(private readonly usuarios: UsuariosService) {}
 
   @Get()
+  // GET /api/usuarios — lista sin contraseñas.
   listar(@Req() req: RequestConUsuario) {
     return this.usuarios.listar(req.usuario!.empresaId);
   }

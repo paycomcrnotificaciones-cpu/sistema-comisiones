@@ -71,6 +71,7 @@ function fechaHoy(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Fecha corta para mostrar en la tabla (dd/mm/aa).
 function fechaCorta(d: Date): string {
   const mes = String(d.getMonth() + 1).padStart(2, "0");
   const dia = String(d.getDate()).padStart(2, "0");
@@ -448,6 +449,7 @@ function PerfilComisionista() {
       ? (Number(monto) * Number(comisionValor)) / 100
       : Number(comisionValor);
 
+  // Cambia entre este mes, el anterior, todos o un rango manual.
   function cambiarPeriodo(nuevo: Periodo) {
     setPeriodo(nuevo);
     if (nuevo !== "rango") {
@@ -455,6 +457,7 @@ function PerfilComisionista() {
     }
   }
 
+  // Valida el rango de fechas elegido y recarga las ventas.
   async function aplicarRango() {
     if (!desde || !hasta) {
       setError("Selecciona la fecha inicial y la fecha final");
@@ -468,11 +471,13 @@ function PerfilComisionista() {
     await cargarVentas("rango", desde, hasta, estadoFiltro, busqueda);
   }
 
+  // Filtra la tabla por estado de la venta (activa o anulada).
   function cambiarEstado(nuevo: string) {
     setEstadoFiltro(nuevo);
     void cargarVentas(periodo, desde, hasta, nuevo, busqueda);
   }
 
+  // Aplica la búsqueda por producto o cliente.
   function aplicarBusqueda(event: React.FormEvent) {
     event.preventDefault();
     void cargarVentas(periodo, desde, hasta, estadoFiltro, busqueda);

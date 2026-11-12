@@ -13,6 +13,7 @@ import type { ZodType } from 'zod';
 export class ZodValidationPipe implements PipeTransform {
   constructor(private readonly schema: ZodType) {}
 
+  // Valida el cuerpo o la consulta y devuelve los datos ya limpios.
   transform(value: unknown, _metadata: ArgumentMetadata): unknown {
     const result = this.schema.safeParse(value);
     if (!result.success) {

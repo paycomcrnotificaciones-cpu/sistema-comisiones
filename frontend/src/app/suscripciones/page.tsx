@@ -48,6 +48,7 @@ const formatoDinero = new Intl.NumberFormat("es-CR", {
 const inputClass =
   "w-full rounded-xl border border-light-100 bg-light-50 px-3 py-2.5 text-sm text-zinc-900 placeholder:text-body-text/60 focus-visible:border-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-dark-600 dark:bg-dark-700 dark:text-white";
 
+// Fecha de hoy en formato AAAA-MM-DD.
 function fechaHoy(): string {
   return new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
@@ -215,6 +216,7 @@ export default function SuscripcionesPage() {
     }
   }
 
+  // Pide confirmación antes de pausar, reactivar o finalizar.
   function pedirCambio(
     id: string,
     accion: "pausar" | "finalizar" | "reactivar",

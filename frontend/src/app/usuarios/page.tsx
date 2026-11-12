@@ -110,6 +110,7 @@ export default function UsuariosPage() {
     return u.rol === "SUPERVISOR" || u.rol === "COMISIONISTA";
   }
 
+  // Cambia el rol de un usuario (solo si tiene permiso para hacerlo).
   async function cambiarRol(id: string, nuevoRol: string) {
     setError(null);
     setMensaje(null);

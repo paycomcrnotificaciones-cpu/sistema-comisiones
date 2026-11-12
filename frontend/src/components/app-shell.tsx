@@ -74,6 +74,8 @@ function leerUsuario(): {
   }
 }
 
+// Iconos del menú lateral y de la barra superior.
+// Cada uno es un dibujo simple hecho con trazos, sin librerías externas.
 function ResumenIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -278,12 +280,15 @@ export function AppShell({
       })),
   ];
 
+  // Indica qué entrada del menú debe verse seleccionada.
   function linkActivo(href: string) {
     return href === "/comisionistas"
       ? pathname.startsWith("/comisionistas")
       : pathname === href;
   }
 
+  // Dibuja una entrada del menú; cambia el estilo si es la pantalla actual
+  // y si es la versión de celular (barra horizontal).
   function navLink(item: (typeof navItems)[number], movil = false) {
     const activoLink = linkActivo(item.href);
     return (

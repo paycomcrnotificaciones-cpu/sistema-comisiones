@@ -29,6 +29,7 @@ export function ThemeToggle() {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
+  // Aplica el tema y lo recuerda para la próxima visita.
   function aplicar(next: Theme) {
     setTheme(next);
     window.localStorage.setItem("theme", next);

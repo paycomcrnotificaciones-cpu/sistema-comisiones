@@ -21,6 +21,7 @@ export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
+  // Compara el rol del usuario con los roles permitidos en la ruta.
   canActivate(context: ExecutionContext): boolean {
     const roles = this.reflector.getAllAndOverride<string[] | undefined>(
       ROLES_KEY,

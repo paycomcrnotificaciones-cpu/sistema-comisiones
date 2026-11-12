@@ -45,6 +45,7 @@ export class SuscripcionesController {
   }
 
   @Get(':id')
+  // GET /api/suscripciones/:id — detalle con sus comisiones generadas.
   obtener(@Req() req: RequestConUsuario, @Param('id') id: string) {
     const usuario = req.usuario!;
     return this.suscripciones.obtener(usuario.empresaId, id);
@@ -80,6 +81,7 @@ export class SuscripcionesController {
   @Post(':id/pausar')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
+  // POST /api/suscripciones/:id/pausar — deja de generar comisiones.
   pausar(@Req() req: RequestConUsuario, @Param('id') id: string) {
     return this.suscripciones.cambiarEstado(
       req.usuario!.empresaId,
@@ -91,6 +93,7 @@ export class SuscripcionesController {
   @Post(':id/finalizar')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
+  // POST /api/suscripciones/:id/finalizar — termina la suscripción.
   finalizar(@Req() req: RequestConUsuario, @Param('id') id: string) {
     return this.suscripciones.cambiarEstado(
       req.usuario!.empresaId,
@@ -102,6 +105,7 @@ export class SuscripcionesController {
   @Post(':id/reactivar')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
+  // POST /api/suscripciones/:id/reactivar — vuelve a cobrar y comisionar.
   reactivar(@Req() req: RequestConUsuario, @Param('id') id: string) {
     return this.suscripciones.cambiarEstado(
       req.usuario!.empresaId,

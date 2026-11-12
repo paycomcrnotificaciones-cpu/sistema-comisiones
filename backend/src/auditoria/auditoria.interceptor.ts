@@ -80,6 +80,8 @@ function describir(
 export class AuditoriaInterceptor implements NestInterceptor {
   constructor(private readonly auditoria: AuditoriaService) {}
 
+  // Se ejecuta en cada petición. Si no es un cambio, la deja pasar;
+  // si lo es, guarda el movimiento al terminar (bien o con error).
   intercept(context: ExecutionContext, next: CallHandler) {
     const req = context.switchToHttp().getRequest<
       RequestConUsuario & { method: string; originalUrl: string; params: Record<string, string> }

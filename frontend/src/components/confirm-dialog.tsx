@@ -30,7 +30,8 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   useEffect(() => {
     if (!abierto) return;
-    function alPresionar(event: KeyboardEvent) {
+    // Permite cerrar el modal con la tecla Escape.
+  function alPresionar(event: KeyboardEvent) {
       if (event.key === "Escape" && !cargando) onCancelar();
     }
     window.addEventListener("keydown", alPresionar);

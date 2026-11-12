@@ -26,6 +26,8 @@ export interface RequestConUsuario extends Request {
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly jwt: JwtService) {}
 
+  // Revisa el encabezado, valida el token y deja los datos del usuario
+  // en la petición para que el controlador los pueda usar.
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestConUsuario>();
     const header = request.headers.authorization;

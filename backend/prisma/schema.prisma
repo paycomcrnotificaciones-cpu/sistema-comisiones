@@ -1,3 +1,11 @@
+// Estructura de la base de datos del sistema de comisiones.
+// Cada "model" es una tabla y cada enum una lista fija de opciones.
+// Las relaciones (por ejemplo venta -> comisionista) las controla la base,
+// así no quedan registros apuntando a algo que ya no existe.
+//
+// Regla general: casi todo cuelga de la empresa, porque el sistema puede
+// atender varias empresas con los mismos datos separados.
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -7,6 +15,8 @@ datasource db {
   provider = "postgresql"
 }
 
+// Roles de acceso: el super admin manda en todo, el admin gestiona,
+// el supervisor consulta y el comisionista solo ve lo suyo.
 enum Rol {
   SUPER_ADMIN
   ADMIN
@@ -14,6 +24,7 @@ enum Rol {
   COMISIONISTA
 }
 
+// Empresa: el nivel más alto. Todo lo demás le pertenece.
 model Empresa {
   id       String   @id @default(uuid())
   nombre   String
@@ -34,6 +45,7 @@ model Empresa {
   @@map("empresas")
 }
 
+// Sucursal: punto de venta. Agrupa comisionistas, ventas y reglas.
 model Sucursal {
   id        String   @id @default(uuid())
   empresaId String   @map("empresa_id")
@@ -50,6 +62,7 @@ model Sucursal {
   @@map("sucursales")
 }
 
+// Usuario: quien entra al sistema. Puede estar ligado a un comisionista.
 model Usuario {
   id             String   @id @default(uuid())
   empresaId      String   @map("empresa_id")
@@ -67,6 +80,7 @@ model Usuario {
   @@map("usuarios")
 }
 
+// Comisionista: la persona que vende y gana comisión.
 model Comisionista {
   id         String   @id @default(uuid())
   empresaId  String   @map("empresa_id")
@@ -92,6 +106,7 @@ model Comisionista {
   @@map("comisionistas")
 }
 
+// Moneda: catálogo de monedas de la empresa.
 model Moneda {
   id        String   @id @default(uuid())
   empresaId String   @map("empresa_id")
@@ -106,21 +121,25 @@ model Moneda {
   @@map("monedas")
 }
 
+// Estado de una venta: activa o anulada (anulada no se borra).
 enum EstadoVenta {
   ACTIVA
   ANULADA
 }
 
+// La comisión puede ser un porcentaje del neto o un monto fijo.
 enum TipoComision {
   PORCENTAJE
   MONTO_FIJO
 }
 
+// Una liquidación nace en borrador y pasa a pagada.
 enum EstadoLiquidacion {
   BORRADOR
   PAGADA
 }
 
+// A qué aplica una regla: a todo, a un producto, a una persona o a una sucursal.
 enum AmbitoRegla {
   GLOBAL
   PRODUCTO
@@ -128,6 +147,7 @@ enum AmbitoRegla {
   SUCURSAL
 }
 
+// Cómo se le pagó al comisionista.
 enum MetodoPago {
   EFECTIVO
   SINPE
@@ -135,6 +155,7 @@ enum MetodoPago {
   OTRO
 }
 
+// Cada cuánto se cobra una suscripción o se paga su comisión.
 enum Frecuencia {
   MENSUAL
   TRIMESTRAL
@@ -143,12 +164,15 @@ enum Frecuencia {
   UNICA
 }
 
+// Una suscripción puede estar activa, en pausa o terminada.
 enum EstadoSuscripcion {
   ACTIVA
   PAUSADA
   FINALIZADA
 }
 
+// Liquidación: el cierre de un mes para un comisionista.
+// Guarda el total a pagar y a qué ventas y comisiones corresponde.
 model Liquidacion {
   id             String            @id @default(uuid())
   empresaId      String            @map("empresa_id")
@@ -173,6 +197,7 @@ model Liquidacion {
   @@map("liquidaciones")
 }
 
+// Suscripción: cliente que paga cada cierto tiempo y deja comisión recurrente.
 model Suscripcion {
   id                 String            @id @default(uuid())
   empresaId          String            @map("empresa_id")
@@ -198,6 +223,7 @@ model Suscripcion {
   @@map("suscripciones")
 }
 
+// Comisión generada por una suscripción en un mes concreto.
 model ComisionSuscripcion {
   id             String   @id @default(uuid())
   empresaId      String   @map("empresa_id")
@@ -220,6 +246,7 @@ model ComisionSuscripcion {
   @@map("comisiones_suscripcion")
 }
 
+// Venta: el registro principal. Guarda montos, comisión y si ya se liquidó.
 model Venta {
   id             String       @id @default(uuid())
   empresaId      String       @map("empresa_id")
@@ -252,6 +279,7 @@ model Venta {
   @@map("ventas")
 }
 
+// Meta de venta de un mes, general o de un comisionista.
 model Meta {
   id             String   @id @default(uuid())
   empresaId      String   @map("empresa_id")
@@ -268,6 +296,7 @@ model Meta {
   @@map("metas")
 }
 
+// Auditoría: historial de cambios hechos por los usuarios.
 model Auditoria {
   id        String   @id @default(uuid())
   empresaId String   @map("empresa_id")
@@ -288,6 +317,8 @@ model Auditoria {
   @@map("auditoria")
 }
 
+// Regla de comisión: sugerencia para llenar el formulario de venta.
+// No cambia liquidaciones ya hechas.
 model ReglaComision {
   id             String       @id @default(uuid())
   empresaId      String       @map("empresa_id")

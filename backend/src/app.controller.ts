@@ -9,6 +9,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get('health')
+  // Responde ok solo si la base de datos contesta.
   health() {
     return this.appService.health();
   }

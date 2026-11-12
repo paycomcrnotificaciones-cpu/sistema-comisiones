@@ -27,6 +27,7 @@ const PAGE_SIZE = 8;
 const inputClass =
   "w-full rounded-xl border border-light-100 bg-light-50 px-3 py-2.5 text-sm text-zinc-900 placeholder:text-body-text/60 focus-visible:border-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/25 dark:border-dark-600 dark:bg-dark-600 dark:text-white";
 
+// Saca las iniciales del nombre para el círculo del avatar.
 function iniciales(nombre: string): string {
   return nombre
     .split(" ")

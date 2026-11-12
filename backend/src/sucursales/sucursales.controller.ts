@@ -29,6 +29,7 @@ export class SucursalesController {
   constructor(private readonly sucursales: SucursalesService) {}
 
   @Get()
+  // GET /api/sucursales — lista con los conteos de uso.
   listar(@Req() req: RequestConUsuario) {
     return this.sucursales.listar(req.usuario!.empresaId);
   }
@@ -57,6 +58,7 @@ export class SucursalesController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
+  // DELETE /api/sucursales/:id — solo si no tiene datos asociados.
   eliminar(@Req() req: RequestConUsuario, @Param('id') id: string) {
     return this.sucursales.eliminar(req.usuario!.empresaId, id);
   }

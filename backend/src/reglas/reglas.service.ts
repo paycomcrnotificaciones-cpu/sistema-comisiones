@@ -54,6 +54,8 @@ function coincide(a: string, b: string): boolean {
   return corto >= 5 && distancia(textoA, textoB) <= 2;
 }
 
+// Convierte un texto AAAA-MM-DD en fecha (a las 6 a.m. de Costa Rica).
+// Respeta tres casos: no viene el dato, viene vacío, o viene con fecha.
 function aFecha(valor?: string | null): Date | null | undefined {
   if (valor === undefined) return undefined;
   if (valor === null) return null;
