@@ -76,6 +76,7 @@ function leerUsuario(): {
 
 // Iconos del menú lateral y de la barra superior.
 // Cada uno es un dibujo simple hecho con trazos, sin librerías externas.
+// Icono de Resumen: cuatro cuadros que representan el panel.
 function ResumenIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -87,6 +88,7 @@ function ResumenIcon() {
   );
 }
 
+// Icono de Comisionistas: una persona con un check al lado.
 function UsersIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -97,6 +99,7 @@ function UsersIcon() {
   );
 }
 
+// Icono de Sucursales: un local con su puerta.
 function StoreIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -107,7 +110,9 @@ function StoreIcon() {
   );
 }
 
-function SalesIcon() {  return (
+// Icono de ventas: una gráfica con la línea subiendo.
+function SalesIcon() {
+  return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 19V5" />
       <path d="M4 19h16" />
@@ -116,6 +121,7 @@ function SalesIcon() {  return (
   );
 }
 
+// Icono de Suscripciones: dos flechas que se repiten.
 function RepeatIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -127,6 +133,7 @@ function RepeatIcon() {
   );
 }
 
+// Icono de Liquidaciones: un billete.
 function MoneyIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -136,6 +143,7 @@ function MoneyIcon() {
   );
 }
 
+// Icono de Reglas: controles deslizantes.
 function ReglasIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -147,6 +155,7 @@ function ReglasIcon() {
   );
 }
 
+// Icono de Historial: un reloj con la flecha hacia atrás.
 function HistoryIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -157,6 +166,7 @@ function HistoryIcon() {
   );
 }
 
+// Icono de Usuarios y accesos: una llave.
 function KeyIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -166,6 +176,7 @@ function KeyIcon() {
   );
 }
 
+// Icono del botón Inicio, arriba a la izquierda.
 function HomeIcon() {
   return (
     <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -175,6 +186,7 @@ function HomeIcon() {
   );
 }
 
+// Icono del botón Salir.
 function LogoutIcon() {
   return (
     <svg width={19} height={19} viewBox="0 0 24 24" aria-hidden="true">
