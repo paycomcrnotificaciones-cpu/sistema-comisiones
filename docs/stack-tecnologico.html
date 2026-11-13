@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Stack tecnológico - Comisiones</title>
+<style>
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Segoe UI","Liberation Sans",Helvetica,Arial,sans-serif;
+  color: #1c2436; font-size: 10pt; line-height: 1.45;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { width: 210mm; height: 297mm; padding: 16mm 17mm 12mm;
+  position: relative; page-break-after: always; background: #fff; overflow: hidden; }
+.page:last-child { page-break-after: auto; }
+.cover { background: #0d1528;
+  background-image: radial-gradient(circle at 88% 8%, rgba(74,196,243,.22), transparent 45%),
+                    radial-gradient(circle at 5% 92%, rgba(66,84,186,.35), transparent 48%);
+  color: #fff; padding: 22mm 18mm 14mm; display: flex; flex-direction: column; }
+.kicker { font-size: 8pt; letter-spacing: 2.6px; text-transform: uppercase;
+  color: #7fd4f7; font-weight: 700; }
+.cover h1 { font-size: 33pt; line-height: 1.05; font-weight: 800;
+  letter-spacing: -.6px; margin-top: 6mm; }
+.cover .sub { margin-top: 4mm; font-size: 12pt; color: rgba(255,255,255,.72); }
+.rule { height: 2px; width: 26mm; background: #4ac4f3; margin-top: 9mm; }
+.badges { display: flex; gap: 12mm; margin-top: 9mm; }
+.badge .v { font-size: 14pt; font-weight: 700; }
+.diagram { display: flex; gap: 4mm; margin-top: 12mm; }
+.node { flex: 1; border: 1px solid rgba(255,255,255,.16); border-radius: 4mm;
+  padding: 5mm; background: rgba(255,255,255,.05); }
+.node .h { font-size: 7pt; letter-spacing: 1.6px; text-transform: uppercase;
+  color: #7fd4f7; font-weight: 700; }
+.node .t { font-size: 11.5pt; font-weight: 700; margin-top: 2mm; }
+.node .d { font-size: 7.5pt; color: rgba(255,255,255,.6); margin-top: 1mm; }
+.badge .n { font-size: 7pt; text-transform: uppercase; letter-spacing: 1.1px;
+  color: rgba(255,255,255,.55); margin-top: 1mm; }
+  .sec { margin-top: 7mm; }
+  .sec h2 { font-size: 12.5pt; font-weight: 800; color: #17233f;
+    border-bottom: 1.6px solid #e3e8f4; padding-bottom: 2mm; margin-bottom: 3mm; }
+  .sec h2 .num { display: inline-block; min-width: 8mm; height: 8mm; line-height: 8mm;
+    text-align: center; background: #4254ba; color: #fff; border-radius: 2mm;
+    font-size: 9pt; margin-right: 3mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+  th { text-align: left; font-size: 7.6pt; text-transform: uppercase; letter-spacing: .7px;
+    color: #6b7590; border-bottom: 1px solid #dfe4f0; padding: 1.6mm 2mm; }
+  td { padding: 1.5mm 2mm; border-bottom: 1px solid #eef1f8; vertical-align: top; }
+  td.k { width: 34%; font-weight: 600; color: #17233f; }
+  td.v { color: #33405c; }
+  ul { margin: 0 0 0 4mm; font-size: 9pt; }
+  li { margin-bottom: 1.4mm; }
+  .note { background: #f4f6fc; border-left: 3px solid #4254ba; border-radius: 2mm;
+    padding: 3mm 4mm; font-size: 8.8pt; color: #33405c; margin-top: 3mm; }
+  .foot { position: absolute; bottom: 8mm; left: 17mm; right: 17mm;
+    display: flex; justify-content: space-between; font-size: 7.5pt; color: #8b93a8;
+    border-top: 1px solid #eef1f8; padding-top: 2mm; }
+</style>
+</head>
+<body>
+
+
+<div class="page cover">
+  <p class="kicker">Documentación técnica</p>
+  <h1>Stack tecnológico<br>de la app Comisiones</h1>
+  <p class="sub">Backend NestJS · Frontend Next.js · PostgreSQL · Multiempresa</p>
+  <div class="rule"></div>
+  <div class="badges">
+    <div class="badge"><div class="v">24.21.0</div><div class="n">Node.js</div></div>
+    <div class="badge"><div class="v">12.2.0</div><div class="n">NestJS</div></div>
+    <div class="badge"><div class="v">16.4.2</div><div class="n">Next.js</div></div>
+    <div class="badge"><div class="v">19.3.0</div><div class="n">React</div></div>
+    <div class="badge"><div class="v">16</div><div class="n">PostgreSQL</div></div>
+    <div class="badge"><div class="v">7.10.1</div><div class="n">Prisma</div></div>
+  </div>
+  <div class="diagram">
+    <div class="node"><div class="h">Frontend</div><div class="t">Next.js 16.4.2</div>
+      <div class="d">frontend/ · puerto 3100</div></div>
+    <div class="node"><div class="h">Backend</div><div class="t">NestJS 12.2.0</div>
+      <div class="d">backend/ · puerto 4100 (/api)</div></div>
+    <div class="node"><div class="h">Base de datos</div><div class="t">PostgreSQL 16</div>
+      <div class="d">contenedor · puerto 55433</div></div>
+  </div>
+  <p style="margin-top:14mm;max-width:118mm;font-size:9.5pt;line-height:1.7;color:rgba(255,255,255,.62)">
+    Aplicación para controlar las ventas y las comisiones de una empresa: cada comisionista
+    con su libreta, sus ventas, sus metas y lo que corresponde pagar en el mes. Funciona de
+    forma local, solo en esta laptop, y se enciende cuando el usuario lo decide.</p>
+  <div class="note" style="margin-top:auto;background:rgba(255,255,255,.06);border-left-color:#4ac4f3;color:rgba(255,255,255,.75)">
+    Versión actualizada · noviembre 2026 · uso local en una sola laptop
+  </div>
+</div>
+<div class="page">
+  <div class="sec" style="margin-top:0">
+    <h2><span class="num">1</span>Runtimes y plataforma</h2>
+    <table>
+      <tr><td class="k">Node.js</td><td class="v">24.21.0</td></tr>
+      <tr><td class="k">pnpm</td><td class="v">12.11.2</td></tr>
+      <tr><td class="k">Sistema operativo</td><td class="v">Fedora Linux 44 (COSMIC), Wayland</td></tr>
+      <tr><td class="k">Contenedores</td><td class="v">Podman (Docker no está instalado)</td></tr>
+      <tr><td class="k">Acceso</td><td class="v">Solo local: 127.0.0.1, sin túnel ni LAN</td></tr>
+    </table>
+  </div>
+  <div class="sec">
+    <h2><span class="num">2</span>Estructura del proyecto</h2>
+    <ul>
+      <li><b>backend/</b> — API NestJS, Prisma y 11 migraciones.</li>
+      <li><b>frontend/</b> — web Next.js (App Router) con Tailwind CSS 4.</li>
+      <li><b>docs/</b> — documentación del proyecto (API, diseño, entorno, roadmap).</li>
+      <li><b>backups/</b> — respaldos de la base (se conservan los últimos 7).</li>
+      <li><b>logs/</b> — salida de la API y de la web al arrancar.</li>
+      <li><b>iniciar.sh / detener.sh / respaldo.sh</b> — arranque, apagado y respaldo manual.</li>
+    </ul>
+    <div class="note">No es un monorepo: son dos proyectos independientes que se comunican
+      por HTTP. Las validaciones compartidas viven en <b>backend/src/common/validators.ts</b>.</div>
+  </div>
+  <div class="sec">
+    <h2><span class="num">3</span>Backend: backend/</h2>
+    <table>
+      <tr><th>Categoría</th><th>Tecnología</th><th>Versión</th></tr>
+      <tr><td class="k">Framework</td><td class="v">NestJS (common, core, platform-express)</td><td>12.2.0</td></tr>
+      <tr><td class="k">CLI</td><td class="v">@nestjs/cli</td><td>12.0.0</td></tr>
+      <tr><td class="k">Auth</td><td class="v">@nestjs/jwt + bcryptjs</td><td>12.0.3 / 3.0.3</td></tr>
+      <tr><td class="k">ORM / BD</td><td class="v">Prisma + @prisma/adapter-pg</td><td>7.10.1</td></tr>
+      <tr><td class="k">Validación</td><td class="v">Zod + pipe propio</td><td>4.6.7</td></tr>
+      <tr><td class="k">Config</td><td class="v">dotenv</td><td>18.0.8</td></tr>
+      <tr><td class="k">Reactividad</td><td class="v">rxjs</td><td>7.8.1</td></tr>
+      <tr><td class="k">TypeScript</td><td class="v">compilador y typecheck</td><td>6.0.2</td></tr>
+      <tr><td class="k">Lint / tests</td><td class="v">oxlint / vitest</td><td>1.58 / 4.1</td></tr>
+      <tr><td class="k">Runtime TS</td><td class="v">tsx</td><td>4.23.15</td></tr>
+    </table>
+  </div>
+  <div class="foot"><span>Stack tecnológico – Comisiones</span><span>Página 2</span></div>
+</div>
+<div class="page">
+  <div class="sec" style="margin-top:0">
+    <h2><span class="num">4</span>Frontend: frontend/</h2>
+    <table>
+      <tr><th>Categoría</th><th>Tecnología</th><th>Versión</th></tr>
+      <tr><td class="k">Framework</td><td class="v">Next.js (App Router, Turbopack)</td><td>16.4.2</td></tr>
+      <tr><td class="k">UI</td><td class="v">React / React DOM</td><td>19.3.0</td></tr>
+      <tr><td class="k">Estilos</td><td class="v">Tailwind CSS (@tailwindcss/turbopack)</td><td>4</td></tr>
+      <tr><td class="k">Lenguaje</td><td class="v">TypeScript</td><td>5</td></tr>
+      <tr><td class="k">Lint</td><td class="v">ESLint + eslint-config-next</td><td>9 / 16.4.2</td></tr>
+    </table>
+    <div class="note">Interfaz en español, con tema claro y oscuro, diseño adaptable a celular,
+      tablet y computadora, y ventanas de confirmación propias (sin <i>window.confirm</i>).</div>
+  </div>
+  <div class="sec">
+    <h2><span class="num">5</span>Base de datos</h2>
+    <table>
+      <tr><td class="k">Motor</td><td class="v">PostgreSQL 16 (imagen postgres:16-alpine)</td></tr>
+      <tr><td class="k">Contenedor</td><td class="v">comisiones-db-v2 (Podman)</td></tr>
+      <tr><td class="k">Puerto / base</td><td class="v">55433 · comisiones</td></tr>
+      <tr><td class="k">ORM</td><td class="v">Prisma 7.10.1</td></tr>
+      <tr><td class="k">Migraciones</td><td class="v">11 aplicadas (migrate deploy)</td></tr>
+      <tr><td class="k">Modelos</td><td class="v">12 tablas y 8 enums</td></tr>
+      <tr><td class="k">Respaldo</td><td class="v">respaldo.sh con pg_dump comprimido, conserva 7</td></tr>
+    </table>
+    <ul style="margin-top:3mm">
+      <li>Empresa, Sucursal, Usuario, Comisionista, Moneda.</li>
+      <li>Venta, Liquidación, Suscripción, Comisión de suscripción.</li>
+      <li>Meta, Regla de comisión, Auditoría.</li>
+    </ul>
+  </div>
+  <div class="sec">
+    <h2><span class="num">6</span>Auth y seguridad (implementación propia, sin Passport)</h2>
+    <ul>
+      <li>Login con correo y contraseña; contraseñas con bcryptjs.</li>
+      <li>Token JWT de acceso con duración de 8 horas (sin refresh).</li>
+      <li>Autorización por roles con <b>RolesGuard</b> y el decorador <b>@Roles(...)</b>.</li>
+      <li>Separación por empresa: cada consulta filtra por <b>empresaId</b> tomado del token.</li>
+      <li>Validación de entrada con Zod antes de tocar la base.</li>
+      <li>Auditoría global: registra quién hizo cada cambio y si salió bien o mal.</li>
+      <li>La API solo escucha en 127.0.0.1 y acepta pedidos únicamente desde la web local.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>Stack tecnológico – Comisiones</span><span>Página 3</span></div>
+</div>
+<div class="page">
+  <div class="sec" style="margin-top:0">
+    <h2><span class="num">7</span>Módulos funcionales</h2>
+    <table>
+      <tr><th>Módulo</th><th>Qué resuelve</th></tr>
+      <tr><td class="k">Resumen</td><td class="v">Totales del mes, ranking de comisionistas, comparación por sucursal, ventas por día y avance de metas.</td></tr>
+      <tr><td class="k">Comisionistas</td><td class="v">Alta y edición del equipo; libreta con perfil, meta, ventas y comisión.</td></tr>
+      <tr><td class="k">Ventas</td><td class="v">Registro con cálculo de comisión, filtros, exportación a CSV y anulación.</td></tr>
+      <tr><td class="k">Liquidaciones</td><td class="v">Cierre del mes por comisionista, pago con método y anulación; todo en una transacción.</td></tr>
+      <tr><td class="k">Reglas</td><td class="v">Sugerencia de porcentaje o monto fijo según producto, persona o sucursal.</td></tr>
+      <tr><td class="k">Suscripciones</td><td class="v">Clientes recurrentes que generan comisión mes a mes, con pausa y finalización.</td></tr>
+      <tr><td class="k">Metas</td><td class="v">Objetivo mensual general o por comisionista, para medir avance.</td></tr>
+      <tr><td class="k">Sucursales</td><td class="v">Puntos de venta; se protege el borrado si tienen datos asociados.</td></tr>
+      <tr><td class="k">Usuarios</td><td class="v">Accesos y roles; se impide quedarse sin super administrador activo.</td></tr>
+      <tr><td class="k">Historial</td><td class="v">Auditoría de cambios con búsqueda y paginación.</td></tr>
+    </table>
+  </div>
+  <div class="sec">
+    <h2><span class="num">8</span>Entorno de ejecución y respaldo</h2>
+    <ul>
+      <li>Arranque manual: <b>./iniciar.sh</b> levanta el contenedor, la API y la web, y valida <b>/api/health</b>.</li>
+      <li>Apagado: <b>./detener.sh</b> cierra web, API y contenedor.</li>
+      <li>Respaldo: <b>./respaldo.sh</b> guarda un <i>pg_dump</i> comprimido en <b>backups/</b>.</li>
+      <li>Separación: web <b>3100</b>, API <b>4100</b> (/api), base <b>55433</b>.</li>
+      <li>No arranca solo al encender la laptop; el usuario decide cuándo.</li>
+      <li>La aplicación anterior quedó desactivada (no borrada) y ambos servicios no chocan de puerto.</li>
+    </ul>
+  </div>
+  <div class="sec">
+    <h2><span class="num">9</span>No usado / pendiente</h2>
+    <ul>
+      <li>Sin Docker: se usa Podman con un solo contenedor de PostgreSQL.</li>
+      <li>Sin Redis ni BullMQ: no hay colas; las comisiones de suscripción se generan al abrir el mes.</li>
+      <li>Sin Passport: la autenticación es propia con @nestjs/jwt.</li>
+      <li>Sin despliegue público: no hay dominio, túnel ni servidor externo.</li>
+      <li>Pruebas automatizadas mínimas (solo la ruta de salud); el resto se verificó a mano.</li>
+      <li>Sin refresh token: al vencer las 8 horas hay que volver a entrar.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>Stack tecnológico – Comisiones</span><span>Página 4</span></div>
+</div>
+</body>
+</html>
