@@ -46,6 +46,12 @@ export class ReglasController {
     return this.reglas.sugerir(req.usuario!.empresaId, query);
   }
 
+  // GET /api/reglas/productos — productos que ya existen en ventas o reglas.
+  @Get('productos')
+  productos(@Req() req: RequestConUsuario) {
+    return this.reglas.productos(req.usuario!.empresaId);
+  }
+
   @Post()
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')

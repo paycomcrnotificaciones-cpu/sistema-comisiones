@@ -81,6 +81,35 @@ export class ReglasService {
     });
   }
 
+  // Nombres de producto que ya existen, sacados de las ventas y de las reglas.
+  // El formulario los usa para ofrecer un select en vez de escribir a mano.
+  async productos(empresaId: string) {
+    const [ventas, reglas] = await Promise.all([
+      this.prisma.venta.findMany({
+        where: { empresaId, producto: { not: null } },
+        select: { producto: true },
+        distinct: ['producto'],
+      }),
+      this.prisma.reglaComision.findMany({
+        where: { empresaId, producto: { not: null } },
+        select: { producto: true },
+        distinct: ['producto'],
+      }),
+    ]);
+
+    // Se agrupa sin distinguir mayúsculas para no mostrar "aguacate" y
+    // "agUACATE" como dos productos distintos; se conserva la primera grafía.
+    const nombres = new Map<string, string>();
+    for (const fila of [...ventas, ...reglas]) {
+      const nombre = fila.producto?.trim();
+      if (!nombre) continue;
+      const clave = nombre.toLocaleLowerCase('es');
+      if (!nombres.has(clave)) nombres.set(clave, nombre);
+    }
+
+    return [...nombres.values()].sort((a, b) => a.localeCompare(b, 'es'));
+  }
+
   // Crea una regla y deja vacíos los datos que no corresponden a su ámbito:
   // una regla global no guarda producto, comisionista ni sucursal.
   crear(empresaId: string, input: ReglaComisionInput) {

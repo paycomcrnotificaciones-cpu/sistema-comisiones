@@ -76,6 +76,7 @@ export default function ReglasPage() {
   const [reglas, setReglas] = useState<Regla[]>([]);
   const [comisionistas, setComisionistas] = useState<Opcion[]>([]);
   const [sucursales, setSucursales] = useState<Opcion[]>([]);
+  const [productos, setProductos] = useState<string[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [trabajando, setTrabajando] = useState(false);
@@ -88,6 +89,8 @@ export default function ReglasPage() {
   const [valor, setValor] = useState("");
   const [ambito, setAmbito] = useState<Ambito>("PRODUCTO");
   const [producto, setProducto] = useState("");
+  // Cuando el producto no está en la lista se muestra un campo de texto libre.
+  const [productoNuevo, setProductoNuevo] = useState(false);
   const [comisionistaId, setComisionistaId] = useState("");
   const [sucursalId, setSucursalId] = useState("");
   const [prioridad, setPrioridad] = useState("100");
@@ -103,14 +106,16 @@ export default function ReglasPage() {
 
   // Trae todas las reglas de la empresa.
   const cargar = useCallback(async () => {
-    const [lista, gente, sedes] = await Promise.all([
+    const [lista, gente, sedes, catalogo] = await Promise.all([
       apiFetch<Regla[]>("/reglas"),
       apiFetch<Opcion[]>("/comisionistas"),
       apiFetch<Opcion[]>("/sucursales"),
+      apiFetch<string[]>("/reglas/productos"),
     ]);
     setReglas(lista);
     setComisionistas(gente);
     setSucursales(sedes);
+    setProductos(catalogo);
   }, []);
 
   useEffect(() => {
@@ -147,6 +152,7 @@ export default function ReglasPage() {
     setValor("");
     setAmbito("PRODUCTO");
     setProducto("");
+    setProductoNuevo(false);
     setComisionistaId("");
     setSucursalId("");
     setPrioridad("100");
@@ -164,6 +170,7 @@ export default function ReglasPage() {
     setValor(String(Number(r.valor)));
     setAmbito(r.ambito);
     setProducto(r.producto ?? "");
+    setProductoNuevo(!!r.producto && !productos.includes(r.producto));
     setComisionistaId(r.comisionista?.id ?? "");
     setSucursalId(r.sucursal?.id ?? "");
     setPrioridad(String(r.prioridad));
@@ -322,7 +329,37 @@ export default function ReglasPage() {
             {ambito === "PRODUCTO" && (
               <label className={`${labelClass} sm:col-span-2`}>
                 <span>Producto</span>
-                <input required value={producto} onChange={(e) => setProducto(e.target.value)} placeholder="Ej. Cámara de seguridad" className={inputClass} />
+                <select
+                  required
+                  value={productoNuevo ? "__otro__" : producto}
+                  onChange={(e) => {
+                    const elegido = e.target.value;
+                    if (elegido === "__otro__") {
+                      setProductoNuevo(true);
+                      setProducto("");
+                    } else {
+                      setProductoNuevo(false);
+                      setProducto(elegido);
+                    }
+                  }}
+                  className={inputClass}
+                >
+                  <option value="">Selecciona…</option>
+                  {productos.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                  <option value="__otro__">Otro producto…</option>
+                </select>
+                {productoNuevo && (
+                  <input
+                    required
+                    autoFocus
+                    value={producto}
+                    onChange={(e) => setProducto(e.target.value)}
+                    placeholder="Nombre del producto nuevo"
+                    className={`${inputClass} mt-2`}
+                  />
+                )}
               </label>
             )}
             {ambito === "COMISIONISTA" && (
