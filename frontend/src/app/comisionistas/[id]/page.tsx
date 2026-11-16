@@ -162,9 +162,8 @@ function PerfilComisionista() {
 
   const [fecha, setFecha] = useState("");
   const [producto, setProducto] = useState("");
-  // Productos que ya existen, para elegirlos con un select en vez de escribirlos.
-  const [productos, setProductos] = useState<string[]>([]);
-  const [productoNuevo, setProductoNuevo] = useState(false);
+  // Productos que ya tienen una regla activa: se ofrecen como atajo.
+  const [productosConRegla, setProductosConRegla] = useState<string[]>([]);
   const [monto, setMonto] = useState("");
   const [comisionTipo, setComisionTipo] = useState<"PORCENTAJE" | "MONTO_FIJO">(
     "PORCENTAJE",
@@ -311,12 +310,12 @@ function PerfilComisionista() {
         const [c, s, catalogo] = await Promise.all([
           apiFetch<Comisionista>(`/comisionistas/${id}`),
           apiFetch<Sucursal[]>("/sucursales"),
-          apiFetch<string[]>("/reglas/productos"),
+          apiFetch<string[]>("/reglas/productos?conRegla=1"),
         ]);
         if (!vivo) return;
         setComisionista(c);
         setSucursales(s);
-        setProductos(catalogo);
+        setProductosConRegla(catalogo);
         setNombre(c.nombre);
         setCodigo(c.codigo ?? "");
         setSucursalId(c.sucursal?.id ?? s[0]?.id ?? "");
@@ -375,7 +374,6 @@ function PerfilComisionista() {
     setEditandoId(null);
     setFecha(fechaHoy());
     setProducto("");
-    setProductoNuevo(false);
     setMonto("");
     setComisionTipo("PORCENTAJE");
     setComisionValor("");
@@ -386,7 +384,6 @@ function PerfilComisionista() {
     setEditandoId(v.id);
     setFecha(v.fecha.slice(0, 10));
     setProducto(v.producto ?? "");
-    setProductoNuevo(!!v.producto && !productos.includes(v.producto));
     setMonto(v.neto);
     setComisionTipo(v.comisionTipo);
     setComisionValor(v.comisionValor);
@@ -815,40 +812,39 @@ function PerfilComisionista() {
               </div>
 
               <form onSubmit={guardarVenta} className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
-                <label className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
-                  <span>¿Qué vendió?</span>
-                  <select
-                    required
-                    value={productoNuevo ? "__otro__" : producto}
-                    onChange={(e) => {
-                      const elegido = e.target.value;
-                      if (elegido === "__otro__") {
-                        setProductoNuevo(true);
-                        setProducto("");
-                      } else {
-                        setProductoNuevo(false);
-                        setProducto(elegido);
-                      }
-                    }}
-                    className={inputClass}
-                  >
-                    <option value="">Selecciona un producto…</option>
-                    {productos.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                    <option value="__otro__">Otro producto…</option>
-                  </select>
-                  {productoNuevo && (
+                <div className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
+                  <label className="space-y-1.5">
+                    <span className="block">¿Qué vendió?</span>
                     <input
                       required
-                      autoFocus
                       value={producto}
                       onChange={(e) => setProducto(e.target.value)}
-                      placeholder="Nombre del producto nuevo"
-                      className={`${inputClass} mt-2`}
+                      placeholder="Escribe el artículo"
+                      className={inputClass}
                     />
-                  )}
-                </label>
+                  </label>
+                  <label className="mt-3 block space-y-1.5">
+                    <span className="block normal-case tracking-normal text-[11px] font-medium text-body-text">
+                      O elige un producto que ya tiene regla
+                    </span>
+                    <select
+                      value={productosConRegla.includes(producto) ? producto : ""}
+                      onChange={(e) => {
+                        if (e.target.value) setProducto(e.target.value);
+                      }}
+                      className={inputClass}
+                    >
+                      <option value="">
+                        {productosConRegla.length
+                          ? "Sin regla específica (se escribe arriba)"
+                          : "Todavía no hay productos con regla"}
+                      </option>
+                      {productosConRegla.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
                 <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
                   <span>Fecha</span>
                   <input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputClass} />

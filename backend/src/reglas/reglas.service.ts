@@ -83,7 +83,30 @@ export class ReglasService {
 
   // Nombres de producto que ya existen, sacados de las ventas y de las reglas.
   // El formulario los usa para ofrecer un select en vez de escribir a mano.
-  async productos(empresaId: string) {
+  async productos(empresaId: string, soloConRegla = false) {
+    // Con soloConRegla se devuelven únicamente los productos que ya tienen
+    // una regla activa, que son los que el formulario de venta puede sugerir.
+    if (soloConRegla) {
+      const reglas = await this.prisma.reglaComision.findMany({
+        where: {
+          empresaId,
+          ambito: 'PRODUCTO',
+          activa: true,
+          producto: { not: null },
+        },
+        select: { producto: true },
+        distinct: ['producto'],
+      });
+      const unicos = new Map<string, string>();
+      for (const fila of reglas) {
+        const nombre = fila.producto?.trim();
+        if (!nombre) continue;
+        const clave = nombre.toLocaleLowerCase('es');
+        if (!unicos.has(clave)) unicos.set(clave, nombre);
+      }
+      return [...unicos.values()].sort((a, b) => a.localeCompare(b, 'es'));
+    }
+
     const [ventas, reglas] = await Promise.all([
       this.prisma.venta.findMany({
         where: { empresaId, producto: { not: null } },

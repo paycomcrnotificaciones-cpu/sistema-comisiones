@@ -48,8 +48,11 @@ export class ReglasController {
 
   // GET /api/reglas/productos — productos que ya existen en ventas o reglas.
   @Get('productos')
-  productos(@Req() req: RequestConUsuario) {
-    return this.reglas.productos(req.usuario!.empresaId);
+  productos(@Req() req: RequestConUsuario, @Query('conRegla') conRegla?: string) {
+    return this.reglas.productos(
+      req.usuario!.empresaId,
+      conRegla === '1' || conRegla === 'true',
+    );
   }
 
   @Post()
