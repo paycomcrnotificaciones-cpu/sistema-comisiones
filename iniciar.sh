@@ -3,6 +3,8 @@
 set -euo pipefail
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Node y pnpm viven en ~/.local/node/bin (no están en el PATH del sistema).
+export PATH="$HOME/.local/node/bin:$PATH"
 LOGS="$RAIZ/logs"
 APP="Sistema de comisiones Dilan Delgado"
 API_PUERTO=4100
@@ -26,11 +28,12 @@ esperar() {
 }
 
 echo "==> Base de datos"
-if [ "$(podman inspect -f '{{.State.Running}}' comisiones-db-v2 2>/dev/null)" != "true" ]; then
-  podman start comisiones-db-v2 >/dev/null
+DATOS="$RAIZ/db/pgdata"
+if ! pg_isready -h 127.0.0.1 -p 55433 -q 2>/dev/null; then
+  pg_ctl -D "$DATOS" -l "$LOGS/db.log" start -w -t 60 >/dev/null 2>&1
 fi
-esperar 60 podman exec comisiones-db-v2 pg_isready -U comisiones -d comisiones \
-  || { echo "La base de datos no respondió. Revisa: podman logs comisiones-db-v2"; exit 1; }
+esperar 30 pg_isready -h 127.0.0.1 -p 55433 -q \
+  || { echo "La base de datos no respondió. Revisa: logs/db.log"; exit 1; }
 echo "    lista en 127.0.0.1:55433"
 
 echo "==> API (:$API_PUERTO)"

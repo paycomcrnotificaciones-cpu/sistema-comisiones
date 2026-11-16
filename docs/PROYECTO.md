@@ -159,7 +159,7 @@ layout responsive con sidebar en escritorio.
 Base de datos:
 
 ```bash
-podman start comisiones-db-v2
+./iniciar.sh
 ```
 
 Backend (puerto 4100):

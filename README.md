@@ -67,7 +67,7 @@ La interfaz web consume la API mediante solicitudes HTTP y JSON. El backend orga
 | pnpm 12 | Instalación y administración de paquetes |
 | Git | Control de versiones |
 | VS Code | Editor de código |
-| Podman 5.8 | Ejecución local de PostgreSQL en un contenedor |
+| PostgreSQL 18 | Base de datos local (datos en `db/pgdata`) |
 | Vitest 4 | Pruebas unitarias y de extremo a extremo |
 | Supertest | Pruebas HTTP de la API |
 | Oxlint | Análisis estático del backend |
@@ -119,7 +119,7 @@ El esquema de PostgreSQL incluye entidades para empresas, usuarios, sucursales, 
 ### 1. Iniciar la base de datos
 
 ```bash
-podman start comisiones-db-v2
+pg_ctl -D db/pgdata -l logs/db.log start
 ```
 
 Configura las variables de entorno del backend en `backend/.env`; puedes tomar `backend/.env.example` como referencia.

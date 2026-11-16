@@ -34,9 +34,9 @@ detener api
 pkill -f "node dist/main\.js" 2>/dev/null && echo "    procesos de la API cerrados"
 
 echo "==> Base de datos"
-if [ "$(podman inspect -f '{{.State.Running}}' comisiones-db-v2 2>/dev/null)" = "true" ]; then
-  podman stop comisiones-db-v2 >/dev/null
-  echo "    contenedor detenido"
+if pg_isready -h 127.0.0.1 -p 55433 -q 2>/dev/null; then
+  pg_ctl -D "$RAIZ/db/pgdata" stop -m fast >/dev/null 2>&1
+  echo "    base de datos detenida"
 else
   echo "    ya estaba detenida"
 fi

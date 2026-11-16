@@ -67,7 +67,7 @@ body { font-family: "Segoe UI","Liberation Sans",Helvetica,Arial,sans-serif;
     <div class="badge"><div class="v">12.2.0</div><div class="n">NestJS</div></div>
     <div class="badge"><div class="v">16.4.2</div><div class="n">Next.js</div></div>
     <div class="badge"><div class="v">19.3.0</div><div class="n">React</div></div>
-    <div class="badge"><div class="v">16</div><div class="n">PostgreSQL</div></div>
+    <div class="badge"><div class="v">18</div><div class="n">PostgreSQL</div></div>
     <div class="badge"><div class="v">7.10.1</div><div class="n">Prisma</div></div>
   </div>
   <div class="diagram">
@@ -75,8 +75,8 @@ body { font-family: "Segoe UI","Liberation Sans",Helvetica,Arial,sans-serif;
       <div class="d">frontend/ · puerto 3100</div></div>
     <div class="node"><div class="h">Backend</div><div class="t">NestJS 12.2.0</div>
       <div class="d">backend/ · puerto 4100 (/api)</div></div>
-    <div class="node"><div class="h">Base de datos</div><div class="t">PostgreSQL 16</div>
-      <div class="d">contenedor · puerto 55433</div></div>
+    <div class="node"><div class="h">Base de datos</div><div class="t">PostgreSQL 18</div>
+      <div class="d">db/pgdata · puerto 55433</div></div>
   </div>
   <p style="margin-top:14mm;max-width:118mm;font-size:9.5pt;line-height:1.7;color:rgba(255,255,255,.62)">
     Aplicación para controlar las ventas y las comisiones de una empresa: cada comisionista
@@ -93,7 +93,7 @@ body { font-family: "Segoe UI","Liberation Sans",Helvetica,Arial,sans-serif;
       <tr><td class="k">Node.js</td><td class="v">24.21.0</td></tr>
       <tr><td class="k">pnpm</td><td class="v">12.11.2</td></tr>
       <tr><td class="k">Sistema operativo</td><td class="v">Fedora Linux 44 (COSMIC), Wayland</td></tr>
-      <tr><td class="k">Contenedores</td><td class="v">Podman (Docker no está instalado)</td></tr>
+      <tr><td class="k">Base de datos</td><td class="v">PostgreSQL 18 instalado en el sistema (sin contenedores)</td></tr>
       <tr><td class="k">Acceso</td><td class="v">Solo local: 127.0.0.1, sin túnel ni LAN</td></tr>
     </table>
   </div>
@@ -145,8 +145,8 @@ body { font-family: "Segoe UI","Liberation Sans",Helvetica,Arial,sans-serif;
   <div class="sec">
     <h2><span class="num">5</span>Base de datos</h2>
     <table>
-      <tr><td class="k">Motor</td><td class="v">PostgreSQL 16 (imagen postgres:16-alpine)</td></tr>
-      <tr><td class="k">Contenedor</td><td class="v">comisiones-db-v2 (Podman)</td></tr>
+      <tr><td class="k">Motor</td><td class="v">PostgreSQL 18.7 (paquete del sistema)</td></tr>
+      <tr><td class="k">Datos</td><td class="v">carpeta db/pgdata (se respalda aparte)</td></tr>
       <tr><td class="k">Puerto / base</td><td class="v">55433 · comisiones</td></tr>
       <tr><td class="k">ORM</td><td class="v">Prisma 7.10.1</td></tr>
       <tr><td class="k">Migraciones</td><td class="v">11 aplicadas (migrate deploy)</td></tr>
@@ -204,7 +204,7 @@ body { font-family: "Segoe UI","Liberation Sans",Helvetica,Arial,sans-serif;
   <div class="sec">
     <h2><span class="num">9</span>No usado / pendiente</h2>
     <ul>
-      <li>Sin Docker: se usa Podman con un solo contenedor de PostgreSQL.</li>
+      <li>Sin contenedores: PostgreSQL va instalado directamente en el sistema.</li>
       <li>Sin Redis ni BullMQ: no hay colas; las comisiones de suscripción se generan al abrir el mes.</li>
       <li>Sin Passport: la autenticación es propia con @nestjs/jwt.</li>
       <li>Sin despliegue público: no hay dominio, túnel ni servidor externo.</li>

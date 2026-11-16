@@ -18,3 +18,4 @@ test-results/
 # datos locales
 backups/
 logs/
+db/pgdata/

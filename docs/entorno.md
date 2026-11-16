@@ -3,26 +3,26 @@
 ## Requisitos ya instalados
 - Node.js 24
 - pnpm 12
-- podman 5.8
+- PostgreSQL 18 (`initdb`, `psql`, `pg_dump` en el sistema)
 - Git
 - VS Code
 
-## Base de datos (PostgreSQL en podman)
+## Base de datos (PostgreSQL local)
 
-Contenedor: `comisiones-db-v2` · puerto host `55433` · volumen `comisiones-db-v2-data`
+Los datos viven en `db/pgdata` · puerto `55433` · escucha solo en `127.0.0.1`
 
 ```bash
 # iniciar
-podman start comisiones-db-v2
+pg_ctl -D db/pgdata -l logs/db.log start
 
 # estado
-podman ps --filter name=comisiones-db-v2
+pg_isready -h 127.0.0.1 -p 55433
 
 # detener
-podman stop comisiones-db-v2
+pg_ctl -D db/pgdata stop -m fast
 
 # consola SQL
-podman exec -it comisiones-db-v2 psql -U comisiones -d comisiones
+psql "postgresql://comisiones:CLAVE@127.0.0.1:55433/comisiones"
 ```
 
 Credenciales locales: usuario `comisiones`, base `comisiones`, clave en `backend/.env`.

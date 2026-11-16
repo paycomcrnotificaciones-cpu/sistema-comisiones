@@ -9,7 +9,7 @@ cd "/home/Delgado/Sistema de comisiones Dilan Delgado"
 ./iniciar.sh
 ```
 
-Hace todo en orden: base de datos (contenedor `comisiones-db-v2`), API en `:4100` y web en `:3100`. Al terminar imprime:
+Hace todo en orden: base de datos (PostgreSQL local en `db/pgdata`, puerto `55433`), API en `:4100` y web en `:3100`. Al terminar imprime:
 
 ```
 Listo:  http://localhost:3100
@@ -38,9 +38,11 @@ Guarda `backups/comisiones-AAAAMMDD-HHMM.sql.gz` y conserva los últimos 7. Si l
 Restaurar un respaldo:
 
 ```bash
-podman start comisiones-db-v2
-gunzip -c backups/comisiones-FECHA.sql.gz | podman exec -i comisiones-db-v2 psql -U comisiones -d comisiones
+./iniciar.sh
+gunzip -c backups/comisiones-FECHA.sql.gz | psql "postgresql://comisiones:CLAVE@127.0.0.1:55433/comisiones"
 ```
+
+La clave está en `backend/.env` (`DATABASE_URL`).
 
 ## Notas
 

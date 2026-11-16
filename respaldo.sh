@@ -7,18 +7,19 @@ DESTINO="$RAIZ/backups"
 mkdir -p "$DESTINO"
 ARCHIVO="$DESTINO/comisiones-$(date +%Y%m%d-%H%M).sql.gz"
 
+# La dirección de la base sale de backend/.env (una sola fuente de verdad).
+URL="$(grep -m1 '^DATABASE_URL=' "$RAIZ/backend/.env" | cut -d'"' -f2)"
+# pg_dump no entiende el ?schema=public que usa Prisma, así que se quita.
+URL="${URL%%\?*}"
+
 iniciada_por_nosotros=false
-if [ "$(podman inspect -f '{{.State.Running}}' comisiones-db-v2 2>/dev/null)" != "true" ]; then
+if ! pg_isready -h 127.0.0.1 -p 55433 -q 2>/dev/null; then
   echo "==> Iniciando base de datos para el respaldo"
-  podman start comisiones-db-v2 >/dev/null
+  pg_ctl -D "$RAIZ/db/pgdata" -l "$RAIZ/logs/db.log" start -w -t 60 >/dev/null
   iniciada_por_nosotros=true
-  for _ in $(seq 1 30); do
-    podman exec comisiones-db-v2 pg_isready -U comisiones -d comisiones >/dev/null 2>&1 && break
-    sleep 2
-  done
 fi
 
-podman exec comisiones-db-v2 pg_dump -U comisiones comisiones | gzip > "$ARCHIVO"
+pg_dump "$URL" | gzip > "$ARCHIVO"
 echo "Respaldo: $ARCHIVO ($(du -h "$ARCHIVO" | cut -f1))"
 
 ls -1t "$DESTINO"/comisiones-*.sql.gz | tail -n +8 | while read -r viejo; do
@@ -27,6 +28,6 @@ ls -1t "$DESTINO"/comisiones-*.sql.gz | tail -n +8 | while read -r viejo; do
 done
 
 if [ "$iniciada_por_nosotros" = true ]; then
-  podman stop comisiones-db-v2 >/dev/null
+  pg_ctl -D "$RAIZ/db/pgdata" stop -m fast >/dev/null
   echo "Base de datos detenida de nuevo"
 fi
