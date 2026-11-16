@@ -162,6 +162,9 @@ function PerfilComisionista() {
 
   const [fecha, setFecha] = useState("");
   const [producto, setProducto] = useState("");
+  // Productos que ya existen, para elegirlos con un select en vez de escribirlos.
+  const [productos, setProductos] = useState<string[]>([]);
+  const [productoNuevo, setProductoNuevo] = useState(false);
   const [monto, setMonto] = useState("");
   const [comisionTipo, setComisionTipo] = useState<"PORCENTAJE" | "MONTO_FIJO">(
     "PORCENTAJE",
@@ -305,13 +308,15 @@ function PerfilComisionista() {
     let vivo = true;
     (async () => {
       try {
-        const [c, s] = await Promise.all([
+        const [c, s, catalogo] = await Promise.all([
           apiFetch<Comisionista>(`/comisionistas/${id}`),
           apiFetch<Sucursal[]>("/sucursales"),
+          apiFetch<string[]>("/reglas/productos"),
         ]);
         if (!vivo) return;
         setComisionista(c);
         setSucursales(s);
+        setProductos(catalogo);
         setNombre(c.nombre);
         setCodigo(c.codigo ?? "");
         setSucursalId(c.sucursal?.id ?? s[0]?.id ?? "");
@@ -370,6 +375,7 @@ function PerfilComisionista() {
     setEditandoId(null);
     setFecha(fechaHoy());
     setProducto("");
+    setProductoNuevo(false);
     setMonto("");
     setComisionTipo("PORCENTAJE");
     setComisionValor("");
@@ -380,6 +386,7 @@ function PerfilComisionista() {
     setEditandoId(v.id);
     setFecha(v.fecha.slice(0, 10));
     setProducto(v.producto ?? "");
+    setProductoNuevo(!!v.producto && !productos.includes(v.producto));
     setMonto(v.neto);
     setComisionTipo(v.comisionTipo);
     setComisionValor(v.comisionValor);
@@ -810,7 +817,37 @@ function PerfilComisionista() {
               <form onSubmit={guardarVenta} className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
                 <label className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
                   <span>¿Qué vendió?</span>
-                  <input required value={producto} onChange={(e) => setProducto(e.target.value)} placeholder="Ej. Cámara de seguridad" className={inputClass} />
+                  <select
+                    required
+                    value={productoNuevo ? "__otro__" : producto}
+                    onChange={(e) => {
+                      const elegido = e.target.value;
+                      if (elegido === "__otro__") {
+                        setProductoNuevo(true);
+                        setProducto("");
+                      } else {
+                        setProductoNuevo(false);
+                        setProducto(elegido);
+                      }
+                    }}
+                    className={inputClass}
+                  >
+                    <option value="">Selecciona un producto…</option>
+                    {productos.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                    <option value="__otro__">Otro producto…</option>
+                  </select>
+                  {productoNuevo && (
+                    <input
+                      required
+                      autoFocus
+                      value={producto}
+                      onChange={(e) => setProducto(e.target.value)}
+                      placeholder="Nombre del producto nuevo"
+                      className={`${inputClass} mt-2`}
+                    />
+                  )}
                 </label>
                 <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
                   <span>Fecha</span>
