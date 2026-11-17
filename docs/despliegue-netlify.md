@@ -309,7 +309,92 @@ registro de prueba.
 
 ---
 
-## 11. Resumen de este proyecto
+## 11. Límites de los planes gratuitos
+
+Netlify ya no cobra por GB ni por minutos: desde 2025 usa **créditos**. Por eso
+las cuotas no son fijas; todo sale del mismo presupuesto mensual.
+
+### 11.1 Netlify Free — 300 créditos al mes (tope duro)
+
+| Uso | Costo | Techo aproximado |
+|---|---|---|
+| Deploy a producción | 15 créditos | ~20 deploys |
+| Deploy preview / branch deploy | 0 | ilimitados |
+| Ancho de banda | 20 créditos/GB | ~15 GB |
+| Peticiones web | 2 créditos/10 000 | ~1,5 millones |
+| Cómputo de funciones | 10 créditos/GB-hora | ~30 horas a 1 GB |
+
+Otros límites del plan Free:
+
+- **1 miembro** en el equipo.
+- **1 build simultáneo**.
+- **500 proyectos** como máximo.
+- Región de funciones fija en US East (Ohio), sin poder cambiarla.
+- Funciones: 1 GB de RAM, 60 s síncronas, 30 s programadas, 15 min en segundo plano.
+- Payload de 6 MB (20 MB si la respuesta es en streaming).
+- No hay disco persistente ni WebSockets nativos.
+
+Si se agotan los créditos, **todos los sitios de la cuenta se pausan** hasta el
+siguiente ciclo y los visitantes ven `Site not available`. No hay cobro
+automático en Free.
+
+### 11.2 Render Free — la API
+
+| Límite | Valor |
+|---|---|
+| Suspensión por inactividad | a los 15 min sin tráfico |
+| Tiempo de despertar | ~1 minuto |
+| Horas de instancia | 750 al mes por workspace |
+| RAM / CPU | 512 MB / 0.1 CPU |
+| Disco | efímero, se pierde al reiniciar |
+| Ancho de banda | 5 GB/mes por workspace |
+| Minutos de build | 500/mes |
+| SSH, jobs, discos persistentes | no disponibles |
+| SLA | ninguno |
+
+Consideraciones: Render puede reiniciar el servicio en cualquier momento y, si
+el ancho de banda se agota sin método de pago, suspende los servicios hasta fin
+de mes. El plan Free sirve para pruebas y apps internas, no para producción
+crítica.
+
+### 11.3 Neon Free — la base de datos
+
+| Límite | Valor |
+|---|---|
+| Almacenamiento | 1 GB por proyecto (20 GB por cuenta) |
+| Cómputo | 100 CU-horas por proyecto al mes |
+| Suspensión por inactividad | 5 min (no se puede desactivar) |
+| Transferencia | 5 GB por proyecto al mes |
+| Ramas | 10 por proyecto |
+| Restauración | 6 horas de historial |
+| IP allowlist | no disponible en Free |
+| SLA | ninguno |
+
+El plan es permanente y no pide tarjeta. Si se agota el cómputo, la base se
+suspende hasta el mes siguiente, pero **no se borran los datos**.
+
+### 11.4 ¿La base de datos queda pública?
+
+- Es accesible desde internet: cualquier IP puede **intentar** conectarse.
+- Exige usuario, contraseña y TLS (`sslmode=require`).
+- En Free **no se puede limitar por IP**; los planes pagos sí lo permiten.
+
+Por eso la contraseña de la base es un secreto real: si se filtra, cualquiera
+que tenga la cadena entra. Conviene rotarla si alguna vez se compartió.
+
+### 11.5 Recomendaciones con estos límites
+
+1. Agrupar cambios antes de pushear: cada deploy a producción cuesta 15 créditos.
+2. Usar **Deploy Previews** (gratis) para revisar antes de publicar.
+3. Comprimir imágenes: el ancho de banda es el gasto más caro.
+4. Revisar el consumo en **Project configuration → Usage**.
+5. Programar respaldos de la base fuera de Neon (6 h de historial es poco).
+6. Si la app crece, los primeros gastos útiles son Render $7/mes (quita el
+   sueño) y Netlify Personal $9/mes (1 000 créditos).
+
+---
+
+## 12. Resumen de este proyecto
 
 | Cosa | Valor |
 |---|---|
