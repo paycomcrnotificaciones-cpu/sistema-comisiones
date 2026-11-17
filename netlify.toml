@@ -1,0 +1,18 @@
+# Configuración de Netlify para la web (solo el frontend).
+# Netlify entra a la carpeta frontend, compila con pnpm y usa el adaptador
+# oficial de Next.js para servir las rutas.
+[build]
+  base = "frontend"
+  command = "pnpm build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  PNPM_VERSION = "12.21.0"
+
+# Adaptador que traduce Next.js al formato de Netlify.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Las rutas dinámicas (por ejemplo /comisionistas/[id]) las resuelve
+# el adaptador; cualquier ruta desconocida cae en la página 404 de Next.
