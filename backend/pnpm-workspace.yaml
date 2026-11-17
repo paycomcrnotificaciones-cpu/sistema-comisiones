@@ -1,0 +1,7 @@
+# Solo esta carpeta. allowBuilds permite que Prisma y esbuild ejecuten sus
+# scripts de instalación; si no, pnpm los bloquea y el build falla en Render.
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
