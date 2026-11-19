@@ -20,8 +20,8 @@ negocio filtran los datos por el `empresaId` del token.
 |---|---|---|---|
 | GET | `/comisionistas` | — | `Comisionista[]` |
 | GET | `/comisionistas/:id` | — | `Comisionista` |
-| POST | `/comisionistas` | `{ nombre, codigo?, sucursalId, email?, password? }` | `Comisionista` |
-| PATCH | `/comisionistas/:id` | `{ nombre?, codigo?, sucursalId?, activo?, email?, password? }` | `Comisionista` |
+| POST | `/comisionistas` | `{ nombre, sucursalId, email? }` | `Comisionista` + `enlaceInvitacion?` |
+| PATCH | `/comisionistas/:id` | `{ nombre?, sucursalId?, activo?, email? }` | `Comisionista` |
 
 `POST` y `PATCH` requieren rol `ADMIN` o `SUPER_ADMIN`.
 El `SUPERVISOR` solo puede leer.
@@ -35,8 +35,10 @@ Solo para `ADMIN` y `SUPER_ADMIN`.
 | Método | Ruta | Request | Response |
 |---|---|---|---|
 | GET | `/usuarios` | — | `Usuario[]` |
-| POST | `/usuarios` | `{ email, password, rol }` | `Usuario` |
-| PATCH | `/usuarios/:id` | `{ email?, password?, rol?, activo? }` | `Usuario` |
+| POST | `/usuarios` | `{ email, rol }` | `Usuario` + `enlaceInvitacion` |
+| PATCH | `/usuarios/:id` | `{ email?, rol?, activo? }` | `Usuario` |
+| POST | `/usuarios/:id/enlace` | — | `{ enlace, expiraEn }` |
+| POST | `/auth/activar` | `{ token, password }` | `{ email }` (ruta pública) |
 
 El `SUPER_ADMIN` puede asignar `SUPERVISOR`, `ADMIN` y `SUPER_ADMIN`.
 El `ADMIN` solo puede asignar `SUPERVISOR` y no puede editar a un `SUPER_ADMIN`.

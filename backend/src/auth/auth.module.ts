@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { EnlacesService } from './enlaces.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 
 // Configuración del login y de los tokens.
@@ -18,7 +19,7 @@ import { JwtAuthGuard } from './jwt-auth.guard.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard],
-  exports: [AuthService, JwtAuthGuard],
+  providers: [AuthService, EnlacesService, JwtAuthGuard],
+  exports: [AuthService, EnlacesService, JwtAuthGuard],
 })
 export class AuthModule {}

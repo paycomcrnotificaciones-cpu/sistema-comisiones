@@ -24,6 +24,12 @@ enum Rol {
   COMISIONISTA
 }
 
+// Para qué sirve un enlace de un solo uso.
+enum TipoToken {
+  INVITACION
+  RESETEO
+}
+
 // Empresa: el nivel más alto. Todo lo demás le pertenece.
 model Empresa {
   id       String   @id @default(uuid())
@@ -75,9 +81,27 @@ model Usuario {
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   comisionista Comisionista? @relation(fields: [comisionistaId], references: [id], onDelete: SetNull)
+  tokens       TokenAcceso[]
 
   @@index([empresaId])
   @@map("usuarios")
+}
+
+// Enlace de un solo uso para que el usuario cree su propia contraseña.
+// Nunca se guarda el token en claro: solo su hash.
+model TokenAcceso {
+  id        String    @id @default(uuid())
+  usuarioId String    @map("usuario_id")
+  tokenHash String    @unique @map("token_hash")
+  tipo      TipoToken @default(INVITACION)
+  expiraEn  DateTime  @map("expira_en")
+  usadoEn   DateTime? @map("usado_en")
+  creadoEn  DateTime  @default(now()) @map("creado_en")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("tokens_acceso")
 }
 
 // Comisionista: la persona que vende y gana comisión.
@@ -86,7 +110,6 @@ model Comisionista {
   empresaId  String   @map("empresa_id")
   sucursalId String   @map("sucursal_id")
   nombre     String
-  codigo     String?
   activo     Boolean  @default(true)
   creadoEn   DateTime @default(now()) @map("creado_en")
 
@@ -100,7 +123,6 @@ model Comisionista {
   metas                 Meta[]
   reglaComisions        ReglaComision[]
 
-  @@unique([empresaId, codigo])
   @@index([empresaId])
   @@index([sucursalId])
   @@map("comisionistas")

@@ -4,12 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { hash } from 'bcryptjs';
-
 import type {
   ComisionistaCreateInput,
   ComisionistaUpdateInput,
 } from '../common/validators.js';
+import { EnlacesService } from '../auth/enlaces.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 const incluir = {
@@ -22,7 +21,10 @@ const incluir = {
 // entrar al sistema.
 @Injectable()
 export class ComisionistasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly enlaces: EnlacesService,
+  ) {}
 
   // Lista los comisionistas de la empresa con su sucursal y su usuario.
   // Si llega soloId, devuelve únicamente ese (lo usa el propio comisionista).
@@ -49,8 +51,8 @@ export class ComisionistasService {
     return comisionista;
   }
 
-  // Crea el comisionista y, si viene correo y contraseña, también su usuario
-  // de acceso con rol COMISIONISTA. Las dos cosas se guardan juntas.
+  // Crea el comisionista y, si viene correo, también su usuario de acceso
+  // con rol COMISIONISTA. La persona elige su contraseña desde el enlace.
   async crear(empresaId: string, data: ComisionistaCreateInput) {
     const sucursal = await this.prisma.sucursal.findFirst({
       where: { id: data.sucursalId, empresaId },
@@ -59,8 +61,6 @@ export class ComisionistasService {
       throw new NotFoundException('Sucursal no encontrada');
     }
 
-    const passwordHash = data.password ? await hash(data.password, 10) : null;
-
     try {
       return await this.prisma.$transaction(async (tx) => {
         const comisionista = await tx.comisionista.create({
@@ -68,26 +68,30 @@ export class ComisionistasService {
             empresaId,
             sucursalId: data.sucursalId,
             nombre: data.nombre,
-            codigo: data.codigo ?? null,
           },
         });
 
-        if (data.email && passwordHash) {
-          await tx.usuario.create({
+        let enlaceInvitacion: string | undefined;
+        if (data.email) {
+          const acceso = await tx.usuario.create({
             data: {
               empresaId,
               email: data.email,
-              passwordHash,
+              // Nadie puede entrar hasta que active su enlace.
+              passwordHash: await this.enlaces.passwordProvisional(),
               rol: 'COMISIONISTA',
               comisionistaId: comisionista.id,
             },
           });
+          enlaceInvitacion = (await this.enlaces.crearEnTransaccion(tx, acceso.id))
+              .enlace;
         }
 
-        return tx.comisionista.findUniqueOrThrow({
+        const creado = await tx.comisionista.findUniqueOrThrow({
           where: { id: comisionista.id },
           include: incluir,
         });
+        return { ...creado, enlaceInvitacion };
       });
     } catch (error) {
       this.manejarConflicto(error);
@@ -119,25 +123,12 @@ export class ComisionistasService {
       }
     }
 
-    const passwordHash = data.password
-      ? await hash(data.password, 10)
-      : undefined;
-
-    if (!actual.usuario && data.password && !data.email) {
-      throw new BadRequestException(
-        'Indica el email para crear el acceso del comisionista',
-      );
-    }
-
     try {
       return await this.prisma.$transaction(async (tx) => {
         await tx.comisionista.update({
           where: { id },
           data: {
             ...(data.nombre !== undefined ? { nombre: data.nombre } : {}),
-            ...(data.codigo !== undefined
-              ? { codigo: data.codigo ?? null }
-              : {}),
             ...(data.sucursalId !== undefined
               ? { sucursalId: data.sucursalId }
               : {}),
@@ -145,45 +136,36 @@ export class ComisionistasService {
           },
         });
 
-        const tocaAcceso =
-          data.email !== undefined ||
-          passwordHash !== undefined ||
-          data.activo !== undefined;
+        let enlaceInvitacion: string | undefined;
 
-        if (tocaAcceso) {
-          if (actual.usuario) {
-            await tx.usuario.update({
-              where: { id: actual.usuario.id },
-              data: {
-                ...(data.email !== undefined ? { email: data.email } : {}),
-                ...(passwordHash ? { passwordHash } : {}),
-                ...(data.activo !== undefined
-                  ? { activo: data.activo }
-                  : {}),
-              },
-            });
-          } else if (data.email && passwordHash) {
-            await tx.usuario.create({
-              data: {
-                empresaId,
-                email: data.email,
-                passwordHash,
-                rol: 'COMISIONISTA',
-                comisionistaId: id,
-                activo: data.activo ?? true,
-              },
-            });
-          } else if (data.email || passwordHash) {
-            throw new BadRequestException(
-              'Indica email y contraseña para crear el acceso',
-            );
-          }
+        if (actual.usuario) {
+          await tx.usuario.update({
+            where: { id: actual.usuario.id },
+            data: {
+              ...(data.email !== undefined ? { email: data.email } : {}),
+              ...(data.activo !== undefined ? { activo: data.activo } : {}),
+            },
+          });
+        } else if (data.email) {
+          const acceso = await tx.usuario.create({
+            data: {
+              empresaId,
+              email: data.email,
+              passwordHash: await this.enlaces.passwordProvisional(),
+              rol: 'COMISIONISTA',
+              comisionistaId: id,
+              activo: data.activo ?? true,
+            },
+          });
+          enlaceInvitacion = (await this.enlaces.crearEnTransaccion(tx, acceso.id))
+              .enlace;
         }
 
-        return tx.comisionista.findUniqueOrThrow({
+        const editado = await tx.comisionista.findUniqueOrThrow({
           where: { id },
           include: incluir,
         });
+        return { ...editado, enlaceInvitacion };
       });
     } catch (error) {
       this.manejarConflicto(error);
@@ -200,7 +182,7 @@ export class ComisionistasService {
       error.code === 'P2002'
     ) {
       throw new ConflictException(
-        'Ya existe un comisionista con ese código o el email ya está registrado',
+        'Ese correo ya está registrado en otro usuario',
       );
     }
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 import Image from "next/image";
 
@@ -96,7 +97,7 @@ export default function LoginPage() {
               Iniciar sesión
             </h2>
             <p className="mt-1 text-sm text-body-text">
-              Ingresa con el correo y la contraseña que te asignó el administrador.
+              Ingresa con tu correo y tu contraseña.
             </p>
           </div>
 
@@ -135,6 +136,15 @@ export default function LoginPage() {
 
         <p className="text-center text-[11px] text-body-text">
           Comix · Solusoft CR · Acceso autorizado
+        </p>
+
+        <p className="text-center text-[12px]">
+          <Link
+            href="/recuperar"
+            className="font-medium text-primary-600 hover:underline dark:text-primary-100"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
         </p>
       </form>
       </div>

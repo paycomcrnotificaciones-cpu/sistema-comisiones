@@ -17,7 +17,6 @@ interface Sucursal {
 interface Comisionista {
   id: string;
   nombre: string;
-  codigo: string | null;
   activo: boolean;
   sucursal: { id: string; nombre: string } | null;
   usuario: { email: string; activo: boolean } | null;
@@ -151,12 +150,10 @@ function PerfilComisionista() {
   const [error, setError] = useState<string | null>(null);
 
   const [nombre, setNombre] = useState("");
-  const [codigo, setCodigo] = useState("");
   const [sucursalId, setSucursalId] = useState("");
   const [ventaSucursalId, setVentaSucursalId] = useState("");
   const [activo, setActivo] = useState(true);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [mensajePerfil, setMensajePerfil] = useState<string | null>(null);
 
@@ -317,7 +314,6 @@ function PerfilComisionista() {
         setSucursales(s);
         setProductosConRegla(catalogo);
         setNombre(c.nombre);
-        setCodigo(c.codigo ?? "");
         setSucursalId(c.sucursal?.id ?? s[0]?.id ?? "");
         setVentaSucursalId(c.sucursal?.id ?? s[0]?.id ?? "");
         setActivo(c.activo);
@@ -349,16 +345,13 @@ function PerfilComisionista() {
         method: "PATCH",
         body: JSON.stringify({
           nombre,
-          codigo: codigo || null,
           sucursalId,
           activo,
           ...(email ? { email } : {}),
-          ...(password ? { password } : {}),
         }),
       });
       setComisionista(actualizado);
       setEmail(actualizado.usuario?.email ?? "");
-      setPassword("");
       setMensajePerfil("Perfil actualizado correctamente");
     } catch (err) {
       setError(
@@ -533,7 +526,6 @@ function PerfilComisionista() {
                 </h1>
                 <p className="mt-2 text-[13px] text-white/65">
                   {comisionista?.sucursal?.nombre ?? "Sin sucursal"}
-                  {comisionista?.codigo ? ` · ${comisionista.codigo}` : ""}
                 </p>
               </div>
             </div>
@@ -725,12 +717,6 @@ function PerfilComisionista() {
                     </dd>
                   </div>
                   <div className={labelClass}>
-                    <dt>Código</dt>
-                    <dd className="text-sm font-medium text-zinc-900 dark:text-white">
-                      {comisionista?.codigo ?? "—"}
-                    </dd>
-                  </div>
-                  <div className={labelClass}>
                     <dt>Sucursal</dt>
                     <dd className="text-sm font-medium text-zinc-900 dark:text-white">
                       {comisionista?.sucursal?.nombre ?? "—"}
@@ -756,10 +742,6 @@ function PerfilComisionista() {
                   <input required value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputClass} />
                 </label>
                 <label className={labelClass}>
-                  <span>Código</span>
-                  <input value={codigo} onChange={(e) => setCodigo(e.target.value)} className={inputClass} />
-                </label>
-                <label className={labelClass}>
                   <span>Sucursal</span>
                   <select value={sucursalId} onChange={(e) => setSucursalId(e.target.value)} className={inputClass}>
                     {sucursales.map((s) => (
@@ -778,10 +760,6 @@ function PerfilComisionista() {
                 <label className={labelClass}>
                   <span>Email de acceso</span>
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="comisionista@empresa.com" className={inputClass} />
-                </label>
-                <label className={labelClass}>
-                  <span>Nueva contraseña</span>
-                  <input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Dejar vacío para no cambiar" className={inputClass} />
                 </label>
 
                 <div className="flex items-end gap-3 sm:col-span-2">

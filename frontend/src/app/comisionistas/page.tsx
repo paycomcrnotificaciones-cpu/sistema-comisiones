@@ -16,7 +16,6 @@ interface Sucursal {
 interface Comisionista {
   id: string;
   nombre: string;
-  codigo: string | null;
   activo: boolean;
   sucursal: { id: string; nombre: string } | null;
   usuario: { email: string; activo: boolean } | null;
@@ -52,10 +51,11 @@ export default function ComisionistasPage() {
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [comisionistas, setComisionistas] = useState<Comisionista[]>([]);
   const [nombre, setNombre] = useState("");
-  const [codigo, setCodigo] = useState("");
   const [sucursalId, setSucursalId] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // Enlace de un solo uso para que el comisionista cree su contraseña.
+  const [enlace, setEnlace] = useState<{ nombre: string; url: string } | null>(null);
+  const [copiado, setCopiado] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [pagina, setPagina] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -94,21 +94,21 @@ export default function ComisionistasPage() {
   async function crear(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    setEnlace(null);
     try {
-      await apiFetch("/comisionistas", {
+      const creado = await apiFetch<Comisionista & { enlaceInvitacion?: string }>("/comisionistas", {
         method: "POST",
         body: JSON.stringify({
           nombre,
-          codigo: codigo || undefined,
           sucursalId,
           email: email || undefined,
-          password: password || undefined,
         }),
       });
+      if (creado.enlaceInvitacion) {
+        setEnlace({ nombre: creado.nombre, url: creado.enlaceInvitacion });
+      }
       setNombre("");
-      setCodigo("");
       setEmail("");
-      setPassword("");
       const c = await apiFetch<Comisionista[]>("/comisionistas");
       setComisionistas(c);
     } catch (err) {
@@ -122,7 +122,6 @@ export default function ComisionistasPage() {
     return comisionistas.filter(
       (c) =>
         c.nombre.toLowerCase().includes(q) ||
-        (c.codigo ?? "").toLowerCase().includes(q) ||
         (c.sucursal?.nombre ?? "").toLowerCase().includes(q),
     );
   }, [comisionistas, busqueda]);
@@ -180,18 +179,13 @@ export default function ComisionistasPage() {
                 <p className="mt-1 text-[12px] text-body-text">Completa los datos para añadirlo al equipo.</p>
               </div>
             </div>
-            <p className="text-[10px] uppercase tracking-[1.5px] text-body-text/70">Email y contraseña crean el acceso del comisionista</p>
+            <p className="text-[10px] uppercase tracking-[1.5px] text-body-text/70">El email crea el acceso; la persona elige su contraseña</p>
           </div>
 
           <form onSubmit={crear} className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <label className="space-y-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Nombre completo</span>
               <input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Laura Méndez" className={inputClass} />
-            </label>
-
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Código</span>
-              <input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="C-005" className={`${inputClass} font-mono`} />
             </label>
 
             <label className="space-y-1.5">
@@ -210,11 +204,6 @@ export default function ComisionistasPage() {
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="laura@empresa.com" className={inputClass} />
             </label>
 
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Contraseña</span>
-              <input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" className={inputClass} />
-            </label>
-
             <button
               type="submit"
               className="flex h-[46px] items-center justify-center gap-2 rounded-xl bg-primary-500 px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(66,84,186,0.25)] transition-colors hover:bg-primary-600"
@@ -225,6 +214,41 @@ export default function ComisionistasPage() {
           </form>
 
           {error && <p className="mt-4 text-sm text-danger-500">{error}</p>}
+
+          {enlace && (
+            <div className="mt-4 rounded-xl border border-primary-500/30 bg-primary-500/5 p-4">
+              <p className="text-[12px] font-semibold text-primary-600 dark:text-primary-100">
+                Enlace de acceso para {enlace.nombre}
+              </p>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input
+                  readOnly
+                  value={enlace.url}
+                  aria-label="Enlace de acceso"
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="w-full rounded-lg border border-light-100 bg-white px-2.5 py-2 font-mono text-[12px] text-zinc-900 dark:border-dark-600 dark:bg-dark-700 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(enlace.url);
+                      setCopiado(true);
+                      setTimeout(() => setCopiado(false), 2000);
+                    } catch {
+                      setError("No se pudo copiar. Selecciona el enlace y cópialo a mano.");
+                    }
+                  }}
+                  className="h-10 shrink-0 rounded-lg bg-primary-500 px-4 text-[12px] font-semibold text-white hover:bg-primary-600"
+                >
+                  {copiado ? "Copiado" : "Copiar"}
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-body-text">
+                Caduca en 48 horas y sirve una sola vez. Compártelo por un medio privado.
+              </p>
+            </div>
+          )}
         </section>
         )}
 
@@ -266,7 +290,6 @@ export default function ComisionistasPage() {
               <thead>
                 <tr className="bg-light-50 text-[10px] uppercase tracking-[1.5px] text-body-text dark:bg-dark-600">
                   <th className="px-6 py-3 font-semibold lg:px-7">Comisionista</th>
-                  <th className="hidden lg:table-cell px-4 py-3 font-semibold">Código</th>
                   <th className="hidden lg:table-cell px-4 py-3 font-semibold">Sucursal</th>
                   <th className="hidden lg:table-cell px-4 py-3 font-semibold">Estado</th>
                   <th className="sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-4 py-3 text-right font-semibold">Acciones</th>
@@ -275,7 +298,7 @@ export default function ComisionistasPage() {
               <tbody>
                 {cargando ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-body-text">Cargando…</td>
+                    <td colSpan={4} className="px-6 py-8 text-center text-body-text">Cargando…</td>
                   </tr>
                 ) : visibles.length === 0 ? (
                   <tr>
@@ -301,11 +324,6 @@ export default function ComisionistasPage() {
                             </span>
                           </span>
                         </div>
-                      </td>
-                      <td className="hidden lg:table-cell px-4 py-3.5">
-                        <span className="rounded-md bg-light-50 px-2 py-1 font-mono text-[11px] text-body-text dark:bg-dark-600">
-                          {c.codigo ?? "—"}
-                        </span>
                       </td>
                       <td className="hidden lg:table-cell px-4 py-3.5 text-body-text">{c.sucursal?.nombre ?? "—"}</td>
                       <td className="hidden lg:table-cell px-4 py-3.5">

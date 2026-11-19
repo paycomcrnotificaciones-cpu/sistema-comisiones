@@ -13,28 +13,19 @@ export const loginSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 
 // --- Comisionistas ---
-export const comisionistaCreateSchema = z
-  .object({
-    nombre: z.string().trim().min(1).max(120),
-    codigo: z.string().trim().max(40).optional(),
-    sucursalId: z.string().uuid(),
-    email: z.string().trim().toLowerCase().email().optional(),
-    password: z.string().min(8).max(72).optional(),
-  })
-  .refine((v) => (!v.email && !v.password) || (!!v.email && !!v.password), {
-    message: 'Indica email y contraseña para crear el acceso',
-    path: ['email'],
-  });
+export const comisionistaCreateSchema = z.object({
+  nombre: z.string().trim().min(1).max(120),
+  sucursalId: z.string().uuid(),
+  email: z.string().trim().toLowerCase().email().optional(),
+});
 
 export type ComisionistaCreateInput = z.infer<typeof comisionistaCreateSchema>;
 
 export const comisionistaUpdateSchema = z.object({
   nombre: z.string().trim().min(1).max(120).optional(),
-  codigo: z.string().trim().max(40).nullable().optional(),
   sucursalId: z.string().uuid().optional(),
   activo: z.boolean().optional(),
   email: z.string().trim().toLowerCase().email().optional(),
-  password: z.string().min(8).max(72).optional(),
 });
 
 export type ComisionistaUpdateInput = z.infer<typeof comisionistaUpdateSchema>;
@@ -122,7 +113,6 @@ export const rolSchema = z.enum([
 export const usuarioCreateSchema = z
   .object({
     email: z.string().trim().toLowerCase().email(),
-    password: z.string().min(8).max(72),
     rol: rolSchema,
     comisionistaId: z.string().uuid().optional(),
   })
@@ -135,12 +125,21 @@ export type UsuarioCreateInput = z.infer<typeof usuarioCreateSchema>;
 
 export const usuarioUpdateSchema = z.object({
   email: z.string().trim().toLowerCase().email().optional(),
-  password: z.string().min(8).max(72).optional(),
   rol: rolSchema.optional(),
   activo: z.boolean().optional(),
 });
 
 export type UsuarioUpdateInput = z.infer<typeof usuarioUpdateSchema>;
+
+// --- Activación de la cuenta ---
+// El enlace trae el token; el usuario elige su propia contraseña.
+// Nadie más la conoce: ni el administrador que generó el enlace.
+export const activarSchema = z.object({
+  token: z.string().trim().min(20).max(200),
+  password: z.string().min(10, 'La contraseña debe tener al menos 10 caracteres').max(72),
+});
+
+export type ActivarInput = z.infer<typeof activarSchema>;
 
 // --- Sucursales ---
 export const sucursalCreateSchema = z.object({

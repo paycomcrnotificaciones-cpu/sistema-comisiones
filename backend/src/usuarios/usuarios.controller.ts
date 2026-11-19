@@ -51,4 +51,12 @@ export class UsuariosController {
     const usuario = req.usuario!;
     return this.usuarios.actualizar(usuario.empresaId, usuario, id, body);
   }
+
+  // POST /api/usuarios/:id/enlace — enlace de un solo uso para que la
+  // persona cree o cambie su contraseña sin que el admin la conozca.
+  @Post(':id/enlace')
+  enlace(@Req() req: RequestConUsuario, @Param('id') id: string) {
+    const usuario = req.usuario!;
+    return this.usuarios.generarEnlace(usuario.empresaId, usuario, id);
+  }
 }

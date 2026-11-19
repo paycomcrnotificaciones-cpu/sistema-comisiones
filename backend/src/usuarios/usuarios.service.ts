@@ -5,12 +5,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { hash } from 'bcryptjs';
-
 import type {
   UsuarioCreateInput,
   UsuarioUpdateInput,
 } from '../common/validators.js';
+import { EnlacesService } from '../auth/enlaces.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 const seleccion = {
@@ -27,7 +26,10 @@ const seleccion = {
 // Un usuario puede estar ligado a un comisionista (rol COMISIONISTA).
 @Injectable()
 export class UsuariosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly enlaces: EnlacesService,
+  ) {}
 
   // Lista los usuarios de la empresa sin datos sensibles (sin contraseña).
   listar(empresaId: string) {
@@ -63,24 +65,58 @@ export class UsuariosService {
     }
 
     try {
-      return await this.prisma.usuario.create({
+      const usuario = await this.prisma.usuario.create({
         data: {
           empresaId,
           email: data.email,
-          passwordHash: await hash(data.password, 10),
+          // Contraseña aleatoria e inservible: la persona elige la suya
+          // desde el enlace de invitación.
+          passwordHash: await this.enlaces.passwordProvisional(),
           rol: data.rol,
           comisionistaId:
             data.rol === 'COMISIONISTA' ? data.comisionistaId : null,
         },
         select: seleccion,
       });
+
+      const { enlace, expiraEn } = await this.enlaces.crear(usuario.id);
+      return { ...usuario, enlaceInvitacion: enlace, expiraEnlace: expiraEn };
     } catch (error) {
       this.manejarConflicto(error);
       throw error;
     }
   }
 
-  // Actualiza correo, contraseña, rol o estado.
+  // Genera un enlace nuevo para que el usuario cree o cambie su contraseña.
+  // Sirve tanto de invitación como de recuperación.
+  async generarEnlace(
+    empresaId: string,
+    actor: { sub: string; rol: string },
+    id: string,
+  ) {
+    const usuario = await this.prisma.usuario.findFirst({
+      where: { id, empresaId },
+      select: { id: true, rol: true, activo: true },
+    });
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    if (actor.rol !== 'SUPER_ADMIN' && usuario.rol === 'SUPER_ADMIN') {
+      throw new ForbiddenException('Solo un super admin puede editar a otro');
+    }
+    if (!usuario.activo) {
+      throw new BadRequestException('Activa el usuario antes de darle acceso');
+    }
+
+    const { enlace, expiraEn } = await this.enlaces.crear(
+      usuario.id,
+      'RESETEO',
+    );
+    return { enlace, expiraEn };
+  }
+
+  // Actualiza correo, rol o estado. La contraseña no se toca aquí:
+  // solo la persona dueña de la cuenta puede cambiarla.
   // Si se desactiva o cambia de rol, protege que quede al menos un super admin.
   async actualizar(
     empresaId: string,
@@ -90,7 +126,7 @@ export class UsuariosService {
   ) {
     const actual = await this.prisma.usuario.findFirst({
       where: { id, empresaId },
-      select: { ...seleccion, passwordHash: true },
+      select: seleccion,
     });
     if (!actual) {
       throw new NotFoundException('Usuario no encontrado');
@@ -133,10 +169,6 @@ export class UsuariosService {
       throw new BadRequestException('No puedes desactivar tu propio usuario');
     }
 
-    const passwordHash = data.password
-      ? await hash(data.password, 10)
-      : undefined;
-
     try {
       return await this.prisma.usuario.update({
         where: { id },
@@ -144,7 +176,6 @@ export class UsuariosService {
           ...(data.email !== undefined ? { email: data.email } : {}),
           ...(data.rol !== undefined ? { rol: data.rol } : {}),
           ...(data.activo !== undefined ? { activo: data.activo } : {}),
-          ...(passwordHash ? { passwordHash } : {}),
         },
         select: seleccion,
       });

@@ -47,13 +47,14 @@ export default function UsuariosPage() {
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [rol, setRol] = useState("SUPERVISOR");
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
-  const [claveId, setClaveId] = useState<string | null>(null);
-  const [nuevaClave, setNuevaClave] = useState("");
+  // Enlace de un solo uso que se le entrega a la persona para que cree su
+  // contraseña. El administrador nunca la conoce.
+  const [enlace, setEnlace] = useState<{ email: string; url: string } | null>(null);
+  const [copiado, setCopiado] = useState(false);
 
   // Trae la lista de usuarios de la empresa.
   const cargar = useCallback(async () => {
@@ -83,19 +84,24 @@ export default function UsuariosPage() {
     };
   }, [cargar, esGestor, router, sesion]);
 
-  // Crea un usuario nuevo con su correo, contraseña y rol.
+  // Crea un usuario nuevo. No se pide contraseña: el sistema genera un enlace
+  // de invitación y la persona define la suya.
   async function crear(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
     setMensaje(null);
+    setEnlace(null);
     try {
-      await apiFetch("/usuarios", {
+      const creado = await apiFetch<{
+        email: string;
+        enlaceInvitacion: string;
+      }>("/usuarios", {
         method: "POST",
-        body: JSON.stringify({ email, password, rol }),
+        body: JSON.stringify({ email, rol }),
       });
       setEmail("");
-      setPassword("");
-      setMensaje("Usuario creado correctamente");
+      setMensaje("Usuario creado. Comparte el enlace para que defina su contraseña.");
+      setEnlace({ email: creado.email, url: creado.enlaceInvitacion });
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear");
@@ -141,20 +147,35 @@ export default function UsuariosPage() {
     }
   }
 
-  // Cambia la contraseña de un usuario.
-  async function cambiarPassword(id: string) {
+  // Genera un enlace para que el usuario cree o cambie su contraseña.
+  // Reemplaza al viejo "cambiar contraseña": así el admin nunca la ve.
+  async function generarEnlace(u: Usuario) {
     setError(null);
     setMensaje(null);
+    setEnlace(null);
     try {
-      await apiFetch(`/usuarios/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ password: nuevaClave }),
-      });
-      setNuevaClave("");
-      setClaveId(null);
-      setMensaje("Contraseña actualizada");
+      const data = await apiFetch<{ enlace: string }>(
+        `/usuarios/${u.id}/enlace`,
+        { method: "POST" },
+      );
+      setEnlace({ email: u.email, url: data.enlace });
+      setMensaje("Enlace generado. Los anteriores quedaron anulados.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cambiar");
+      setError(
+        err instanceof Error ? err.message : "Error al generar el enlace",
+      );
+    }
+  }
+
+  // Copia el enlace al portapapeles para pegarlo en un chat o correo.
+  async function copiarEnlace() {
+    if (!enlace) return;
+    try {
+      await navigator.clipboard.writeText(enlace.url);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      setError("No se pudo copiar. Selecciona el enlace y cópialo a mano.");
     }
   }
 
@@ -190,14 +211,10 @@ export default function UsuariosPage() {
             </div>
           </div>
 
-          <form onSubmit={crear} className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <form onSubmit={crear} className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <label className="space-y-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Correo</span>
               <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="persona@empresa.com" className={inputClass} />
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Contraseña</span>
-              <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" className={inputClass} />
             </label>
             <label className="space-y-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Rol</span>
@@ -214,6 +231,34 @@ export default function UsuariosPage() {
 
           {error && <p className="mt-4 text-sm text-danger-500">{error}</p>}
           {mensaje && <p className="mt-4 text-sm text-success-600 dark:text-success-500">{mensaje}</p>}
+
+          {enlace && (
+            <div className="mt-4 rounded-xl border border-primary-500/30 bg-primary-500/5 p-4">
+              <p className="text-[12px] font-semibold text-primary-600 dark:text-primary-100">
+                Enlace de acceso para {enlace.email}
+              </p>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input
+                  readOnly
+                  value={enlace.url}
+                  aria-label="Enlace de acceso"
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="w-full rounded-lg border border-light-100 bg-white px-2.5 py-2 font-mono text-[12px] text-zinc-900 dark:border-dark-600 dark:bg-dark-700 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={copiarEnlace}
+                  className="h-10 shrink-0 rounded-lg bg-primary-500 px-4 text-[12px] font-semibold text-white hover:bg-primary-600"
+                >
+                  {copiado ? "Copiado" : "Copiar"}
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-body-text">
+                Caduca en 48 horas y sirve una sola vez. Compártelo por un medio
+                privado: quien lo abra podrá definir la contraseña.
+              </p>
+            </div>
+          )}
         </section>
 
         <section className="surface overflow-hidden">
@@ -273,32 +318,12 @@ export default function UsuariosPage() {
                       <td className="sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-4 py-3.5">
                         {puedeGestionar(u) && (
                           <div className="flex items-center justify-end gap-1.5">
-                            {claveId === u.id ? (
-                              <>
-                                <input
-                                  type="password"
-                                  minLength={8}
-                                  value={nuevaClave}
-                                  onChange={(e) => setNuevaClave(e.target.value)}
-                                  placeholder="Nueva contraseña"
-                                  aria-label="Nueva contraseña"
-                                  className="h-8 w-36 rounded-lg border border-light-100 px-2.5 text-[12px] outline-none focus:border-primary-500 dark:border-dark-600 dark:bg-dark-700 dark:text-white"
-                                />
-                                <button type="button" onClick={() => cambiarPassword(u.id)} className="h-8 rounded-lg bg-primary-500 px-3 text-[12px] font-semibold text-white hover:bg-primary-600">
-                                  Guardar
-                                </button>
-                                <button type="button" onClick={() => { setClaveId(null); setNuevaClave(""); }} className="h-8 rounded-lg border border-light-100 px-3 text-[12px] font-semibold text-body-text hover:bg-light-50 dark:border-dark-600 dark:hover:bg-dark-600">
-                                  Cancelar
-                                </button>
-                              </>
-                            ) : (
-                              <AccionTabla
-                                etiqueta={`Cambiar contraseña de ${u.email}`}
-                                icono="clave"
-                                variante="primario"
-                                onClick={() => setClaveId(u.id)}
-                              />
-                            )}
+                            <AccionTabla
+                              etiqueta={`Generar enlace de acceso de ${u.email}`}
+                              icono="clave"
+                              variante="primario"
+                              onClick={() => generarEnlace(u)}
+                            />
                             <AccionTabla
                               etiqueta={u.activo ? `Desactivar a ${u.email}` : `Activar a ${u.email}`}
                               icono={u.activo ? "desactivar" : "activar"}
