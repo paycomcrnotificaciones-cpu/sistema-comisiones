@@ -15,8 +15,8 @@ const manrope = Manrope({
 
 // Título y descripción que se ven en la pestaña del navegador.
 export const metadata: Metadata = {
-  title: "Sistema de Comisiones",
-  description: "Sistema de comisiones",
+  title: "Comix · Gestión de comisiones",
+  description: "Gestión de comisiones de ventas — Solusoft CR",
 };
 
 // Envoltura de todas las páginas: idioma español, fuentes y fondo base.

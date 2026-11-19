@@ -1,4 +1,4 @@
-# Sistema de Comisiones — Guía del proyecto
+# Comix — Guía del proyecto
 
 ## 1. ¿Qué es?
 

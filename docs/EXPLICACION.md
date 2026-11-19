@@ -5,7 +5,7 @@ cómo fluye la información y cómo presentarlo a los dueños o jefaturas.
 
 ## 1. ¿Qué es?
 
-**Factelec Comisiones** es un sistema web para registrar las ventas de una
+**Comix** (de Solusoft CR) es un sistema web para registrar las ventas de una
 empresa y calcular automáticamente cuánto gana cada comisionista por esas
 ventas. Todo se guarda en internet (base de datos), no en hojas de cálculo
 sueltas.

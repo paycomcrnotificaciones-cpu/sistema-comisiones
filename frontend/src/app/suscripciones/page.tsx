@@ -299,7 +299,7 @@ export default function SuscripcionesPage() {
               </label>
               <label className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Producto</span>
-                <input value={producto} onChange={(e) => setProducto(e.target.value)} placeholder="Ej. Factelec" className={inputClass} />
+                <input value={producto} onChange={(e) => setProducto(e.target.value)} placeholder="Ej. Plan Básico" className={inputClass} />
               </label>
               <label className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Monto por cobro (₡)</span>

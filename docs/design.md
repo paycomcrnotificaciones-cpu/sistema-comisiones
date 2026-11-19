@@ -1,4 +1,4 @@
-# Diseño — Sistema de Comisiones
+# Diseño — Comix
 
 Documento de diseño del sistema implementado. Describe el alcance del MVP,
 los actores, el modelo de datos y las reglas de negocio.
