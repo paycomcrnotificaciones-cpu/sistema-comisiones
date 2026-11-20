@@ -908,7 +908,7 @@ function PerfilComisionista() {
                       <th className="hidden xl:table-cell px-4 py-3 text-right font-semibold">Monto</th>
                       <th className="hidden xl:table-cell px-4 py-3 text-right font-semibold">Comisión</th>
                       <th className="hidden xl:table-cell px-4 py-3 font-semibold">Estado</th>
-                      <th className="sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-4 py-3 text-right font-semibold">Acciones</th>
+                      <th className="lg:sticky lg:right-0 lg:z-10 bg-light-50 dark:bg-dark-600 px-4 py-3 text-right font-semibold">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -966,7 +966,7 @@ function PerfilComisionista() {
                                   : "Pendiente"}
                             </span>
                           </td>
-                          <td className="sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-4 py-3.5">
+                          <td className="lg:sticky lg:right-0 lg:z-10 bg-white lg:shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-4 py-3.5">
                             {!soloLectura && (
                             <div className="flex items-center justify-end gap-1.5">
                               <AccionTabla

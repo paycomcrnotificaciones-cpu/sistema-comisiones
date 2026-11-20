@@ -101,7 +101,28 @@ DATABASE_URL="postgresql://comisiones:dilan_dev_2026@127.0.0.1:55433/comisiones_
   pnpm prisma migrate deploy
 ```
 
-## 6. Pendiente
+## 6. Responsividad
+
+Se revisaron las 9 pantallas privadas en 320, 360, 390, 414, 768, 1024 y
+1440 px, más las públicas (login, recuperar, activar) a 320 x 568.
+
+| Qué se corrigió | Dónde |
+|---|---|
+| Falta de `viewport` con `viewport-fit=cover` y `themeColor` | `app/layout.tsx` |
+| Columnas de acciones pegadas también en celular | 8 tablas |
+| Sombras de la columna fija visibles en celular | 8 tablas |
+| Modales que se salían de la pantalla con el teclado abierto | confirmar, sucursales, pago |
+| Migaja "Panel /" que apretaba el título a 320 px | `app-shell.tsx` |
+| Barra de desplazamiento visible bajo el menú móvil | `globals.css` |
+| Espacio inferior sin `safe-area` en iPhone | `app-shell.tsx` |
+| Filtro con ancho mínimo forzado | `liquidaciones` |
+
+Resultado: **0 desbordes horizontales** en las 63 combinaciones
+(9 pantallas × 7 anchos). Las tablas no se aplastan: por debajo de `xl` se
+ocultan las columnas secundarias y la tabla cabe sin scroll; desde `xl`
+aparecen todas y el contenedor se desplaza si hace falta.
+
+## 7. Pendiente
 
 1. Pruebas de interfaz automatizadas (las actuales son manuales con capturas).
 2. Cubrir reglas de comisión, metas y suscripciones en la batería.

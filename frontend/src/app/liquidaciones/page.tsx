@@ -372,7 +372,7 @@ export default function LiquidacionesPage() {
             <div className="mt-4 flex flex-wrap items-end gap-3">
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-[10px] uppercase tracking-[1.2px] text-body-text">Comisionista</span>
-                <select value={comisionistaId} onChange={(e) => setComisionistaId(e.target.value)} className={`${inputClass} min-w-[200px]`}>
+                <select value={comisionistaId} onChange={(e) => setComisionistaId(e.target.value)} className={`${inputClass} sm:min-w-[200px]`}>
                   {comisionistas.map((c) => (
                     <option key={c.id} value={c.id}>{c.nombre}</option>
                   ))}
@@ -407,7 +407,7 @@ export default function LiquidacionesPage() {
                   <th className="hidden xl:table-cell px-3 py-3 text-right">Comisión</th>
                   <th className="px-3 py-3">Estado</th>
                   <th className="hidden xl:table-cell px-3 py-3">Pago</th>
-                  <th className="sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-5 py-3 text-right">Acciones</th>
+                  <th className="lg:sticky lg:right-0 lg:z-10 bg-light-50 dark:bg-dark-600 px-5 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -448,7 +448,7 @@ export default function LiquidacionesPage() {
                             </span>
                           )}
                         </td>
-                        <td className="sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-3 py-3 text-right sm:px-5">
+                        <td className="lg:sticky lg:right-0 lg:z-10 bg-white lg:shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-3 py-3 text-right sm:px-5">
                           <div className="flex items-center justify-end gap-1.5">
                             <AccionTabla
                               etiqueta={`${abierta === l.id ? "Ocultar" : "Ver"} detalle de ${l.comisionista.nombre}`}
@@ -530,10 +530,10 @@ export default function LiquidacionesPage() {
       />
 
       {pagoId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm">
           <form
             onSubmit={pagar}
-            className="w-full max-w-md rounded-2xl border border-light-100 bg-white p-6 shadow-2xl dark:border-dark-600 dark:bg-dark-700"
+            className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-light-100 bg-white p-6 shadow-2xl dark:border-dark-600 dark:bg-dark-700"
           >
             <p className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-100">
               Confirmar pago

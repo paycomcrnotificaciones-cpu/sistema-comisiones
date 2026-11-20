@@ -410,8 +410,8 @@ export function AppShell({
             </Link>
             <span className="mx-1 hidden h-5 w-px bg-light-100 dark:bg-dark-600 sm:block" />
             <div className="flex min-w-0 items-center gap-2">
-              <span className="text-body-text">Panel</span>
-              <span className="text-body-text/50">/</span>
+              <span className="hidden text-body-text sm:inline">Panel</span>
+              <span className="hidden text-body-text/50 sm:inline">/</span>
               <span className="truncate font-medium text-zinc-900 dark:text-white">{titulo}</span>
             </div>
           </div>
@@ -446,11 +446,13 @@ export function AppShell({
           </div>
         </header>
 
-        <nav className="flex gap-2 overflow-x-auto border-b border-light-100 bg-white/70 px-4 py-3 dark:border-dark-600 dark:bg-dark-700/70 lg:hidden">
+        <nav className="flex gap-2 overflow-x-auto sin-barra overscroll-x-contain border-b border-light-100 bg-white/70 px-4 py-3 dark:border-dark-600 dark:bg-dark-700/70 lg:hidden">
           {navItems.map((item) => navLink(item, true))}
         </nav>
 
-        <main className="fade-rise mx-auto w-full max-w-295 px-5 py-7 lg:px-10 lg:py-8">{children}</main>
+        <main className="fade-rise mx-auto w-full max-w-295 px-5 py-7 pb-[calc(1.75rem+env(safe-area-inset-bottom))] lg:px-10 lg:py-8">
+          {children}
+        </main>
       </div>
     </div>
   );

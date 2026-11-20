@@ -45,7 +45,7 @@ export function ConfirmDialog({
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm"
       onClick={() => {
         if (!cargando) onCancelar();
       }}
@@ -55,7 +55,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-titulo"
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-md rounded-2xl border border-light-100 bg-white p-6 shadow-[0_30px_80px_-30px_rgba(10,18,38,0.65)] dark:border-dark-600 dark:bg-dark-700"
+        className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-light-100 bg-white p-6 shadow-[0_30px_80px_-30px_rgba(10,18,38,0.65)] dark:border-dark-600 dark:bg-dark-700"
       >
         <div className="flex items-start gap-4">
           <span

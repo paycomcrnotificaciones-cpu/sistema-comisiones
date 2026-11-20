@@ -170,6 +170,15 @@ svg {
   scrollbar-color: color-mix(in srgb, var(--color-primary-500) 35%, transparent) transparent;
 }
 
+/* Menú del celular: se desliza igual, pero sin la barra gris debajo. */
+.sin-barra {
+  scrollbar-width: none;
+}
+
+.sin-barra::-webkit-scrollbar {
+  display: none;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--color-primary-500) 25%, transparent);
 }

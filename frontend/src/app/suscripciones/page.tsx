@@ -373,7 +373,7 @@ export default function SuscripcionesPage() {
                   <th className="hidden xl:table-cell px-3 py-3">Comisión</th>
                   <th className="hidden xl:table-cell px-3 py-3">Vigencia</th>
                   <th className="hidden xl:table-cell px-3 py-3">Estado</th>
-                  <th className="sticky right-0 z-10 bg-light-50 dark:bg-dark-600 px-6 py-3 text-right">Acciones</th>
+                  <th className="lg:sticky lg:right-0 lg:z-10 bg-light-50 dark:bg-dark-600 px-6 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -418,7 +418,7 @@ export default function SuscripcionesPage() {
                           {s.estado === "ACTIVA" ? "Activa" : s.estado === "PAUSADA" ? "Pausada" : "Finalizada"}
                         </span>
                       </td>
-                      <td className="sticky right-0 z-10 bg-white shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-6 py-3.5 text-right">
+                      <td className="lg:sticky lg:right-0 lg:z-10 bg-white lg:shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-6 py-3.5 text-right">
                         {puedeGestionar && s.estado !== "FINALIZADA" && (
                           <div className="flex items-center justify-end gap-1.5">
                             <AccionTabla

@@ -241,7 +241,7 @@ export default function SucursalesPage() {
                       <td className="hidden xl:table-cell px-4 py-3.5 text-right text-body-text">
                         {s._count?.reglas ?? 0}
                       </td>
-                      <td className="sticky right-0 z-10 bg-white px-3 py-3.5 shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 sm:px-4">
+                      <td className="sticky right-0 z-10 bg-white px-3 py-3.5 lg:shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 sm:px-4">
                         <div className="flex items-center justify-end gap-1.5">
                           <AccionTabla
                             etiqueta="Editar"
@@ -272,7 +272,7 @@ export default function SucursalesPage() {
       {modalAbierto && (
         <div
           role="presentation"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-4 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm sm:items-center"
           onClick={() => {
             if (!guardando) setModalAbierto(false);
           }}
@@ -280,7 +280,7 @@ export default function SucursalesPage() {
           <form
             onSubmit={guardar}
             onClick={(event) => event.stopPropagation()}
-            className="w-full max-w-md rounded-2xl border border-light-100 bg-white p-5 shadow-[0_30px_80px_-30px_rgba(10,18,38,0.65)] dark:border-dark-600 dark:bg-dark-700 sm:p-6"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-light-100 bg-white p-5 shadow-[0_30px_80px_-30px_rgba(10,18,38,0.65)] dark:border-dark-600 dark:bg-dark-700 sm:p-6"
           >
             <h2 className="font-display text-[19px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
               {editandoId ? "Editar sucursal" : "Nueva sucursal"}

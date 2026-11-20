@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, Manrope } from "next/font/google";
 import "./globals.css";
 
@@ -12,6 +12,18 @@ const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
 });
+
+// Ajustes de pantalla: ancho real del celular, sin zoom raro y respetando
+// el notch. themeColor pinta la barra del navegador como la app.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d1528" },
+  ],
+};
 
 // Título y descripción que se ven en la pestaña del navegador.
 export const metadata: Metadata = {
