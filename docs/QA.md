@@ -79,12 +79,32 @@ siguen coincidiendo con los de antes del cambio.
 | `pnpm test` (dinero) | 10 casos en verde |
 | Lint backend y frontend | sin avisos |
 
-## 5. Pendiente
+## 5. Batería automatizada
 
-1. Batería automatizada por módulo (permisos, multi-empresa, ventas, reglas,
-   liquidaciones, suscripciones). Hoy solo hay pruebas de dinero.
-2. Pruebas de interfaz automatizadas (las actuales son manuales con capturas).
+`pnpm test` ejecuta las pruebas de dinero (10 casos).
+`pnpm test:e2e` ejecuta 27 casos contra la base `comisiones_test`:
+
+| Grupo | Qué cubre |
+|---|---|
+| Autenticación | login correcto e incorrecto, token inválido, sesión revocada |
+| Permisos por rol | usuarios, ventas, auditoría, perfiles |
+| Aislamiento entre empresas | listados, acceso por id, creación cruzada |
+| Ventas | comisión porcentaje y monto fijo, neto > bruto, comisión > 100 % |
+| Liquidaciones | total exacto, duplicado, pagar dos veces, anular pagada |
+| Invitaciones | crear, activar, reutilizar enlace, contraseña corta |
+
+La base de pruebas se crea una vez:
+
+```bash
+createdb -h 127.0.0.1 -p 55433 -U comisiones comisiones_test
+DATABASE_URL="postgresql://comisiones:dilan_dev_2026@127.0.0.1:55433/comisiones_test?schema=public" \
+  pnpm prisma migrate deploy
+```
+
+## 6. Pendiente
+
+1. Pruebas de interfaz automatizadas (las actuales son manuales con capturas).
+2. Cubrir reglas de comisión, metas y suscripciones en la batería.
 3. Cambiar los `Number()` que quedan en `reglas` y `metas`: son de
    presentación, no afectan saldos.
-4. Rotar credenciales y desplegar: migración en Neon, `JWT_SECRET` y
-   `WEB_ORIGIN` en Render.
+4. Desplegar: migración en Neon, `JWT_SECRET` y `WEB_ORIGIN` en Render.

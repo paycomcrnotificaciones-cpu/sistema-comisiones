@@ -24,7 +24,14 @@ import { VentasModule } from './ventas/ventas.module.js';
   imports: [
     // Límite general: 120 peticiones por minuto y por IP. Las rutas
     // sensibles (login, activar) tienen su propio límite más estricto.
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: Number(process.env.THROTTLE_LIMIT ?? 120),
+        // En las pruebas se apaga: el objetivo no es medir el límite.
+        skipIf: () => process.env.NODE_ENV === 'test',
+      },
+    ]),
     PrismaModule,
     AuthModule,
     ResumenModule,
