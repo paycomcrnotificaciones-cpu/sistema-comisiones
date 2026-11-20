@@ -279,7 +279,7 @@ export default function ResumenPage() {
                 disabled={exportando || !mes}
                 className="h-[38px] w-full rounded-xl border border-white/20 bg-white/10 px-4 text-[13px] font-semibold text-white sm:w-auto transition-colors hover:bg-white/20 disabled:opacity-50"
               >
-                {exportando ? "Exportando…" : "Exportar CSV"}
+                {exportando ? "Exportando…" : "Exportar"}
               </button>
             </div>
           </div>

@@ -191,7 +191,7 @@ export default function HistorialPage() {
                       </td>
                       <td className="px-3 py-3 text-zinc-900 dark:text-white">
                         <span className="flex items-center gap-2">
-                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full xl:hidden ${r.estado < 400 ? "bg-success-500" : "bg-danger-500"}`} />
+                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full xl:hidden ${r.estado < 400 ? "bg-success-500" : r.estado === 409 ? "bg-warning-500" : "bg-danger-500"}`} />
                           {r.accion}
                         </span>
                       </td>
@@ -200,9 +200,15 @@ export default function HistorialPage() {
                         <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
                           r.estado < 400
                             ? "bg-success-500/10 text-success-600 dark:text-success-500"
-                            : "bg-danger-500/10 text-danger-500"
+                            : r.estado === 409
+                              ? "bg-warning-500/10 text-warning-600"
+                              : "bg-danger-500/10 text-danger-500"
                         }`}>
-                          {r.estado < 400 ? "Correcto" : `Error ${r.estado}`}
+                          {r.estado < 400
+                            ? "Correcto"
+                            : r.estado === 409
+                              ? "Omitido"
+                              : `Error ${r.estado}`}
                         </span>
                       </td>
                     </tr>

@@ -54,6 +54,14 @@ const formatoDinero = new Intl.NumberFormat("es-CR", {
   minimumFractionDigits: 2,
 });
 
+// "2026-11" se muestra como "noviembre de 2026".
+function mesLegible(periodo: string): string {
+  const [anio, mes] = periodo.split("-").map(Number);
+  const nombres = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "setiembre", "octubre", "noviembre", "diciembre"];
+  return `${nombres[(mes ?? 1) - 1]} de ${anio}`;
+}
+
 // Mes actual en formato AAAA-MM, con la hora de Costa Rica.
 function mesActual(): string {
   const ahora = new Date(Date.now() - 6 * 60 * 60 * 1000);
@@ -95,6 +103,9 @@ export default function LiquidacionesPage() {
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  // Aviso informativo (ámbar): algo normal que no es un error, por ejemplo
+  // "ese comisionista ya tiene borrador este mes".
+  const [aviso, setAviso] = useState<string | null>(null);
   const [pagoId, setPagoId] = useState<string | null>(null);
   const [liqAnular, setLiqAnular] = useState<Liquidacion | null>(null);
   const [anulando, setAnulando] = useState(false);
@@ -155,6 +166,27 @@ export default function LiquidacionesPage() {
     if (!comisionistaId) return;
     setError(null);
     setMensaje(null);
+    setAviso(null);
+
+    // Si ya hay borrador de ese mes, no se pide: se avisa y se señala.
+    // Se consulta el mes completo porque la lista en pantalla puede estar
+    // filtrada por estado.
+    let yaTiene: Liquidacion | undefined;
+    try {
+      const delMes = await apiFetch<Liquidacion[]>(`/liquidaciones?mes=${mes}`);
+      yaTiene = delMes.find((l) => l.comisionista.id === comisionistaId);
+    } catch {
+      // Si la consulta falla, se intenta generar igual y la API decide.
+    }
+    if (yaTiene) {
+      const nombre =
+        comisionistas.find((c) => c.id === comisionistaId)?.nombre ?? "Ese comisionista";
+      setAviso(
+        `${nombre} ya tiene ${yaTiene.estado === "PAGADA" ? "una liquidación pagada" : "un borrador"} de ${mesLegible(mes)}. Búscalo en la lista o anúlalo para regenerarlo.`,
+      );
+      return;
+    }
+
     setTrabajando(true);
     try {
       await apiFetch("/liquidaciones", {
@@ -174,13 +206,21 @@ export default function LiquidacionesPage() {
   async function generarTodos() {
     setError(null);
     setMensaje(null);
+    setAviso(null);
     setTrabajando(true);
     try {
-      const resumen = await apiFetch<{ porComisionista: { id: string }[] }>(
-        `/resumen?mes=${mes}`,
-      );
+      // Se consulta el mes completo (sin el filtro de estado) para saber
+      // quién ya tiene liquidación y no lanzar peticiones que darán 409.
+      const [resumen, delMes] = await Promise.all([
+        apiFetch<{ porComisionista: { id: string }[] }>(`/resumen?mes=${mes}`),
+        apiFetch<Liquidacion[]>(`/liquidaciones?mes=${mes}`),
+      ]);
+      const yaTienen = new Set(delMes.map((l) => l.comisionista.id));
+
       let creadas = 0;
+      let sinVentas = 0;
       for (const fila of resumen.porComisionista) {
+        if (yaTienen.has(fila.id)) continue;
         try {
           await apiFetch("/liquidaciones", {
             method: "POST",
@@ -188,14 +228,31 @@ export default function LiquidacionesPage() {
           });
           creadas += 1;
         } catch {
-          // Ya existía una liquidación para ese comisionista.
+          // No tenía ventas ni comisiones pendientes en ese mes.
+          sinVentas += 1;
         }
       }
-      setMensaje(
-        creadas > 0
-          ? `Se generaron ${creadas} borradores`
-          : "No hay ventas pendientes por liquidar",
-      );
+
+      const partes: string[] = [];
+      if (creadas > 0) {
+        partes.push(`${creadas} ${creadas === 1 ? "borrador creado" : "borradores creados"}`);
+      }
+      if (yaTienen.size > 0) {
+        partes.push(`${yaTienen.size} ya ${yaTienen.size === 1 ? "existía" : "existían"}`);
+      }
+      if (sinVentas > 0) {
+        partes.push(`${sinVentas} sin ventas pendientes`);
+      }
+
+      if (creadas === 0) {
+        setAviso(
+          partes.length > 0
+            ? `No se creó ninguno: ${partes.join(" · ")} en ${mesLegible(mes)}.`
+            : `No hay nada pendiente de liquidar en ${mesLegible(mes)}.`,
+        );
+      } else {
+        setMensaje(partes.join(" · "));
+      }
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al generar");
@@ -301,6 +358,7 @@ export default function LiquidacionesPage() {
         </div>
 
         {error && <p className="text-sm text-danger-500">{error}</p>}
+        {aviso && <p className="text-sm text-warning-600">{aviso}</p>}
         {mensaje && <p className="text-sm text-success-600 dark:text-success-500">{mensaje}</p>}
 
         {puedeGestionar && (
@@ -382,7 +440,8 @@ export default function LiquidacionesPage() {
                           </span>
                         </td>
                         <td className="hidden xl:table-cell px-3 py-3 text-body-text">
-                          {l.pagadaEn ? l.pagadaEn.slice(0, 10) : "—"}
+                          {!l.pagadaEn && <span className="text-body-text/70">Pendiente de pago</span>}
+                          {l.pagadaEn && l.pagadaEn.slice(0, 10)}
                           {l.metodoPago && (
                             <span className="ml-1.5 text-[11px] text-body-text/80">
                               · {metodosPago.find((m) => m.valor === l.metodoPago)?.texto ?? l.metodoPago}

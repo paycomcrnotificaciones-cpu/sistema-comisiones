@@ -607,7 +607,7 @@ function PerfilComisionista() {
                     disabled={exportando}
                     className="h-[42px] rounded-xl border border-light-100 bg-white px-4 text-sm font-semibold text-primary-600 transition-colors hover:border-primary-500 disabled:opacity-50 dark:border-dark-600 dark:bg-dark-700 dark:text-primary-100"
                   >
-                    {exportando ? "Exportando…" : "Exportar CSV"}
+                    {exportando ? "Exportando…" : "Exportar"}
                   </button>
                   {periodo === "rango" && (
                     <>
