@@ -15,7 +15,7 @@ const manrope = Manrope({
 
 // Título y descripción que se ven en la pestaña del navegador.
 export const metadata: Metadata = {
-  title: "Comix · Gestión de comisiones",
+  title: "LiquiCom · Gestión de comisiones",
   description: "Gestión de comisiones de ventas — Solusoft CR",
 };
 

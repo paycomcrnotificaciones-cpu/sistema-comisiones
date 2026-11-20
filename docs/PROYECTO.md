@@ -1,4 +1,4 @@
-# Comix — Guía del proyecto
+# LiquiCom — Guía del proyecto
 
 ## 1. ¿Qué es?
 

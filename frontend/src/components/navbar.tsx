@@ -22,8 +22,8 @@ export function Navbar() {
     <header className="flex items-center justify-between border-b border-dark-600 bg-dark-500 px-6 py-3">
       <div className="flex items-center gap-6">
         <Link href="/comisionistas" className="flex items-center gap-3">
-          <Image src="/logo-icon-light.png" alt="Comix" width={40} height={24} className="h-8 w-auto" />
-          <span className="text-lg font-semibold text-white">Comix</span>
+          <Image src="/logo-icon-light.png" alt="LiquiCom" width={40} height={24} className="h-8 w-auto" />
+          <span className="text-lg font-semibold text-white">LiquiCom</span>
         </Link>
         <nav className="flex items-center gap-1">
           {enlaces.map((e) => (
