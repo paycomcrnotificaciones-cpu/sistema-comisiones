@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Frecuencia } from '../generated/prisma/enums.js';
 
+import { aDecimal, aTexto, porcentaje, type Monto } from '../common/dinero.js';
 import { rangoMes } from '../common/periodo.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -26,8 +27,8 @@ function indiceDePeriodo(periodo: string): number {
 }
 
 // Guarda 4 decimales para no perder centavos al calcular porcentajes.
-function redondear(valor: number): string {
-  return valor.toFixed(4);
+function redondear(valor: Monto): string {
+  return aTexto(valor);
 }
 
 @Injectable()
@@ -74,15 +75,16 @@ export class ComisionesSuscripcionService {
 
       const mesesCobro = MESES[suscripcion.frecuenciaCobro];
       const mesesComision = MESES[suscripcion.comisionFrecuencia];
+      // El prorrateo y el porcentaje se hacen con Decimal.
       const base =
         unica || mesesCobro === 0 || mesesComision === 0
-          ? Number(suscripcion.monto)
-          : (Number(suscripcion.monto) * mesesComision) / mesesCobro;
+          ? aDecimal(suscripcion.monto)
+          : aDecimal(suscripcion.monto).times(mesesComision).dividedBy(mesesCobro);
 
       const monto =
         suscripcion.comisionTipo === 'PORCENTAJE'
-          ? (base * Number(suscripcion.comisionValor)) / 100
-          : Number(suscripcion.comisionValor);
+          ? porcentaje(base, suscripcion.comisionValor)
+          : aTexto(suscripcion.comisionValor);
 
       try {
         await this.prisma.comisionSuscripcion.upsert({

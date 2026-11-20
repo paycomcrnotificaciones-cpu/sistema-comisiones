@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
 import { mesActualCostaRica, rangoMes } from '../common/periodo.js';
+import { Decimal } from 'decimal.js';
+
+import { aDecimal, aNumero } from '../common/dinero.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MetasService } from '../metas/metas.service.js';
 import { ComisionesSuscripcionService } from '../suscripciones/comisiones-suscripcion.service.js';
@@ -166,39 +169,42 @@ export class ResumenService {
     const nombreSucursal = new Map(sucursales.map((s) => [s.id, s.nombre]));
 
     // Agrupa las ventas del mes por día para dibujar la gráfica de barras.
-    const porDia = new Map<string, { monto: number; comision: number }>();
+    const porDia = new Map<string, { monto: Decimal; comision: Decimal }>();
     for (const venta of ventas as FilaVenta[]) {
       const dia = venta.fecha.toISOString().slice(0, 10);
-      const actual = porDia.get(dia) ?? { monto: 0, comision: 0 };
-      actual.monto += Number(venta.neto);
-      actual.comision += Number(venta.comisionMonto);
+      const actual = porDia.get(dia) ?? {
+        monto: new Decimal(0),
+        comision: new Decimal(0),
+      };
+      actual.monto = actual.monto.plus(aDecimal(venta.neto));
+      actual.comision = actual.comision.plus(aDecimal(venta.comisionMonto));
       porDia.set(dia, actual);
     }
 
-    const comisionVentas = Number(totales._sum.comisionMonto ?? 0);
-    const comisionSuscripciones = Number(comisiones._sum.monto ?? 0);
+    const comisionVentas = aDecimal(totales._sum.comisionMonto ?? 0);
+    const comisionSuscripciones = aDecimal(comisiones._sum.monto ?? 0);
 
     // Une las comisiones de ventas con las de suscripciones en una sola fila
     // por comisionista, para que el ranking muestre el total real.
     const filas = new Map<
       string,
-      { ventas: number; montoVendido: number; comision: number }
+      { ventas: number; montoVendido: Decimal; comision: Decimal }
     >();
     for (const f of porComisionista) {
       filas.set(f.comisionistaId, {
         ventas: f._count._all,
-        montoVendido: Number(f._sum.neto ?? 0),
-        comision: Number(f._sum.comisionMonto ?? 0),
+        montoVendido: aDecimal(f._sum.neto ?? 0),
+        comision: aDecimal(f._sum.comisionMonto ?? 0),
       });
     }
     for (const f of porComisionistaCom) {
       const actual = filas.get(f.comisionistaId) ?? {
         ventas: 0,
-        montoVendido: 0,
-        comision: 0,
+        montoVendido: new Decimal(0),
+        comision: new Decimal(0),
       };
-      actual.montoVendido += Number(f._sum.base ?? 0);
-      actual.comision += Number(f._sum.monto ?? 0);
+      actual.montoVendido = actual.montoVendido.plus(aDecimal(f._sum.base ?? 0));
+      actual.comision = actual.comision.plus(aDecimal(f._sum.monto ?? 0));
       filas.set(f.comisionistaId, actual);
     }
 
@@ -211,17 +217,18 @@ export class ResumenService {
       desde: desde.toISOString(),
       hasta: hasta.toISOString(),
       totalVentas: totales._count._all,
-      montoVendido: Number(totales._sum.neto ?? 0),
-      totalComision: comisionVentas + comisionSuscripciones,
-      comisionVentas,
-      comisionSuscripciones,
-      ingresoRecurrente: Number(comisiones._sum.base ?? 0),
+      montoVendido: aNumero(totales._sum.neto ?? 0),
+      totalComision: aNumero(comisionVentas.plus(comisionSuscripciones)),
+      comisionVentas: aNumero(comisionVentas),
+      comisionSuscripciones: aNumero(comisionSuscripciones),
+      ingresoRecurrente: aNumero(comisiones._sum.base ?? 0),
       comisionistasActivos: activos,
-      comisionPendiente:
-        Number(pendiente._sum.comisionMonto ?? 0) +
-        Number(enBorrador._sum.comisionTotal ?? 0) +
-        Number(pendienteCom._sum.monto ?? 0),
-      comisionPagada: Number(pagada._sum.comisionTotal ?? 0),
+      comisionPendiente: aNumero(
+        aDecimal(pendiente._sum.comisionMonto ?? 0)
+          .plus(aDecimal(enBorrador._sum.comisionTotal ?? 0))
+          .plus(aDecimal(pendienteCom._sum.monto ?? 0)),
+      ),
+      comisionPagada: aNumero(pagada._sum.comisionTotal ?? 0),
       metaGeneral: metasMes.general,
       porComisionista: [...filas.entries()]
         .map(([id, valores]) => {
@@ -230,11 +237,16 @@ export class ResumenService {
           return {
             id,
             nombre: nombreComisionista.get(id) ?? 'Sin nombre',
-            ...valores,
+            ventas: valores.ventas,
+            montoVendido: aNumero(valores.montoVendido),
+            comision: aNumero(valores.comision),
             meta,
             avance:
               meta && meta > 0
-                ? Math.round((valores.montoVendido / meta) * 1000) / 10
+                ? aNumero(
+                    valores.montoVendido.dividedBy(meta).times(100),
+                    1,
+                  )
                 : null,
           };
         })
@@ -260,7 +272,11 @@ export class ResumenService {
         })
         .sort((a, b) => b.montoVendido - a.montoVendido),
       porDia: [...porDia.entries()]
-        .map(([fecha, valores]) => ({ fecha, ...valores }))
+        .map(([fecha, valores]) => ({
+          fecha,
+          monto: aNumero(valores.monto),
+          comision: aNumero(valores.comision),
+        }))
         .sort((a, b) => a.fecha.localeCompare(b.fecha)),
     };
   }

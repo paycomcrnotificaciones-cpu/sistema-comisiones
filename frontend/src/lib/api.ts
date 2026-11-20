@@ -41,6 +41,41 @@ export function getSesion(): SesionJwt | null {
   }
 }
 
+// Tiempo máximo de espera. La API gratuita de Render se duerme a los 15
+// minutos y tarda cerca de un minuto en despertar, así que el límite es
+// generoso: si se pasa, se avisa en vez de quedarse colgado.
+const ESPERA_MAXIMA_MS = 45_000;
+
+// Hace la petición con tiempo límite y un reintento si el servidor no
+// responde (red caída o arranque en frío).
+async function pedir(url: string, init: RequestInit): Promise<Response> {
+  const metodo = (init.method ?? "GET").toUpperCase();
+  const intentos = metodo === "GET" ? 2 : 1;
+
+  let ultimoError: unknown;
+  for (let intento = 0; intento < intentos; intento++) {
+    const control = new AbortController();
+    const reloj = setTimeout(() => control.abort(), ESPERA_MAXIMA_MS);
+    try {
+      return await fetch(url, { ...init, signal: control.signal });
+    } catch (err) {
+      ultimoError = err;
+      if (intento === intentos - 1) break;
+      await new Promise((r) => setTimeout(r, 1200));
+    } finally {
+      clearTimeout(reloj);
+    }
+  }
+  if (ultimoError instanceof Error && ultimoError.name === "AbortError") {
+    throw new Error(
+      "El servidor tardó demasiado en responder. Revisa tu conexión e intenta de nuevo.",
+    );
+  }
+  throw new Error(
+    "No se pudo conectar con el servidor. Revisa tu conexión e intenta de nuevo.",
+  );
+}
+
 // Función que usan todas las pantallas para hablar con la API.
 // Agrega el token, convierte la respuesta a JSON y, si la sesión venció,
 // manda al login. Si hay error, lanza un Error con el mensaje del servidor.
@@ -50,7 +85,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(`${API_URL}${path}`, { ...init, headers });
+  const response = await pedir(`${API_URL}${path}`, { ...init, headers });
 
   if (response.status === 401) {
     clearToken();
@@ -91,7 +126,7 @@ export async function login(email: string, password: string): Promise<UsuarioSes
 // Se pide con el token, se arma un enlace temporal y se simula el clic.
 export async function descargarArchivo(path: string, nombre: string): Promise<void> {
   const token = getToken();
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await pedir(`${API_URL}${path}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!response.ok) {

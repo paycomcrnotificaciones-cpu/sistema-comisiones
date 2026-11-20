@@ -11,6 +11,7 @@ import type {
   LiquidacionPagarInput,
   LiquidacionQueryInput,
 } from '../common/validators.js';
+import { sumarATexto } from '../common/dinero.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ComisionesSuscripcionService } from '../suscripciones/comisiones-suscripcion.service.js';
 
@@ -140,10 +141,11 @@ export class LiquidacionesService {
       );
     }
 
-    const comisionTotal = (
-      ventas.reduce((suma, v) => suma + Number(v.comisionMonto), 0) +
-      comisiones.reduce((suma, c) => suma + Number(c.monto), 0)
-    ).toFixed(4);
+    // Suma con Decimal: es el monto que se le va a pagar a la persona.
+    const comisionTotal = sumarATexto([
+      ...ventas.map((v) => v.comisionMonto),
+      ...comisiones.map((c) => c.monto),
+    ]);
 
     return this.prisma.$transaction(async (tx) => {
       const liquidacion = await tx.liquidacion.create({

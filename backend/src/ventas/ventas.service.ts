@@ -5,6 +5,7 @@ import type {
   VentaQueryInput,
   VentaUpdateInput,
 } from '../common/validators.js';
+import { aDecimal, aTexto, comparar, porcentaje } from '../common/dinero.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 // Calcula cuánto gana el comisionista por una venta.
@@ -15,11 +16,9 @@ function calcularComisionMonto(
   neto: string,
   valor: string,
 ): string {
-  const montoBase = Number(neto);
-  const comision = Number(valor);
-  const resultado =
-    tipo === 'PORCENTAJE' ? (montoBase * comision) / 100 : comision;
-  return resultado.toFixed(4);
+  // La cuenta se hace con Decimal para que el resultado no arrastre el
+  // error de la coma flotante (importante en montos grandes).
+  return tipo === 'PORCENTAJE' ? porcentaje(neto, valor) : aTexto(valor);
 }
 
 // Toda la lógica de las ventas: listar con filtros, crear, editar,
@@ -122,10 +121,10 @@ export class VentasService {
             pagina,
             limite,
             datos,
-            montoVendido: Number(suma._sum.neto ?? 0).toFixed(2),
-            totalComision: Number(suma._sum.comisionMonto ?? 0).toFixed(2),
-            comisionPendiente: Number(pendiente._sum.comisionMonto ?? 0).toFixed(2),
-            comisionPagada: Number(pagada._sum.comisionMonto ?? 0).toFixed(2),
+            montoVendido: aDecimal(suma._sum.neto ?? 0).toFixed(2),
+            totalComision: aDecimal(suma._sum.comisionMonto ?? 0).toFixed(2),
+            comisionPendiente: aDecimal(pendiente._sum.comisionMonto ?? 0).toFixed(2),
+            comisionPagada: aDecimal(pagada._sum.comisionMonto ?? 0).toFixed(2),
         };
     }
 
@@ -210,7 +209,7 @@ export class VentasService {
 
     const bruto = data.bruto ?? actual.bruto.toString();
     const neto = data.neto ?? actual.neto.toString();
-    if (Number(neto) > Number(bruto)) {
+    if (comparar(neto, bruto) > 0) {
       throw new BadRequestException(
         'El neto no puede ser mayor que el bruto',
       );
@@ -219,7 +218,7 @@ export class VentasService {
     const comisionTipo = data.comisionTipo ?? actual.comisionTipo;
     const comisionValor =
       data.comisionValor ?? actual.comisionValor.toString();
-    if (comisionTipo === 'PORCENTAJE' && Number(comisionValor) > 100) {
+    if (comisionTipo === 'PORCENTAJE' && comparar(comisionValor, 100) > 0) {
       throw new BadRequestException(
         'El porcentaje de comisión no puede ser mayor a 100',
       );
@@ -275,8 +274,16 @@ export class VentasService {
       },
     });
 
-    const celda = (valor: string | number | null | undefined): string =>
-      `"${(valor === null || valor === undefined ? '' : String(valor)).replace(/"/g, '""')}"`;
+    // Arma una celda entre comillas y escapa las comillas internas.
+    // Si un texto empieza con =, +, - o @, se le antepone un apóstrofo:
+    // así Excel y Sheets no lo ejecutan como fórmula (inyección CSV).
+    const celda = (valor: string | number | null | undefined): string => {
+      let texto = valor === null || valor === undefined ? '' : String(valor);
+      if (typeof valor === 'string' && /^[=+\-@\t\r]/.test(texto)) {
+        texto = `'${texto}`;
+      }
+      return `"${texto.replace(/"/g, '""')}"`;
+    };
 
     const filas = [
       ['Fecha', 'Comisionista', 'Sucursal', 'Documento', 'Cliente', 'Producto', 'Monto', 'Comision', 'Tipo', 'Valor', 'Estado'],
@@ -287,10 +294,10 @@ export class VentasService {
         v.documento ?? '',
         v.cliente ?? '',
         v.producto ?? '',
-        Number(v.neto).toFixed(2),
-        Number(v.comisionMonto).toFixed(2),
+        aDecimal(v.neto).toFixed(2),
+        aDecimal(v.comisionMonto).toFixed(2),
         v.comisionTipo === 'PORCENTAJE' ? 'Porcentaje' : 'Monto fijo',
-        Number(v.comisionValor).toFixed(2),
+        aDecimal(v.comisionValor).toFixed(2),
         v.estado === 'ACTIVA' ? 'Activa' : 'Anulada',
       ]),
     ];

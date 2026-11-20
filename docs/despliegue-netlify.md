@@ -307,6 +307,23 @@ registro de prueba.
 - [ ] Claves demo cambiadas
 - [ ] `JWT_SECRET` y contraseña de la base rotados
 
+### 10.1 La API ya no arranca sin configuración
+
+Desde la revisión de seguridad, la API **falla al arrancar** si en producción
+falta alguna de estas variables, en lugar de usar valores por defecto:
+
+| Variable | Para qué | Si falta |
+|---|---|---|
+| `JWT_SECRET` | firma los tokens de sesión | la API no arranca |
+| `WEB_ORIGIN` | CORS y enlaces de invitación | la API no arranca |
+
+`WEB_ORIGIN` admite varias direcciones separadas por coma, por ejemplo
+`https://mi-app.netlify.app,http://localhost:3100`.
+
+Además, ahora cada petición comprueba en la base que la cuenta siga activa:
+desactivar a un usuario corta su sesión de inmediato, sin esperar a que
+caduque el token. El login tiene un límite de 5 intentos por minuto y por IP.
+
 ---
 
 ## 11. Límites de los planes gratuitos

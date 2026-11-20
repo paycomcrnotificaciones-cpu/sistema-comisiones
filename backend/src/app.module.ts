@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -20,6 +22,9 @@ import { VentasModule } from './ventas/ventas.module.js';
 // sus propias rutas. PrismaModule va primero porque casi todo lo necesita.
 @Module({
   imports: [
+    // Límite general: 120 peticiones por minuto y por IP. Las rutas
+    // sensibles (login, activar) tienen su propio límite más estricto.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     PrismaModule,
     AuthModule,
     ResumenModule,
@@ -34,7 +39,7 @@ import { VentasModule } from './ventas/ventas.module.js';
     ReglasModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
 
