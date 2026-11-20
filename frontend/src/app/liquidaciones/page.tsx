@@ -209,36 +209,37 @@ export default function LiquidacionesPage() {
     setAviso(null);
     setTrabajando(true);
     try {
-      // Se consulta el mes completo (sin el filtro de estado) para saber
-      // quién ya tiene liquidación y no lanzar peticiones que darán 409.
-      const [resumen, delMes] = await Promise.all([
-        apiFetch<{ porComisionista: { id: string }[] }>(`/resumen?mes=${mes}`),
-        apiFetch<Liquidacion[]>(`/liquidaciones?mes=${mes}`),
-      ]);
-      const yaTienen = new Set(delMes.map((l) => l.comisionista.id));
+      // El servidor dice quién tiene algo por liquidar. Así no se lanzan
+      // peticiones que van a ser rechazadas y el historial queda limpio.
+      const info = await apiFetch<{
+        total: number;
+        yaTienen: number;
+        pendientes: { comisionistaId: string }[];
+      }>(`/liquidaciones/pendientes?mes=${mes}`);
 
       let creadas = 0;
       let sinVentas = 0;
-      for (const fila of resumen.porComisionista) {
-        if (yaTienen.has(fila.id)) continue;
+      for (const { comisionistaId } of info.pendientes) {
         try {
           await apiFetch("/liquidaciones", {
             method: "POST",
-            body: JSON.stringify({ comisionistaId: fila.id, mes }),
+            body: JSON.stringify({ comisionistaId, mes }),
           });
           creadas += 1;
         } catch {
-          // No tenía ventas ni comisiones pendientes en ese mes.
+          // Cambió entre la consulta y el envío: no se pudo crear.
           sinVentas += 1;
         }
       }
+      // Los que no tienen nada pendiente ni liquidación previa.
+      sinVentas += Math.max(0, info.total - info.yaTienen - info.pendientes.length);
 
       const partes: string[] = [];
       if (creadas > 0) {
         partes.push(`${creadas} ${creadas === 1 ? "borrador creado" : "borradores creados"}`);
       }
-      if (yaTienen.size > 0) {
-        partes.push(`${yaTienen.size} ya ${yaTienen.size === 1 ? "existía" : "existían"}`);
+      if (info.yaTienen > 0) {
+        partes.push(`${info.yaTienen} ya ${info.yaTienen === 1 ? "existía" : "existían"}`);
       }
       if (sinVentas > 0) {
         partes.push(`${sinVentas} sin ventas pendientes`);

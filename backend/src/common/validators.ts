@@ -159,6 +159,15 @@ export type SucursalUpdateInput = z.infer<typeof sucursalUpdateSchema>;
 // --- Liquidaciones ---
 const periodo = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mes inválido (YYYY-MM)');
 
+// Solo el mes: sirve para preguntar quién tiene algo por liquidar.
+export const liquidacionPendientesSchema = z.object({
+  mes: periodo,
+});
+
+export type LiquidacionPendientesInput = z.infer<
+  typeof liquidacionPendientesSchema
+>;
+
 export const liquidacionCreateSchema = z.object({
   comisionistaId: z.string().uuid(),
   mes: periodo,

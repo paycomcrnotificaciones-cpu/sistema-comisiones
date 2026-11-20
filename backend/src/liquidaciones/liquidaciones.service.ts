@@ -90,6 +90,52 @@ export class LiquidacionesService {
   // suscripciones de ese mes y suma todo lo pendiente. Al final guarda la
   // liquidación y marca esas ventas y comisiones como incluidas, todo dentro
   // de una transacción: si algo falla, no se guarda nada a medias.
+  // Quién tiene algo por liquidar en el mes. Se calcula en el servidor para
+  // que la web no tenga que pedir un borrador por cada comisionista y
+  // provocar rechazos que luego aparecen como errores en el historial.
+  async pendientes(empresaId: string, mes: string) {
+    // Igual que el resumen: deja creadas las comisiones de suscripción del mes
+    // antes de decidir quién tiene pendientes.
+    await this.comisiones.asegurarMes(empresaId, mes);
+
+    const { desde, hasta } = rangoMes(mes);
+
+    const [ventas, comisiones, existentes, total] = await Promise.all([
+      this.prisma.venta.groupBy({
+        by: ['comisionistaId'],
+        where: {
+          empresaId,
+          estado: 'ACTIVA',
+          liquidacionId: null,
+          fecha: { gte: desde, lt: hasta },
+        },
+      }),
+      this.prisma.comisionSuscripcion.groupBy({
+        by: ['comisionistaId'],
+        where: { empresaId, periodo: mes, liquidacionId: null },
+      }),
+      this.prisma.liquidacion.findMany({
+        where: { empresaId, periodo: mes },
+        select: { comisionistaId: true },
+      }),
+      this.prisma.comisionista.count({ where: { empresaId } }),
+    ]);
+
+    const yaTienen = new Set(existentes.map((l) => l.comisionistaId));
+    const conAlgo = new Set([
+      ...ventas.map((v) => v.comisionistaId),
+      ...comisiones.map((c) => c.comisionistaId),
+    ]);
+
+    return {
+      total,
+      yaTienen: yaTienen.size,
+      pendientes: [...conAlgo]
+        .filter((id) => !yaTienen.has(id))
+        .map((comisionistaId) => ({ comisionistaId })),
+    };
+  }
+
   async crear(empresaId: string, data: LiquidacionCreateInput) {
     const comisionista = await this.prisma.comisionista.findFirst({
       where: { id: data.comisionistaId, empresaId },
@@ -136,7 +182,7 @@ export class LiquidacionesService {
     });
 
     if (ventas.length === 0 && comisiones.length === 0) {
-      throw new BadRequestException(
+      throw new ConflictException(
         'No hay ventas ni comisiones pendientes de liquidar en ese mes',
       );
     }

@@ -14,9 +14,11 @@ import { Roles, RolesGuard } from '../auth/roles.guard.js';
 import {
   liquidacionCreateSchema,
   liquidacionPagarSchema,
+  liquidacionPendientesSchema,
   liquidacionQuerySchema,
   type LiquidacionCreateInput,
   type LiquidacionPagarInput,
+  type LiquidacionPendientesInput,
   type LiquidacionQueryInput,
 } from '../common/validators.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
@@ -42,6 +44,19 @@ export class LiquidacionesController {
       query,
       usuario.rol === 'COMISIONISTA' ? usuario.comisionistaId : undefined,
     );
+  }
+
+  // GET /api/liquidaciones/pendientes — quién tiene algo por liquidar.
+  // Va antes de la ruta :id para que "pendientes" no se tome como un id.
+  @Get('pendientes')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  pendientes(
+    @Req() req: RequestConUsuario,
+    @Query(new ZodValidationPipe(liquidacionPendientesSchema))
+    query: LiquidacionPendientesInput,
+  ) {
+    return this.liquidaciones.pendientes(req.usuario!.empresaId, query.mes);
   }
 
   // GET /api/liquidaciones/:id — detalle con ventas y comisiones incluidas.

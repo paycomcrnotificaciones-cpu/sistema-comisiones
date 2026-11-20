@@ -65,6 +65,26 @@ siguen coincidiendo con los de antes del cambio.
   claros cuando la API está despertando.
 - El CSV escapa fórmulas (`=`, `+`, `-`, `@`).
 
+### 3.4 Generación de liquidaciones en lote
+
+Antes la web pedía un borrador por cada comisionista y recibía un 400 de los
+que no tenían nada pendiente; ese rechazo quedaba en el historial como
+"Error 400" en rojo.
+
+Ahora:
+
+- `GET /api/liquidaciones/pendientes?mes=AAAA-MM` devuelve `total`,
+  `yaTienen` y solo los `pendientes` (con algo que liquidar y sin
+  liquidación previa).
+- La web hace `POST` únicamente por esos comisionistas.
+- "Nada que liquidar" responde **409**, que el historial muestra como
+  "Omitido" en ámbar, igual que el duplicado.
+
+Consecuencia: una generación de 5 comisionistas donde solo 1 tiene ventas
+produce **1** petición y **1** registro en el historial, no 5.
+
+Los registros con 400 que ya existían se eliminaron de la base local.
+
 ## 4. Pruebas ejecutadas
 
 | Prueba | Resultado |
@@ -92,6 +112,7 @@ siguen coincidiendo con los de antes del cambio.
 | Ventas | comisión porcentaje y monto fijo, neto > bruto, comisión > 100 % |
 | Liquidaciones | total exacto, duplicado, pagar dos veces, anular pagada |
 | Invitaciones | crear, activar, reutilizar enlace, contraseña corta |
+| Generación en lote | pendientes por mes, exclusión de ya liquidados, permiso y 409 sin nada pendiente |
 
 La base de pruebas se crea una vez:
 

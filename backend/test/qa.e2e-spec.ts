@@ -399,3 +399,57 @@ describe('Invitaciones y contraseñas', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('Generación en lote', () => {
+  it('solo lista a quien tiene algo por liquidar', async () => {
+    await api()
+      .post('/api/ventas')
+      .set('Authorization', `Bearer ${tokens.admin}`)
+      .send({
+        fecha: '2026-05-10',
+        comisionistaId: ids.comisionistaA,
+        sucursalId: ids.sucursalA,
+        bruto: '200',
+        neto: '200',
+        comisionValor: '10',
+      })
+      .expect(201);
+
+    const res = await api()
+      .get('/api/liquidaciones/pendientes?mes=2026-05')
+      .set('Authorization', `Bearer ${tokens.admin}`);
+    expect(res.status).toBe(200);
+    expect(res.body.pendientes).toEqual([{ comisionistaId: ids.comisionistaA }]);
+    expect(res.body.total).toBeGreaterThanOrEqual(1);
+  });
+
+  it('no incluye a quien ya tiene liquidación del mes', async () => {
+    await api()
+      .post('/api/liquidaciones')
+      .set('Authorization', `Bearer ${tokens.admin}`)
+      .send({ comisionistaId: ids.comisionistaA, mes: '2026-05' })
+      .expect(201);
+
+    const res = await api()
+      .get('/api/liquidaciones/pendientes?mes=2026-05')
+      .set('Authorization', `Bearer ${tokens.admin}`);
+    expect(res.status).toBe(200);
+    expect(res.body.pendientes).toEqual([]);
+    expect(res.body.yaTienen).toBeGreaterThanOrEqual(1);
+  });
+
+  it('es solo para administradores', async () => {
+    const res = await api()
+      .get('/api/liquidaciones/pendientes?mes=2026-05')
+      .set('Authorization', `Bearer ${tokens.supervisor}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('crear sin nada pendiente responde 409 y no 400', async () => {
+    const res = await api()
+      .post('/api/liquidaciones')
+      .set('Authorization', `Bearer ${tokens.admin}`)
+      .send({ comisionistaId: ids.comisionistaA, mes: '2026-07' });
+    expect(res.status).toBe(409);
+  });
+});
