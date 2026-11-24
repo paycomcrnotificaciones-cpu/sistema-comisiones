@@ -171,6 +171,7 @@ export default function ResumenPage() {
   const kpis = [
     {
       etiqueta: "Monto vendido",
+      detalle: "Total facturado en ventas este mes",
       valor: formatoDinero.format(data?.montoVendido ?? 0),
       tipo: "dinero",
       color: "text-zinc-900 dark:text-white",
@@ -178,6 +179,7 @@ export default function ResumenPage() {
     },
     {
       etiqueta: "Comisión generada",
+      detalle: "Comisión de ventas + comisión de suscripciones",
       valor: formatoDinero.format(data?.totalComision ?? 0),
       tipo: "comision",
       color: "text-primary-600 dark:text-primary-100",
@@ -185,6 +187,7 @@ export default function ResumenPage() {
     },
     {
       etiqueta: "Ventas activas",
+      detalle: "Ventas del mes, sin las anuladas",
       valor: String(data?.totalVentas ?? 0),
       tipo: "ventas",
       color: "text-zinc-900 dark:text-white",
@@ -192,6 +195,7 @@ export default function ResumenPage() {
     },
     {
       etiqueta: "Comisionistas activos",
+      detalle: "Fichas activas hoy (no depende del mes)",
       valor: String(data?.comisionistasActivos ?? 0),
       tipo: "equipo",
       color: "text-zinc-900 dark:text-white",
@@ -199,6 +203,7 @@ export default function ResumenPage() {
     },
     {
       etiqueta: "Comisión pendiente",
+      detalle: "Generado y todavía sin pagar",
       valor: formatoDinero.format(data?.comisionPendiente ?? 0),
       tipo: "pendiente",
       color: "text-warning-600",
@@ -206,6 +211,7 @@ export default function ResumenPage() {
     },
     {
       etiqueta: "Comisión pagada",
+      detalle: "Liquidaciones pagadas de este mes",
       valor: formatoDinero.format(data?.comisionPagada ?? 0),
       tipo: "pagada",
       color: "text-success-600 dark:text-success-500",
@@ -213,6 +219,7 @@ export default function ResumenPage() {
     },
     {
       etiqueta: "Ingreso recurrente",
+      detalle: "Facturación de las suscripciones",
       valor: formatoDinero.format(data?.ingresoRecurrente ?? 0),
       tipo: "recurrente",
       color: "text-zinc-900 dark:text-white",
@@ -220,6 +227,7 @@ export default function ResumenPage() {
     },
     {
       etiqueta: "Comisión recurrente",
+      detalle: "Comisión que generan las suscripciones",
       valor: formatoDinero.format(data?.comisionSuscripciones ?? 0),
       tipo: "grafico",
       color: "text-primary-600 dark:text-primary-100",
@@ -312,9 +320,18 @@ export default function ResumenPage() {
               <p className={`mt-3 font-display text-[22px] font-bold tracking-[-0.3px] sm:text-[25px] ${kpi.color}`}>
                 {kpi.valor}
               </p>
+              <p className="mt-2 text-[11px] leading-relaxed text-body-text">
+                {kpi.detalle}
+              </p>
             </div>
           ))}
         </div>
+
+        <p className="text-[11px] leading-relaxed text-body-text">
+          <strong className="font-semibold text-zinc-900 dark:text-white">Cómo leer las tarjetas:</strong>{" "}
+          todas se calculan con el mes elegido, excepto «Comisionistas activos», que muestra el estado de hoy.
+          Comisión pendiente + Comisión pagada = Comisión generada.
+        </p>
 
         <section className="rounded-2xl bg-[linear-gradient(135deg,#16224a_0%,#2f3f8f_60%,#4254ba_100%)] p-5 shadow-[0_18px_40px_-24px_rgba(10,18,38,0.7)] sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

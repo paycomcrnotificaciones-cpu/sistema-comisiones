@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { AccionTabla } from "@/components/accion-tabla";
 import { AppShell } from "@/components/app-shell";
@@ -146,6 +146,7 @@ function MovimientosComisionista() {
   const [subFin, setSubFin] = useState("");
   const [subGuardando, setSubGuardando] = useState(false);
   const [subMensaje, setSubMensaje] = useState<string | null>(null);
+  const formSuscripcionRef = useRef<HTMLElement | null>(null);
   const [subConfirmacion, setSubConfirmacion] = useState<{
     id: string;
     accion: "pausar" | "finalizar" | "reactivar" | "eliminar";
@@ -355,6 +356,13 @@ function MovimientosComisionista() {
     setSubComisionFrecuencia(s.comisionFrecuencia);
     setSubInicio(s.inicio.slice(0, 10));
     setSubFin(s.fin ? s.fin.slice(0, 10) : "");
+    setSubMensaje(null);
+    requestAnimationFrame(() =>
+      formSuscripcionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      }),
+    );
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -740,11 +748,13 @@ function MovimientosComisionista() {
               </div>
             </section>
 
-            <section className="surface overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
-                <div className="flex items-center gap-3">
             {esGestor && (
-              <section className="surface overflow-hidden">
+              <section
+                ref={formSuscripcionRef}
+                className={`surface overflow-hidden scroll-mt-24 transition-shadow ${
+                  subEditandoId ? "ring-2 ring-primary-500/40" : ""
+                }`}
+              >
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
                   <div className="flex items-center gap-3">
                     <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">03</span>
@@ -753,7 +763,9 @@ function MovimientosComisionista() {
                     </h2>
                   </div>
                   <p className="text-[12px] text-body-text">
-                    La comisión se genera según la frecuencia indicada.
+                    {subEditandoId
+                      ? `Editando: ${subCliente || "suscripción"}`
+                      : "La comisión se genera según la frecuencia indicada."}
                   </p>
                 </div>
 
@@ -822,6 +834,9 @@ function MovimientosComisionista() {
               </section>
             )}
 
+            <section className="surface overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
+                <div className="flex items-center gap-3">
                   <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">{esGestor ? "04" : "02"}</span>
                   <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
                     {esComisionista ? "Mis suscripciones" : "Suscripciones del comisionista"}
