@@ -445,15 +445,18 @@ function PerfilComisionista() {
               </div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {[
-                  { etiqueta: "Monto vendido", valor: totales.montoVendido, clase: "text-zinc-900 dark:text-white", borde: "border-t-primary-500" },
-                  { etiqueta: "Comisión generada", valor: totales.totalComision, clase: "text-primary-600 dark:text-primary-100", borde: "border-t-brand-cyan-500" },
-                  { etiqueta: "Pendiente de pago", valor: totales.comisionPendiente, clase: "text-warning-600", borde: "border-t-warning-500" },
-                  { etiqueta: "Comisión pagada", valor: totales.comisionPagada, clase: "text-success-600 dark:text-success-500", borde: "border-t-success-500" },
+                  { etiqueta: "Monto vendido", valor: totales.montoVendido, detalle: "Total facturado en ventas del rango", clase: "text-zinc-900 dark:text-white", borde: "border-t-primary-500" },
+                  { etiqueta: "Comisión generada", valor: totales.totalComision, detalle: "Comisión de ventas + comisión de suscripciones", clase: "text-primary-600 dark:text-primary-100", borde: "border-t-brand-cyan-500" },
+                  { etiqueta: "Pendiente de pago", valor: totales.comisionPendiente, detalle: "Generado y todavía sin pagar", clase: "text-warning-600", borde: "border-t-warning-500" },
+                  { etiqueta: "Comisión pagada", valor: totales.comisionPagada, detalle: "Liquidaciones pagadas del rango", clase: "text-success-600 dark:text-success-500", borde: "border-t-success-500" },
                 ].map((item) => (
                   <div key={item.etiqueta} className={`rounded-xl border border-t-2 border-light-100 bg-light-50/70 p-4 dark:border-dark-600 dark:bg-dark-600/60 ${item.borde}`}>
                     <p className="text-[10px] uppercase tracking-[1.5px] text-body-text">{item.etiqueta}</p>
                     <p className={`mt-1 font-display text-[22px] font-bold ${item.clase}`}>
                       {formatoDinero.format(item.valor)}
+                    </p>
+                    <p className="mt-2 text-[11px] leading-relaxed text-body-text">
+                      {item.detalle}
                     </p>
                   </div>
                 ))}
