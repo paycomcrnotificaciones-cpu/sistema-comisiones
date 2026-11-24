@@ -19,7 +19,6 @@ interface NavItem {
 const enlaces: NavItem[] = [
   { href: "/comisionistas", texto: "Comisionistas" },
   { href: "/liquidaciones", texto: "Liquidaciones" },
-  { href: "/suscripciones", texto: "Suscripciones" },
   { href: "/reglas", texto: "Reglas" },
   { href: "/historial", texto: "Historial" },
   { href: "/usuarios", texto: "Usuarios" },
@@ -103,19 +102,6 @@ function SalesIcon() {
   );
 }
 
-// Icono de Suscripciones: dos flechas que se repiten.
-function RepeatIcon() {
-  return (
-    <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M17 2l4 4-4 4" />
-      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-      <path d="M7 22l-4-4 4-4" />
-      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-    </svg>
-  );
-}
-
-// Icono de Liquidaciones: un billete.
 function MoneyIcon() {
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
@@ -250,8 +236,6 @@ export function AppShell({
             <KeyIcon />
           ) : e.href === "/liquidaciones" ? (
             <MoneyIcon />
-          ) : e.href === "/suscripciones" ? (
-            <RepeatIcon />
           ) : e.href === "/historial" ? (
             <HistoryIcon />
           ) : e.href === "/reglas" ? (
@@ -306,7 +290,7 @@ export function AppShell({
     <div className="app-bg min-h-screen text-zinc-900 dark:text-light-50">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[268px] flex-col border-r border-white/5 bg-[linear-gradient(180deg,#151f3b_0%,#1d2a50_55%,#121a33_100%)] px-5 pb-6 pt-8 shadow-[8px_0_40px_-24px_rgba(10,18,38,0.8)] lg:flex">
         <Link href={esComisionista ? rutaPerfil : "/comisionistas"} className="flex items-center gap-3 px-2 pb-8">
-          <Image src={logoIcon} alt="PayCom CR" width={48} height={48} className="shrink-0 rounded-2xl bg-white/5 p-1 ring-1 ring-white/10" />
+          <Image src={logoIcon} alt="PayCom CR" width={48} height={48} className="shrink-0 rounded-2xl" />
           <span className="flex flex-col">
             <span className="font-display text-[19px] font-bold leading-tight tracking-tight text-white">
               PayCom CR

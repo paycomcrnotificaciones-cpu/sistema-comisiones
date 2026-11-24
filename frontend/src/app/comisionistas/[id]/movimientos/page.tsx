@@ -130,9 +130,36 @@ function MovimientosComisionista() {
   const [ventaAnular, setVentaAnular] = useState<Venta | null>(null);
   const [anulando, setAnulando] = useState(false);
 
+  // Formulario y acciones de suscripciones del comisionista de la URL.
+  const [subEditandoId, setSubEditandoId] = useState<string | null>(null);
+  const [subCliente, setSubCliente] = useState("");
+  const [subProducto, setSubProducto] = useState("");
+  const [subMonto, setSubMonto] = useState("");
+  const [subFrecuenciaCobro, setSubFrecuenciaCobro] =
+    useState<Frecuencia>("MENSUAL");
+  const [subComisionTipo, setSubComisionTipo] =
+    useState<"PORCENTAJE" | "MONTO_FIJO">("PORCENTAJE");
+  const [subComisionValor, setSubComisionValor] = useState("");
+  const [subComisionFrecuencia, setSubComisionFrecuencia] =
+    useState<Frecuencia>("MENSUAL");
+  const [subInicio, setSubInicio] = useState("");
+  const [subFin, setSubFin] = useState("");
+  const [subGuardando, setSubGuardando] = useState(false);
+  const [subMensaje, setSubMensaje] = useState<string | null>(null);
+  const [subConfirmacion, setSubConfirmacion] = useState<{
+    id: string;
+    accion: "pausar" | "finalizar" | "reactivar" | "eliminar";
+    titulo: string;
+    mensaje: string;
+    texto: string;
+    cliente: string;
+  } | null>(null);
+  const [subCambiando, setSubCambiando] = useState(false);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFecha(fechaHoy());
+    setSubInicio(fechaHoy());
   }, []);
 
   // Carga las ventas del comisionista (últimas 100) y sus suscripciones.
@@ -151,6 +178,15 @@ function MovimientosComisionista() {
       comisionPendiente: Number(data.comisionPendiente),
       comisionPagada: Number(data.comisionPagada),
     });
+  }, [id]);
+
+  // Recarga solo las suscripciones del comisionista.
+  const cargarSuscripciones = useCallback(async () => {
+    const parametros = new URLSearchParams({ comisionistaId: id });
+    const s = await apiFetch<Suscripcion[]>(
+      `/suscripciones?${parametros.toString()}`,
+    );
+    setSuscripciones(s);
   }, [id]);
 
   useEffect(() => {
@@ -293,6 +329,148 @@ function MovimientosComisionista() {
     }
   }
 
+  // Deja el formulario listo para crear una suscripción nueva.
+  function resetSuscripcion() {
+    setSubEditandoId(null);
+    setSubCliente("");
+    setSubProducto("");
+    setSubMonto("");
+    setSubFrecuenciaCobro("MENSUAL");
+    setSubComisionTipo("PORCENTAJE");
+    setSubComisionValor("");
+    setSubComisionFrecuencia("MENSUAL");
+    setSubInicio(fechaHoy());
+    setSubFin("");
+  }
+
+  // Carga una suscripción existente en el formulario para editarla.
+  function editarSuscripcion(s: Suscripcion) {
+    setSubEditandoId(s.id);
+    setSubCliente(s.cliente);
+    setSubProducto(s.producto ?? "");
+    setSubMonto(String(Number(s.monto)));
+    setSubFrecuenciaCobro(s.frecuenciaCobro);
+    setSubComisionTipo(s.comisionTipo);
+    setSubComisionValor(String(Number(s.comisionValor)));
+    setSubComisionFrecuencia(s.comisionFrecuencia);
+    setSubInicio(s.inicio.slice(0, 10));
+    setSubFin(s.fin ? s.fin.slice(0, 10) : "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Crea o actualiza la suscripción del comisionista de la URL.
+  async function guardarSuscripcion(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setSubMensaje(null);
+    setSubGuardando(true);
+    try {
+      const base = {
+        cliente: subCliente,
+        producto: subProducto || undefined,
+        monto: subMonto,
+        frecuenciaCobro: subFrecuenciaCobro,
+        comisionTipo: subComisionTipo,
+        comisionValor: subComisionValor,
+        comisionFrecuencia: subComisionFrecuencia,
+        inicio: subInicio,
+      };
+      if (subEditandoId) {
+        await apiFetch(`/suscripciones/${subEditandoId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ ...base, fin: subFin || null }),
+        });
+        setSubMensaje("Suscripción actualizada");
+      } else {
+        await apiFetch("/suscripciones", {
+          method: "POST",
+          body: JSON.stringify({
+            ...base,
+            comisionistaId: id,
+            ...(subFin ? { fin: subFin } : {}),
+          }),
+        });
+        setSubMensaje("Suscripción creada");
+      }
+      resetSuscripcion();
+      await cargarSuscripciones();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "No se pudo guardar la suscripción",
+      );
+    } finally {
+      setSubGuardando(false);
+    }
+  }
+
+  // Pausa, reactiva, finaliza o borra la suscripción elegida.
+  async function cambiarEstadoSuscripcion() {
+    if (!subConfirmacion) return;
+    setError(null);
+    setSubMensaje(null);
+    setSubCambiando(true);
+    try {
+      if (subConfirmacion.accion === "eliminar") {
+        await apiFetch(`/suscripciones/${subConfirmacion.id}`, {
+          method: "DELETE",
+        });
+        setSubMensaje("Suscripción borrada");
+      } else {
+        await apiFetch(
+          `/suscripciones/${subConfirmacion.id}/${subConfirmacion.accion}`,
+          { method: "POST" },
+        );
+      }
+      setSubConfirmacion(null);
+      await cargarSuscripciones();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "No se pudo actualizar la suscripción",
+      );
+    } finally {
+      setSubCambiando(false);
+    }
+  }
+
+  // Pide confirmación antes de cambiar el estado de una suscripción.
+  function pedirCambioSuscripcion(
+    suscripcion: Suscripcion,
+    accion: "pausar" | "finalizar" | "reactivar" | "eliminar",
+  ) {
+    const textos: Record<
+      "pausar" | "finalizar" | "reactivar" | "eliminar",
+      { titulo: string; mensaje: string; texto: string }
+    > = {
+      pausar: {
+        titulo: "¿Pausar la suscripción?",
+        mensaje: "Dejará de generar comisiones mientras esté pausada.",
+        texto: "Pausar",
+      },
+      finalizar: {
+        titulo: "¿Finalizar la suscripción?",
+        mensaje: "Se cerrará definitivamente y no volverá a generar comisiones.",
+        texto: "Finalizar",
+      },
+      reactivar: {
+        titulo: "¿Reactivar la suscripción?",
+        mensaje: "Volverá a generar comisiones recurrentes.",
+        texto: "Reactivar",
+      },
+      eliminar: {
+        titulo: "¿Borrar la suscripción?",
+        mensaje:
+          "Se eliminará del sistema junto con sus comisiones. Esta acción no se puede deshacer.",
+        texto: "Borrar",
+      },
+    };
+    setSubConfirmacion({
+      id: suscripcion.id,
+      accion,
+      cliente: suscripcion.cliente,
+      ...textos[accion],
+    });
+  }
+
   const comisionCalculada =
     comisionTipo === "PORCENTAJE"
       ? (Number(monto) * Number(comisionValor)) / 100
@@ -335,6 +513,11 @@ function MovimientosComisionista() {
         </section>
 
         {error && <p className="text-sm text-danger-500">{error}</p>}
+        {subMensaje && (
+          <p className="text-sm text-success-600 dark:text-success-500">
+            {subMensaje}
+          </p>
+        )}
 
         {cargando ? (
           <p className="text-sm text-body-text">Cargando movimientos…</p>
@@ -560,17 +743,93 @@ function MovimientosComisionista() {
             <section className="surface overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
                 <div className="flex items-center gap-3">
-                  <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">{esGestor ? "03" : "02"}</span>
+            {esGestor && (
+              <section className="surface overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
+                  <div className="flex items-center gap-3">
+                    <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">03</span>
+                    <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
+                      {subEditandoId ? "Editar suscripción" : "Nueva suscripción"}
+                    </h2>
+                  </div>
+                  <p className="text-[12px] text-body-text">
+                    La comisión se genera según la frecuencia indicada.
+                  </p>
+                </div>
+
+                <form onSubmit={guardarSuscripcion} className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <label className={labelClass}>
+                    <span>Cliente</span>
+                    <input required value={subCliente} onChange={(e) => setSubCliente(e.target.value)} placeholder="Ej. Restaurante La Esquina" className={inputClass} />
+                  </label>
+                  <label className={labelClass}>
+                    <span>Producto</span>
+                    <input value={subProducto} onChange={(e) => setSubProducto(e.target.value)} placeholder="Ej. Plan Básico" className={inputClass} />
+                  </label>
+                  <label className={labelClass}>
+                    <span>Monto por cobro (₡)</span>
+                    <input required inputMode="decimal" value={subMonto} onChange={(e) => setSubMonto(e.target.value)} placeholder="30000" className={inputClass} />
+                  </label>
+                  <label className={labelClass}>
+                    <span>Cada cuánto paga el cliente</span>
+                    <select value={subFrecuenciaCobro} onChange={(e) => setSubFrecuenciaCobro(e.target.value as Frecuencia)} className={inputClass}>
+                      {Object.entries(frecuenciaLabel).map(([valor, texto]) => (
+                        <option key={valor} value={valor}>{texto}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className={labelClass}>
+                    <span>Inicio</span>
+                    <input type="date" required value={subInicio} onChange={(e) => setSubInicio(e.target.value)} className={inputClass} />
+                  </label>
+                  <label className={labelClass}>
+                    <span>Fin (opcional)</span>
+                    <input type="date" value={subFin} onChange={(e) => setSubFin(e.target.value)} className={inputClass} />
+                  </label>
+                  <label className={labelClass}>
+                    <span>Tipo de comisión</span>
+                    <select value={subComisionTipo} onChange={(e) => setSubComisionTipo(e.target.value as "PORCENTAJE" | "MONTO_FIJO")} className={inputClass}>
+                      <option value="PORCENTAJE">Porcentaje (%)</option>
+                      <option value="MONTO_FIJO">Monto fijo (₡)</option>
+                    </select>
+                  </label>
+                  <label className={labelClass}>
+                    <span>{subComisionTipo === "PORCENTAJE" ? "Porcentaje de comisión (%)" : "Monto fijo de comisión (₡)"}</span>
+                    <input required inputMode="decimal" value={subComisionValor} onChange={(e) => setSubComisionValor(e.target.value)} placeholder={subComisionTipo === "PORCENTAJE" ? "10" : "5000"} className={inputClass} />
+                  </label>
+                  <label className={labelClass}>
+                    <span>Cada cuánto gana la comisión</span>
+                    <select value={subComisionFrecuencia} onChange={(e) => setSubComisionFrecuencia(e.target.value as Frecuencia)} className={inputClass}>
+                      {Object.entries(frecuenciaLabel).map(([valor, texto]) => (
+                        <option key={valor} value={valor}>{texto}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="flex items-end gap-3 sm:col-span-2 lg:col-span-3">
+                    <button type="submit" disabled={subGuardando} className="h-[46px] rounded-xl bg-primary-500 px-5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60">
+                      {subGuardando ? "Guardando…" : subEditandoId ? "Guardar cambios" : "Crear suscripción"}
+                    </button>
+                    {subEditandoId && (
+                      <button type="button" onClick={resetSuscripcion} className="h-[46px] rounded-xl border border-light-100 px-5 text-sm font-semibold text-body-text dark:border-dark-600">
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[12px] leading-relaxed text-body-text sm:col-span-2 lg:col-span-3">
+                    <strong>Cliente:</strong> quién paga cada cierto tiempo. La comisión se calcula con el tipo y la frecuencia elegidos.
+                  </p>
+                </form>
+              </section>
+            )}
+
+                  <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">{esGestor ? "04" : "02"}</span>
                   <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
                     {esComisionista ? "Mis suscripciones" : "Suscripciones del comisionista"}
                   </h2>
                 </div>
-                <Link
-                  href="/suscripciones"
-                  className="text-[12px] font-semibold text-primary-600 transition-colors hover:text-primary-500 dark:text-primary-100"
-                >
-                  Ver todas →
-                </Link>
+                <p className="text-[12px] text-body-text">
+                  {suscripciones.length} registros
+                </p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full xl:min-w-[820px] text-left text-sm">
@@ -582,12 +841,15 @@ function MovimientosComisionista() {
                       <th className="hidden xl:table-cell px-4 py-3 font-semibold">Comisión</th>
                       <th className="hidden xl:table-cell px-4 py-3 font-semibold">Vigencia</th>
                       <th className="px-6 py-3 font-semibold">Estado</th>
+                      {esGestor && (
+                        <th className="lg:sticky lg:right-0 lg:z-10 bg-light-50 dark:bg-dark-600 px-4 py-3 text-right font-semibold">Acciones</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {suscripciones.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-body-text">
+                        <td colSpan={esGestor ? 7 : 6} className="px-6 py-8 text-center text-body-text">
                           Todavía no tiene suscripciones registradas.
                         </td>
                       </tr>
@@ -627,6 +889,50 @@ function MovimientosComisionista() {
                               {estadoSuscripcionLabel[s.estado]}
                             </span>
                           </td>
+                          {esGestor && (
+                            <td className="lg:sticky lg:right-0 lg:z-10 bg-white lg:shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-4 py-3.5">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {s.estado === "FINALIZADA" ? (
+                                  <AccionTabla
+                                    etiqueta={`Borrar suscripción de ${s.cliente}`}
+                                    icono="anular"
+                                    variante="peligro"
+                                    onClick={() => pedirCambioSuscripcion(s, "eliminar")}
+                                  />
+                                ) : (
+                                  <>
+                                    <AccionTabla
+                                      etiqueta={`Editar suscripción de ${s.cliente}`}
+                                      icono="editar"
+                                      variante="primario"
+                                      onClick={() => editarSuscripcion(s)}
+                                    />
+                                    {s.estado === "ACTIVA" ? (
+                                      <AccionTabla
+                                        etiqueta={`Pausar suscripción de ${s.cliente}`}
+                                        icono="pausar"
+                                        variante="aviso"
+                                        onClick={() => pedirCambioSuscripcion(s, "pausar")}
+                                      />
+                                    ) : (
+                                      <AccionTabla
+                                        etiqueta={`Reactivar suscripción de ${s.cliente}`}
+                                        icono="reactivar"
+                                        variante="exito"
+                                        onClick={() => pedirCambioSuscripcion(s, "reactivar")}
+                                      />
+                                    )}
+                                    <AccionTabla
+                                      etiqueta={`Finalizar suscripción de ${s.cliente}`}
+                                      icono="finalizar"
+                                      variante="peligro"
+                                      onClick={() => pedirCambioSuscripcion(s, "finalizar")}
+                                    />
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))
                     )}
@@ -651,6 +957,18 @@ function MovimientosComisionista() {
         cargando={anulando}
         onConfirmar={anularVenta}
         onCancelar={() => setVentaAnular(null)}
+      />
+
+      <ConfirmDialog
+        abierto={subConfirmacion !== null}
+        titulo={subConfirmacion?.titulo ?? ""}
+        mensaje={subConfirmacion?.mensaje ?? ""}
+        detalle={subConfirmacion?.cliente ?? null}
+        textoConfirmar={subConfirmacion?.texto ?? "Confirmar"}
+        variante={subConfirmacion?.accion === "reactivar" ? "primary" : "danger"}
+        cargando={subCambiando}
+        onConfirmar={cambiarEstadoSuscripcion}
+        onCancelar={() => setSubConfirmacion(null)}
       />
     </AppShell>
   );
