@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import logoIcon from "../../public/logo-icon-light.png";
+import logoIcon from "../../public/logo-icon-dark.png";
 import { apiFetch, clearToken, getToken } from "@/lib/api";
 import { ThemeToggle } from "./theme-toggle";
 
