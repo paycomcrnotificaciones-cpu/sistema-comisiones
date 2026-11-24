@@ -50,10 +50,8 @@ beforeAll(async () => {
   await prisma.venta.deleteMany();
   await prisma.suscripcion.deleteMany();
   await prisma.reglaComision.deleteMany();
-  await prisma.meta.deleteMany();
   await prisma.usuario.deleteMany();
   await prisma.comisionista.deleteMany();
-  await prisma.sucursal.deleteMany();
   await prisma.empresa.deleteMany();
 
   const empresaA = await prisma.empresa.create({ data: { nombre: 'Empresa A' } });
@@ -61,20 +59,11 @@ beforeAll(async () => {
   ids.empresaA = empresaA.id;
   ids.empresaB = empresaB.id;
 
-  const sucA = await prisma.sucursal.create({
-    data: { empresaId: empresaA.id, nombre: 'Sucursal A' },
-  });
-  const sucB = await prisma.sucursal.create({
-    data: { empresaId: empresaB.id, nombre: 'Sucursal B' },
-  });
-  ids.sucursalA = sucA.id;
-  ids.sucursalB = sucB.id;
-
   const comiA = await prisma.comisionista.create({
-    data: { empresaId: empresaA.id, sucursalId: sucA.id, nombre: 'Ana A' },
+    data: { empresaId: empresaA.id, nombre: 'Ana A' },
   });
   const comiB = await prisma.comisionista.create({
-    data: { empresaId: empresaB.id, sucursalId: sucB.id, nombre: 'Bruno B' },
+    data: { empresaId: empresaB.id, nombre: 'Bruno B' },
   });
   ids.comisionistaA = comiA.id;
   ids.comisionistaB = comiB.id;
@@ -174,7 +163,6 @@ describe('Permisos por rol', () => {
       .send({
         fecha: '2026-03-02',
         comisionistaId: ids.comisionistaA,
-        sucursalId: ids.sucursalA,
         bruto: '100',
         neto: '100',
         comisionValor: '10',
@@ -229,7 +217,6 @@ describe('Aislamiento entre empresas', () => {
       .send({
         fecha: '2026-03-03',
         comisionistaId: ids.comisionistaB,
-        sucursalId: ids.sucursalA,
         bruto: '100',
         neto: '100',
         comisionValor: '10',
@@ -246,7 +233,6 @@ describe('Ventas y cálculo de comisión', () => {
       .send({
         fecha: '2026-03-05',
         comisionistaId: ids.comisionistaA,
-        sucursalId: ids.sucursalA,
         producto: 'Producto de prueba',
         bruto: '1300',
         neto: '1234.5678',
@@ -264,7 +250,6 @@ describe('Ventas y cálculo de comisión', () => {
       .send({
         fecha: '2026-03-06',
         comisionistaId: ids.comisionistaA,
-        sucursalId: ids.sucursalA,
         bruto: '500',
         neto: '500',
         comisionTipo: 'MONTO_FIJO',
@@ -281,7 +266,6 @@ describe('Ventas y cálculo de comisión', () => {
       .send({
         fecha: '2026-03-07',
         comisionistaId: ids.comisionistaA,
-        sucursalId: ids.sucursalA,
         bruto: '100',
         neto: '150',
         comisionValor: '10',
@@ -296,7 +280,6 @@ describe('Ventas y cálculo de comisión', () => {
       .send({
         fecha: '2026-03-08',
         comisionistaId: ids.comisionistaA,
-        sucursalId: ids.sucursalA,
         bruto: '100',
         neto: '100',
         comisionTipo: 'PORCENTAJE',
@@ -408,7 +391,6 @@ describe('Generación en lote', () => {
       .send({
         fecha: '2026-05-10',
         comisionistaId: ids.comisionistaA,
-        sucursalId: ids.sucursalA,
         bruto: '200',
         neto: '200',
         comisionValor: '10',

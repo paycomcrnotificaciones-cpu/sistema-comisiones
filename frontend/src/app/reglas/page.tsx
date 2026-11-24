@@ -7,7 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { apiFetch, getSesion, getToken, type SesionJwt } from "@/lib/api";
 
-type Ambito = "GLOBAL" | "PRODUCTO" | "COMISIONISTA" | "SUCURSAL";
+type Ambito = "GLOBAL" | "PRODUCTO" | "COMISIONISTA";
 type Tipo = "PORCENTAJE" | "MONTO_FIJO";
 
 interface Regla {
@@ -23,7 +23,6 @@ interface Regla {
   vigenciaDesde: string | null;
   vigenciaHasta: string | null;
   comisionista: { id: string; nombre: string } | null;
-  sucursal: { id: string; nombre: string } | null;
 }
 
 interface Opcion {
@@ -47,14 +46,12 @@ const ambitos: { valor: Ambito; texto: string }[] = [
   { valor: "GLOBAL", texto: "Global" },
   { valor: "PRODUCTO", texto: "Por producto" },
   { valor: "COMISIONISTA", texto: "Por comisionista" },
-  { valor: "SUCURSAL", texto: "Por sucursal" },
 ];
 
-// Texto corto que dice a qué aplica la regla (producto, persona o sucursal).
+// Texto corto que dice a qué aplica la regla (producto o persona).
 function detalleAmbito(r: Regla): string {
   if (r.ambito === "PRODUCTO") return r.producto ?? "—";
   if (r.ambito === "COMISIONISTA") return r.comisionista?.nombre ?? "—";
-  if (r.ambito === "SUCURSAL") return r.sucursal?.nombre ?? "—";
   return "Todas las ventas";
 }
 
@@ -67,7 +64,7 @@ function valorTexto(r: Regla): string {
 
 
 // Pantalla de reglas de comisión. Sirven para que el formulario de venta
-// proponga un porcentaje o monto fijo según el producto, la persona o la sucursal.
+// proponga un porcentaje o monto fijo según el producto o la persona.
 export default function ReglasPage() {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
@@ -75,7 +72,6 @@ export default function ReglasPage() {
 
   const [reglas, setReglas] = useState<Regla[]>([]);
   const [comisionistas, setComisionistas] = useState<Opcion[]>([]);
-  const [sucursales, setSucursales] = useState<Opcion[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [trabajando, setTrabajando] = useState(false);
@@ -89,7 +85,6 @@ export default function ReglasPage() {
   const [ambito, setAmbito] = useState<Ambito>("PRODUCTO");
   const [producto, setProducto] = useState("");
   const [comisionistaId, setComisionistaId] = useState("");
-  const [sucursalId, setSucursalId] = useState("");
   const [prioridad, setPrioridad] = useState("100");
   const [acumulable, setAcumulable] = useState(false);
   const [activa, setActiva] = useState(true);
@@ -103,14 +98,12 @@ export default function ReglasPage() {
 
   // Trae todas las reglas de la empresa.
   const cargar = useCallback(async () => {
-    const [lista, gente, sedes] = await Promise.all([
+    const [lista, gente] = await Promise.all([
       apiFetch<Regla[]>("/reglas"),
       apiFetch<Opcion[]>("/comisionistas"),
-      apiFetch<Opcion[]>("/sucursales"),
     ]);
     setReglas(lista);
     setComisionistas(gente);
-    setSucursales(sedes);
   }, []);
 
   useEffect(() => {
@@ -148,7 +141,6 @@ export default function ReglasPage() {
     setAmbito("PRODUCTO");
     setProducto("");
     setComisionistaId("");
-    setSucursalId("");
     setPrioridad("100");
     setAcumulable(false);
     setActiva(true);
@@ -165,7 +157,6 @@ export default function ReglasPage() {
     setAmbito(r.ambito);
     setProducto(r.producto ?? "");
     setComisionistaId(r.comisionista?.id ?? "");
-    setSucursalId(r.sucursal?.id ?? "");
     setPrioridad(String(r.prioridad));
     setAcumulable(r.acumulable);
     setActiva(r.activa);
@@ -187,7 +178,6 @@ export default function ReglasPage() {
         ambito,
         producto: ambito === "PRODUCTO" ? producto : null,
         comisionistaId: ambito === "COMISIONISTA" ? comisionistaId || null : null,
-        sucursalId: ambito === "SUCURSAL" ? sucursalId || null : null,
         prioridad: Number(prioridad) || 100,
         acumulable,
         activa,
@@ -258,7 +248,7 @@ export default function ReglasPage() {
               Reglas de comisión
             </h1>
             <p className="mt-3 max-w-xl text-[14px] text-white/70">
-              Define cuánto se paga según el producto, el comisionista o la sucursal.
+              Define cuánto se paga según el producto o el comisionista.
               La regla más específica se sugiere al registrar la venta.
             </p>
           </div>
@@ -332,17 +322,6 @@ export default function ReglasPage() {
                   <option value="">Selecciona…</option>
                   {comisionistas.map((c) => (
                     <option key={c.id} value={c.id}>{c.nombre}</option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {ambito === "SUCURSAL" && (
-              <label className={`${labelClass} sm:col-span-2`}>
-                <span>Sucursal</span>
-                <select required value={sucursalId} onChange={(e) => setSucursalId(e.target.value)} className={inputClass}>
-                  <option value="">Selecciona…</option>
-                  {sucursales.map((s) => (
-                    <option key={s.id} value={s.id}>{s.nombre}</option>
                   ))}
                 </select>
               </label>

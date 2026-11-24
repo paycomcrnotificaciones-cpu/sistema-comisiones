@@ -147,4 +147,41 @@ export class SuscripcionesService {
       include: incluir,
     });
   }
+
+  // Suscripciones activas que terminan dentro de los próximos días.
+  porVencer(
+    empresaId: string,
+    dias = 7,
+    soloComisionistaId?: string | null,
+  ) {
+    const hoy = new Date();
+    const limite = new Date(hoy.getTime() + dias * 24 * 60 * 60 * 1000);
+    return this.prisma.suscripcion.findMany({
+      where: {
+        empresaId,
+        estado: 'ACTIVA',
+        fin: { not: null, gte: hoy, lte: limite },
+        ...(soloComisionistaId ? { comisionistaId: soloComisionistaId } : {}),
+      },
+      include: incluir,
+      orderBy: { fin: 'asc' },
+    });
+  }
+
+  // Borra definitivamente una suscripción finalizada y sus comisiones.
+  async eliminar(empresaId: string, id: string) {
+    const actual = await this.obtener(empresaId, id);
+    if (actual.estado !== 'FINALIZADA') {
+      throw new BadRequestException(
+        'Solo se puede borrar una suscripción finalizada',
+      );
+    }
+    await this.prisma.$transaction([
+      this.prisma.comisionSuscripcion.deleteMany({
+        where: { suscripcionId: id, empresaId },
+      }),
+      this.prisma.suscripcion.delete({ where: { id } }),
+    ]);
+    return { ok: true };
+  }
 }

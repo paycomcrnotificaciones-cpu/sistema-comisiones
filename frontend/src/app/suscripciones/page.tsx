@@ -73,7 +73,7 @@ export default function SuscripcionesPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmacion, setConfirmacion] = useState<{
     id: string;
-    accion: "pausar" | "finalizar" | "reactivar";
+    accion: "pausar" | "finalizar" | "reactivar" | "eliminar";
     cliente: string;
     titulo: string;
     mensaje: string;
@@ -204,9 +204,14 @@ export default function SuscripcionesPage() {
     setError(null);
     setCambiando(true);
     try {
-      await apiFetch(`/suscripciones/${confirmacion.id}/${confirmacion.accion}`, {
-        method: "POST",
-      });
+      if (confirmacion.accion === "eliminar") {
+        await apiFetch(`/suscripciones/${confirmacion.id}`, { method: "DELETE" });
+        setMensaje("Suscripción borrada");
+      } else {
+        await apiFetch(`/suscripciones/${confirmacion.id}/${confirmacion.accion}`, {
+          method: "POST",
+        });
+      }
       setConfirmacion(null);
       await cargar();
     } catch (err) {
@@ -219,27 +224,33 @@ export default function SuscripcionesPage() {
   // Pide confirmación antes de pausar, reactivar o finalizar.
   function pedirCambio(
     id: string,
-    accion: "pausar" | "finalizar" | "reactivar",
+    accion: "pausar" | "finalizar" | "reactivar" | "eliminar",
     cliente: string,
   ) {
-    setConfirmacion({
-      id,
-      accion,
-      cliente,
-      titulo:
-        accion === "pausar"
-          ? "¿Pausar la suscripción?"
-          : accion === "finalizar"
-            ? "¿Finalizar la suscripción?"
-            : "¿Reactivar la suscripción?",
-      mensaje:
-        accion === "pausar"
-          ? "Dejará de generar comisiones mientras esté pausada."
-          : accion === "finalizar"
-            ? "Se cerrará definitivamente y no volverá a generar comisiones."
-            : "Volverá a generar comisiones recurrentes.",
-      texto: accion === "pausar" ? "Pausar" : accion === "finalizar" ? "Finalizar" : "Reactivar",
-    });
+    const textos: Record<typeof accion, { titulo: string; mensaje: string; texto: string }> = {
+      pausar: {
+        titulo: "¿Pausar la suscripción?",
+        mensaje: "Dejará de generar comisiones mientras esté pausada.",
+        texto: "Pausar",
+      },
+      finalizar: {
+        titulo: "¿Finalizar la suscripción?",
+        mensaje: "Se cerrará definitivamente y no volverá a generar comisiones.",
+        texto: "Finalizar",
+      },
+      reactivar: {
+        titulo: "¿Reactivar la suscripción?",
+        mensaje: "Volverá a generar comisiones recurrentes.",
+        texto: "Reactivar",
+      },
+      eliminar: {
+        titulo: "¿Borrar la suscripción?",
+        mensaje:
+          "Se eliminará del sistema junto con sus comisiones. Esta acción no se puede deshacer.",
+        texto: "Borrar",
+      },
+    };
+    setConfirmacion({ id, accion, cliente, ...textos[accion] });
   }
 
   return (
@@ -419,7 +430,16 @@ export default function SuscripcionesPage() {
                         </span>
                       </td>
                       <td className="lg:sticky lg:right-0 lg:z-10 bg-white lg:shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-6 py-3.5 text-right">
-                        {puedeGestionar && s.estado !== "FINALIZADA" && (
+                        {puedeGestionar && s.estado === "FINALIZADA" ? (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <AccionTabla
+                              etiqueta={`Borrar suscripción de ${s.cliente}`}
+                              icono="anular"
+                              variante="peligro"
+                              onClick={() => pedirCambio(s.id, "eliminar", s.cliente)}
+                            />
+                          </div>
+                        ) : puedeGestionar ? (
                           <div className="flex items-center justify-end gap-1.5">
                             <AccionTabla
                               etiqueta={`Editar suscripción de ${s.cliente}`}
@@ -449,7 +469,7 @@ export default function SuscripcionesPage() {
                               onClick={() => pedirCambio(s.id, "finalizar", s.cliente)}
                             />
                           </div>
-                        )}
+                        ) : null}
                       </td>
                     </tr>
                   ))

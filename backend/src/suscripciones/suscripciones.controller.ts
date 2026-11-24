@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -40,6 +41,17 @@ export class SuscripcionesController {
     return this.suscripciones.listar(
       usuario.empresaId,
       query,
+      usuario.rol === 'COMISIONISTA' ? usuario.comisionistaId : undefined,
+    );
+  }
+
+  @Get('por-vencer')
+  // GET /api/suscripciones/por-vencer?dias=7 — las que vencen pronto.
+  porVencer(@Req() req: RequestConUsuario, @Query('dias') dias?: string) {
+    const usuario = req.usuario!;
+    return this.suscripciones.porVencer(
+      usuario.empresaId,
+      dias ? Number(dias) : 7,
       usuario.rol === 'COMISIONISTA' ? usuario.comisionistaId : undefined,
     );
   }
@@ -112,5 +124,13 @@ export class SuscripcionesController {
       id,
       'ACTIVA',
     );
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  // DELETE /api/suscripciones/:id — borra una finalizada y sus comisiones.
+  eliminar(@Req() req: RequestConUsuario, @Param('id') id: string) {
+    return this.suscripciones.eliminar(req.usuario!.empresaId, id);
   }
 }

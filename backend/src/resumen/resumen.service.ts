@@ -5,7 +5,6 @@ import { Decimal } from 'decimal.js';
 
 import { aDecimal, aNumero } from '../common/dinero.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { MetasService } from '../metas/metas.service.js';
 import { ComisionesSuscripcionService } from '../suscripciones/comisiones-suscripcion.service.js';
 
 // Recibe un mes AAAA-MM y devuelve el anterior (2026-01 -> 2025-12).
@@ -24,14 +23,12 @@ interface FilaVenta {
   comisionMonto: unknown;
 }
 
-// Arma el panel del mes: totales, ranking de comisionistas, ventas por
-// sucursal (comparadas con el mes anterior), ventas por día y avance de metas.
+// Arma el panel del mes: totales, ranking de comisionistas y ventas por día.
 @Injectable()
 export class ResumenService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly comisionesSvc: ComisionesSuscripcionService,
-    private readonly metasSvc: MetasService,
   ) {}
 
   // Devuelve todo lo que muestra la pantalla de Resumen para un mes.
@@ -54,19 +51,13 @@ export class ResumenService {
       fecha: { gte: desde, lt: hasta },
     };
 
-    const previo = rangoMes(mesAnterior(mes));
-    const wherePrevio = {
-      ...where,
-      fecha: { gte: previo.desde, lt: previo.hasta },
-    };
-
     const whereComision = {
       empresaId,
       periodo: mes,
       ...(soloComisionistaId ? { comisionistaId: soloComisionistaId } : {}),
     };
 
-    const [totales, porComisionista, porSucursal, porSucursalPrevio, ventas, activos, pendiente, enBorrador, pagada, comisiones, pendienteCom, porComisionistaCom, metasMes] =
+    const [totales, porComisionista, ventas, activos, pendiente, enBorrador, pagada, comisiones, pendienteCom, porComisionistaCom] =
       await Promise.all([
         this.prisma.venta.aggregate({
           where,
@@ -78,17 +69,6 @@ export class ResumenService {
           where,
           _count: { _all: true },
           _sum: { neto: true, comisionMonto: true },
-        }),
-        this.prisma.venta.groupBy({
-          by: ['sucursalId'],
-          where,
-          _count: { _all: true },
-          _sum: { neto: true, comisionMonto: true },
-        }),
-        this.prisma.venta.groupBy({
-          by: ['sucursalId'],
-          where: wherePrevio,
-          _sum: { neto: true },
         }),
         this.prisma.venta.findMany({
           where,
@@ -140,7 +120,6 @@ export class ResumenService {
           where: whereComision,
           _sum: { base: true, monto: true },
         }),
-        this.metasSvc.mapaMes(empresaId, mes),
       ]);
 
     // Los groupBy devuelven solo ids; aquí se buscan los nombres para mostrarlos.
@@ -150,23 +129,14 @@ export class ResumenService {
         ...porComisionistaCom.map((f) => f.comisionistaId),
       ]),
     ];
-    const idsSucursales = porSucursal.map((f) => f.sucursalId);
-
-    const [comisionistas, sucursales] = await Promise.all([
-      this.prisma.comisionista.findMany({
-        where: { id: { in: idsComisionistas } },
-        select: { id: true, nombre: true },
-      }),
-      this.prisma.sucursal.findMany({
-        where: { id: { in: idsSucursales } },
-        select: { id: true, nombre: true },
-      }),
-    ]);
+    const comisionistas = await this.prisma.comisionista.findMany({
+      where: { id: { in: idsComisionistas } },
+      select: { id: true, nombre: true },
+    });
 
     const nombreComisionista = new Map(
       comisionistas.map((c) => [c.id, c.nombre]),
     );
-    const nombreSucursal = new Map(sucursales.map((s) => [s.id, s.nombre]));
 
     // Agrupa las ventas del mes por día para dibujar la gráfica de barras.
     const porDia = new Map<string, { monto: Decimal; comision: Decimal }>();
@@ -229,48 +199,15 @@ export class ResumenService {
           .plus(aDecimal(pendienteCom._sum.monto ?? 0)),
       ),
       comisionPagada: aNumero(pagada._sum.comisionTotal ?? 0),
-      metaGeneral: metasMes.general,
       porComisionista: [...filas.entries()]
-        .map(([id, valores]) => {
-          const meta =
-            metasMes.individuales.get(id) ?? metasMes.general ?? null;
-          return {
-            id,
-            nombre: nombreComisionista.get(id) ?? 'Sin nombre',
-            ventas: valores.ventas,
-            montoVendido: aNumero(valores.montoVendido),
-            comision: aNumero(valores.comision),
-            meta,
-            avance:
-              meta && meta > 0
-                ? aNumero(
-                    valores.montoVendido.dividedBy(meta).times(100),
-                    1,
-                  )
-                : null,
-          };
-        })
+        .map(([id, valores]) => ({
+          id,
+          nombre: nombreComisionista.get(id) ?? 'Sin nombre',
+          ventas: valores.ventas,
+          montoVendido: aNumero(valores.montoVendido),
+          comision: aNumero(valores.comision),
+        }))
         .sort((a, b) => b.comision - a.comision),
-      porSucursal: porSucursal
-        .map((f) => {
-          const anterior =
-            porSucursalPrevio.find((p) => p.sucursalId === f.sucursalId)?._sum
-              .neto ?? 0;
-          const actual = Number(f._sum.neto ?? 0);
-          return {
-            id: f.sucursalId,
-            nombre: nombreSucursal.get(f.sucursalId) ?? 'Sin sucursal',
-            ventas: f._count._all,
-            montoVendido: actual,
-            comision: Number(f._sum.comisionMonto ?? 0),
-            montoAnterior: Number(anterior),
-            variacion:
-              Number(anterior) > 0
-                ? Math.round(((actual - Number(anterior)) / Number(anterior)) * 1000) / 10
-                : null,
-          };
-        })
-        .sort((a, b) => b.montoVendido - a.montoVendido),
       porDia: [...porDia.entries()]
         .map(([fecha, valores]) => ({
           fecha,

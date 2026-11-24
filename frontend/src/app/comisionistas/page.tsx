@@ -8,16 +8,10 @@ import { AccionTabla } from "@/components/accion-tabla";
 import { AppShell } from "@/components/app-shell";
 import { apiFetch, getSesion, type SesionJwt } from "@/lib/api";
 
-interface Sucursal {
-  id: string;
-  nombre: string;
-}
-
 interface Comisionista {
   id: string;
   nombre: string;
   activo: boolean;
-  sucursal: { id: string; nombre: string } | null;
   usuario: { email: string; activo: boolean } | null;
 }
 
@@ -36,8 +30,8 @@ function iniciales(nombre: string): string {
     .join("");
 }
 
-// Listado del equipo. Muestra a cada comisionista con su sucursal, su estado
-// y un botón para abrir su libreta. Permite buscar y filtrar por sucursal.
+// Listado del equipo. Muestra a cada comisionista con su estado
+// y un botón para abrir su libreta. Permite buscar por nombre o correo.
 export default function ComisionistasPage() {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
@@ -48,10 +42,8 @@ export default function ComisionistasPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSesion(getSesion());
   }, []);
-  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [comisionistas, setComisionistas] = useState<Comisionista[]>([]);
   const [nombre, setNombre] = useState("");
-  const [sucursalId, setSucursalId] = useState("");
   const [email, setEmail] = useState("");
   // Enlace de un solo uso para que el comisionista cree su contraseña.
   const [enlace, setEnlace] = useState<{ nombre: string; url: string } | null>(null);
@@ -70,14 +62,9 @@ export default function ComisionistasPage() {
     let activo = true;
     (async () => {
       try {
-        const [s, c] = await Promise.all([
-          apiFetch<Sucursal[]>("/sucursales"),
-          apiFetch<Comisionista[]>("/comisionistas"),
-        ]);
+        const c = await apiFetch<Comisionista[]>("/comisionistas");
         if (!activo) return;
-        setSucursales(s);
         setComisionistas(c);
-        setSucursalId((actual) => actual || s[0]?.id || "");
         setCargando(false);
       } catch (err) {
         if (!activo) return;
@@ -100,7 +87,6 @@ export default function ComisionistasPage() {
         method: "POST",
         body: JSON.stringify({
           nombre,
-          sucursalId,
           email: email || undefined,
         }),
       });
@@ -122,7 +108,7 @@ export default function ComisionistasPage() {
     return comisionistas.filter(
       (c) =>
         c.nombre.toLowerCase().includes(q) ||
-        (c.sucursal?.nombre ?? "").toLowerCase().includes(q),
+        (c.usuario?.email ?? "").toLowerCase().includes(q),
     );
   }, [comisionistas, busqueda]);
 
@@ -186,17 +172,6 @@ export default function ComisionistasPage() {
             <label className="space-y-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Nombre completo</span>
               <input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Laura Méndez" className={inputClass} />
-            </label>
-
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-body-text">Sucursal</span>
-              <select value={sucursalId} onChange={(e) => setSucursalId(e.target.value)} className={inputClass}>
-                {sucursales.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre}
-                  </option>
-                ))}
-              </select>
             </label>
 
             <label className="space-y-1.5">
@@ -290,7 +265,6 @@ export default function ComisionistasPage() {
               <thead>
                 <tr className="bg-light-50 text-[10px] uppercase tracking-[1.5px] text-body-text dark:bg-dark-600">
                   <th className="px-6 py-3 font-semibold lg:px-7">Comisionista</th>
-                  <th className="hidden lg:table-cell px-4 py-3 font-semibold">Sucursal</th>
                   <th className="hidden lg:table-cell px-4 py-3 font-semibold">Estado</th>
                   <th className="lg:sticky lg:right-0 lg:z-10 bg-light-50 dark:bg-dark-600 px-4 py-3 text-right font-semibold">Acciones</th>
                 </tr>
@@ -302,7 +276,7 @@ export default function ComisionistasPage() {
                   </tr>
                 ) : visibles.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-body-text">
+                    <td colSpan={4} className="px-6 py-8 text-center text-body-text">
                       {busqueda ? "Sin resultados para esa búsqueda" : "Sin comisionistas registrados"}
                     </td>
                   </tr>
@@ -325,7 +299,6 @@ export default function ComisionistasPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="hidden lg:table-cell px-4 py-3.5 text-body-text">{c.sucursal?.nombre ?? "—"}</td>
                       <td className="hidden lg:table-cell px-4 py-3.5">
                         <span
                           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${

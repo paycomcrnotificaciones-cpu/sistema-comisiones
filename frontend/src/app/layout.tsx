@@ -27,7 +27,7 @@ export const viewport: Viewport = {
 
 // Título y descripción que se ven en la pestaña del navegador.
 export const metadata: Metadata = {
-  title: "LiquiCom · Gestión de comisiones",
+  title: "PayCom CR · Gestión de comisiones",
   description: "Gestión de comisiones de ventas — Solusoft CR",
 };
 

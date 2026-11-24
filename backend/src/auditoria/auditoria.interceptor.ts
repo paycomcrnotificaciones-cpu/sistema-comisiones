@@ -58,10 +58,6 @@ function describir(
     return null;
   }
 
-  if (recurso === 'metas') {
-    return { accion: 'Fijó una meta', entidad: 'Meta' };
-  }
-
   if (recurso === 'suscripciones') {
     if (metodo === 'POST') return { accion: 'Creó una suscripción', entidad: 'Suscripción' };
     if (metodo === 'PATCH') return { accion: 'Editó una suscripción', entidad: 'Suscripción' };

@@ -15,7 +15,6 @@ export type LoginInput = z.infer<typeof loginSchema>;
 // --- Comisionistas ---
 export const comisionistaCreateSchema = z.object({
   nombre: z.string().trim().min(1).max(120),
-  sucursalId: z.string().uuid(),
   email: z.string().trim().toLowerCase().email().optional(),
 });
 
@@ -23,7 +22,6 @@ export type ComisionistaCreateInput = z.infer<typeof comisionistaCreateSchema>;
 
 export const comisionistaUpdateSchema = z.object({
   nombre: z.string().trim().min(1).max(120).optional(),
-  sucursalId: z.string().uuid().optional(),
   activo: z.boolean().optional(),
   email: z.string().trim().toLowerCase().email().optional(),
 });
@@ -35,7 +33,6 @@ export type ComisionistaUpdateInput = z.infer<typeof comisionistaUpdateSchema>;
 const dinero = z.string().regex(/^\d+(\.\d{1,4})?$/, 'Monto Invalido');
 
 export const ventaCreateSchema = z.object({
-  sucursalId: z.string().uuid(),
   comisionistaId: z.string().uuid(),
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida (YYYY-MM-DD)'),
   documento: z.string().trim().max(40).optional(),
@@ -58,7 +55,6 @@ export type VentaCreateInput = z.infer<typeof ventaCreateSchema>;
 
 export const ventaUpdateSchema = z
   .object({
-    sucursalId: z.string().uuid().optional(),
     comisionistaId: z.string().uuid().optional(),
     fecha: z
       .string()
@@ -93,7 +89,6 @@ export const ventaQuerySchema = z.object({
   desde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   hasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   comisionistaId: z.string().uuid().optional(),
-  sucursalId: z.string().uuid().optional(),
   estado: z.enum(['ACTIVA', 'ANULADA']).optional(),
   pago: z.enum(['PENDIENTE', 'PAGADA']).optional(),
   q: z.string().trim().max(100).optional(),
@@ -127,6 +122,7 @@ export const usuarioUpdateSchema = z.object({
   email: z.string().trim().toLowerCase().email().optional(),
   rol: rolSchema.optional(),
   activo: z.boolean().optional(),
+  comisionistaId: z.string().uuid().nullable().optional(),
 });
 
 export type UsuarioUpdateInput = z.infer<typeof usuarioUpdateSchema>;
@@ -140,21 +136,6 @@ export const activarSchema = z.object({
 });
 
 export type ActivarInput = z.infer<typeof activarSchema>;
-
-// --- Sucursales ---
-export const sucursalCreateSchema = z.object({
-  nombre: z.string().trim().min(1).max(120),
-  lugar: z.string().trim().max(120).optional(),
-});
-
-export type SucursalCreateInput = z.infer<typeof sucursalCreateSchema>;
-
-export const sucursalUpdateSchema = z.object({
-  nombre: z.string().trim().min(1).max(120).optional(),
-  lugar: z.string().trim().max(120).nullable().optional(),
-});
-
-export type SucursalUpdateInput = z.infer<typeof sucursalUpdateSchema>;
 
 // --- Liquidaciones ---
 const periodo = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mes inválido (YYYY-MM)');
@@ -233,21 +214,6 @@ export const suscripcionQuerySchema = z.object({
 
 export type SuscripcionQueryInput = z.infer<typeof suscripcionQuerySchema>;
 
-// --- Metas ---
-export const metaQuerySchema = z.object({
-  mes: periodo,
-});
-
-export type MetaQueryInput = z.infer<typeof metaQuerySchema>;
-
-export const metaUpsertSchema = z.object({
-  mes: periodo,
-  monto: z.coerce.number().min(0).nullable(),
-  comisionistaId: z.string().uuid().nullable().optional(),
-});
-
-export type MetaUpsertInput = z.infer<typeof metaUpsertSchema>;
-
 // --- Reglas de comisión ---
 // Cada ámbito exige su dato: una regla de producto necesita el producto,
 // una de comisionista necesita el comisionista, y así.
@@ -262,11 +228,10 @@ const reglaComisionBase = z.object({
   tipo: z.enum(['PORCENTAJE', 'MONTO_FIJO']),
   valor: z.coerce.number().min(0),
   ambito: z
-    .enum(['GLOBAL', 'PRODUCTO', 'COMISIONISTA', 'SUCURSAL'])
+    .enum(['GLOBAL', 'PRODUCTO', 'COMISIONISTA'])
     .default('GLOBAL'),
   producto: z.string().trim().max(120).nullable().optional(),
   comisionistaId: z.string().uuid().nullable().optional(),
-  sucursalId: z.string().uuid().nullable().optional(),
   prioridad: z.coerce.number().int().min(1).max(999).default(100),
   acumulable: z.boolean().default(false),
   activa: z.boolean().default(true),
@@ -282,10 +247,6 @@ export const reglaComisionSchema = reglaComisionBase
   .refine((v) => v.ambito !== 'COMISIONISTA' || !!v.comisionistaId, {
     message: 'Indica el comisionista de la regla',
     path: ['comisionistaId'],
-  })
-  .refine((v) => v.ambito !== 'SUCURSAL' || !!v.sucursalId, {
-    message: 'Indica la sucursal de la regla',
-    path: ['sucursalId'],
   });
 
 export const reglaComisionUpdateSchema = reglaComisionBase.partial();
@@ -298,7 +259,6 @@ export type ReglaComisionUpdateInput = z.infer<
 export const reglaSugerirSchema = z.object({
   producto: z.string().trim().max(120).optional(),
   comisionistaId: z.string().uuid().optional(),
-  sucursalId: z.string().uuid().optional(),
 });
 
 export type ReglaSugerirInput = z.infer<typeof reglaSugerirSchema>;

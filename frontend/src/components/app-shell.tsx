@@ -15,22 +15,15 @@ interface NavItem {
 }
 
 // Menú lateral. Algunas entradas se ocultan según el rol:
-// usuarios, sucursales, reglas e historial son solo para administradores.
+// usuarios, reglas e historial son solo para administradores.
 const enlaces: NavItem[] = [
   { href: "/comisionistas", texto: "Comisionistas" },
-  { href: "/sucursales", texto: "Sucursales" },
   { href: "/liquidaciones", texto: "Liquidaciones" },
   { href: "/suscripciones", texto: "Suscripciones" },
   { href: "/reglas", texto: "Reglas" },
   { href: "/historial", texto: "Historial" },
   { href: "/usuarios", texto: "Usuarios" },
 ];
-
-const formatoDinero = new Intl.NumberFormat("es-CR", {
-  style: "currency",
-  currency: "CRC",
-  minimumFractionDigits: 2,
-});
 
 const rolLabel: Record<string, string> = {
   SUPER_ADMIN: "Super admin",
@@ -95,17 +88,6 @@ function UsersIcon() {
       <path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" />
       <circle cx="9.5" cy="7.5" r="3.5" />
       <path d="M17 11l2 2 3-4" />
-    </svg>
-  );
-}
-
-// Icono de Sucursales: un local con su puerta.
-function StoreIcon() {
-  return (
-    <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 9h16l-1.2-4.2A2 2 0 0 0 16.9 3H7.1a2 2 0 0 0-1.9 1.8L4 9z" />
-      <path d="M5 9v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9" />
-      <path d="M9.5 21v-6h5v6" />
     </svg>
   );
 }
@@ -223,7 +205,6 @@ export function AppShell({
   const rutaInicio = esComisionista ? rutaPerfil : "/resumen";
   const enInicio = pathname === rutaInicio;
   const [activos, setActivos] = useState<number | null>(null);
-  const [resumen, setResumen] = useState<{ montoVendido: number; totalComision: number; totalVentas: number } | null>(null);
 
   useEffect(() => {
     if (!getToken()) {
@@ -239,14 +220,6 @@ export function AppShell({
         if (activo) setActivos(data.filter((c) => c.activo).length);
       } catch {
         if (activo) setActivos(null);
-      }
-    })();
-    (async () => {
-      try {
-        const data = await apiFetch<{ montoVendido: number; totalComision: number; totalVentas: number }>("/resumen");
-        if (activo) setResumen(data);
-      } catch {
-        if (activo) setResumen(null);
       }
     })();
     return () => {
@@ -265,7 +238,6 @@ export function AppShell({
       .filter((e) => !(esComisionista && e.href === "/liquidaciones"))
       .filter((e) => !(esComisionista && e.href === "/comisionistas"))
       .filter((e) => e.href !== "/usuarios" || esGestor)
-      .filter((e) => e.href !== "/sucursales" || esGestor)
       .filter((e) => e.href !== "/historial" || esGestor)
       .filter((e) => e.href !== "/reglas" || esGestor)
       .map((e) => ({
@@ -274,8 +246,6 @@ export function AppShell({
         icono:
           e.href === "/comisionistas" ? (
             <UsersIcon />
-          ) : e.href === "/sucursales" ? (
-            <StoreIcon />
           ) : e.href === "/usuarios" ? (
             <KeyIcon />
           ) : e.href === "/liquidaciones" ? (
@@ -336,10 +306,10 @@ export function AppShell({
     <div className="app-bg min-h-screen text-zinc-900 dark:text-light-50">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[268px] flex-col border-r border-white/5 bg-[linear-gradient(180deg,#151f3b_0%,#1d2a50_55%,#121a33_100%)] px-5 pb-6 pt-8 shadow-[8px_0_40px_-24px_rgba(10,18,38,0.8)] lg:flex">
         <Link href={esComisionista ? rutaPerfil : "/comisionistas"} className="flex items-center gap-3 px-2 pb-8">
-          <Image src={logoIcon} alt="LiquiCom" width={48} height={48} className="shrink-0 rounded-2xl bg-white/5 p-1 ring-1 ring-white/10" />
+          <Image src={logoIcon} alt="PayCom CR" width={48} height={48} className="shrink-0 rounded-2xl bg-white/5 p-1 ring-1 ring-white/10" />
           <span className="flex flex-col">
             <span className="font-display text-[19px] font-bold leading-tight tracking-tight text-white">
-              LiquiCom
+              PayCom CR
             </span>
             <span className="text-[9px] font-semibold uppercase tracking-[2px] text-white/60">
               Comisiones
@@ -352,32 +322,6 @@ export function AppShell({
         </nav>
 
         <div className="mt-auto space-y-4">
-          <div className="rounded-xl bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.03))] p-4 ring-1 ring-white/10">
-            <p className="text-[10px] font-semibold uppercase tracking-[1.5px] text-white/50">
-              Resumen del mes
-            </p>
-            <p className="mt-1 font-display text-[24px] font-bold leading-tight text-white">
-              {resumen ? formatoDinero.format(resumen.montoVendido) : "—"}
-            </p>
-            <p className="mt-1 text-[11px] text-white/50">
-              {resumen
-                ? `${resumen.totalVentas} ventas · ${formatoDinero.format(resumen.totalComision)} en comisión`
-                : "Sin movimientos aún"}
-            </p>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-brand-cyan-500),var(--color-primary-500))]"
-                style={{
-                  width: `${
-                    resumen && resumen.montoVendido > 0
-                      ? Math.min(100, (resumen.totalComision / resumen.montoVendido) * 100 * 4)
-                      : 0
-                  }%`,
-                }}
-              />
-            </div>
-          </div>
-
           <button
             type="button"
             onClick={() => {

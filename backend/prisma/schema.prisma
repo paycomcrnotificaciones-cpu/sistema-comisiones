@@ -37,35 +37,16 @@ model Empresa {
   creadoEn DateTime @default(now()) @map("creado_en")
 
   usuarios              Usuario[]
-  sucursales            Sucursal[]
   comisionistas         Comisionista[]
   monedas               Moneda[]
   ventas                Venta[]
   liquidaciones         Liquidacion[]
   suscripciones         Suscripcion[]
   comisionesSuscripcion ComisionSuscripcion[]
-  metas                 Meta[]
   auditoria             Auditoria[]
   reglaComisions        ReglaComision[]
 
   @@map("empresas")
-}
-
-// Sucursal: punto de venta. Agrupa comisionistas, ventas y reglas.
-model Sucursal {
-  id        String   @id @default(uuid())
-  empresaId String   @map("empresa_id")
-  nombre    String
-  lugar     String?
-  creadoEn  DateTime @default(now()) @map("creado_en")
-
-  empresa       Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  comisionistas Comisionista[]
-  reglas        ReglaComision[]
-  ventas        Venta[]
-
-  @@index([empresaId])
-  @@map("sucursales")
 }
 
 // Usuario: quien entra al sistema. Puede estar ligado a un comisionista.
@@ -108,23 +89,19 @@ model TokenAcceso {
 model Comisionista {
   id         String   @id @default(uuid())
   empresaId  String   @map("empresa_id")
-  sucursalId String   @map("sucursal_id")
   nombre     String
   activo     Boolean  @default(true)
   creadoEn   DateTime @default(now()) @map("creado_en")
 
   empresa               Empresa               @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  sucursal              Sucursal              @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
   ventas                Venta[]
   usuario               Usuario?
   liquidaciones         Liquidacion[]
   suscripciones         Suscripcion[]
   comisionesSuscripcion ComisionSuscripcion[]
-  metas                 Meta[]
   reglaComisions        ReglaComision[]
 
   @@index([empresaId])
-  @@index([sucursalId])
   @@map("comisionistas")
 }
 
@@ -161,12 +138,11 @@ enum EstadoLiquidacion {
   PAGADA
 }
 
-// A qué aplica una regla: a todo, a un producto, a una persona o a una sucursal.
+// A qué aplica una regla: a todo, a un producto o a una persona.
 enum AmbitoRegla {
   GLOBAL
   PRODUCTO
   COMISIONISTA
-  SUCURSAL
 }
 
 // Cómo se le pagó al comisionista.
@@ -272,7 +248,6 @@ model ComisionSuscripcion {
 model Venta {
   id             String       @id @default(uuid())
   empresaId      String       @map("empresa_id")
-  sucursalId     String       @map("sucursal_id")
   comisionistaId String       @map("comisionista_id")
   fecha          DateTime
   documento      String?
@@ -290,7 +265,6 @@ model Venta {
   creadoEn       DateTime     @default(now()) @map("creado_en")
 
   empresa      Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  sucursal     Sucursal     @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
   comisionista Comisionista @relation(fields: [comisionistaId], references: [id], onDelete: Restrict)
   liquidacion  Liquidacion? @relation(fields: [liquidacionId], references: [id], onDelete: SetNull)
 
@@ -299,23 +273,6 @@ model Venta {
   @@index([empresaId, comisionistaId])
   @@index([liquidacionId])
   @@map("ventas")
-}
-
-// Meta de venta de un mes, general o de un comisionista.
-model Meta {
-  id             String   @id @default(uuid())
-  empresaId      String   @map("empresa_id")
-  comisionistaId String?  @map("comisionista_id")
-  periodo        String
-  monto          Decimal  @db.Decimal(18, 4)
-  creadoEn       DateTime @default(now()) @map("creado_en")
-  actualizadoEn  DateTime @updatedAt @map("actualizado_en")
-
-  empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  comisionista Comisionista? @relation(fields: [comisionistaId], references: [id], onDelete: Cascade)
-
-  @@index([empresaId, periodo])
-  @@map("metas")
 }
 
 // Auditoría: historial de cambios hechos por los usuarios.
@@ -351,7 +308,6 @@ model ReglaComision {
   ambito         AmbitoRegla  @default(GLOBAL)
   producto       String?
   comisionistaId String?      @map("comisionista_id")
-  sucursalId     String?      @map("sucursal_id")
   prioridad      Int          @default(100)
   acumulable     Boolean      @default(false)
   vigenciaDesde  DateTime?    @map("vigencia_desde")
@@ -361,7 +317,6 @@ model ReglaComision {
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   comisionista Comisionista? @relation(fields: [comisionistaId], references: [id], onDelete: Cascade)
-  sucursal     Sucursal?     @relation(fields: [sucursalId], references: [id], onDelete: Cascade)
 
   @@index([empresaId, ambito])
   @@map("reglas_comision")

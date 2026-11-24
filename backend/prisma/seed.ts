@@ -11,17 +11,6 @@ async function main() {
   let empresa = await prisma.empresa.findFirst({ where: { nombre: 'Demo' } });
   empresa ??= await prisma.empresa.create({ data: { nombre: 'Demo' } });
 
-  let sucursal = await prisma.sucursal.findFirst({
-    where: { empresaId: empresa.id, codigo: 'PRINCIPAL' },
-  });
-  sucursal ??= await prisma.sucursal.create({
-    data: {
-      empresaId: empresa.id,
-      nombre: 'Principal',
-      codigo: 'PRINCIPAL',
-    },
-  });
-
   await prisma.moneda.upsert({
     where: { empresaId_codigo: { empresaId: empresa.id, codigo: 'CRC' } },
     update: {},
@@ -71,9 +60,7 @@ async function main() {
   comisionista ??= await prisma.comisionista.create({
     data: {
       empresaId: empresa.id,
-      sucursalId: sucursal.id,
       nombre: 'Laura Méndez',
-      codigo: 'C-100',
     },
   });
 
@@ -145,7 +132,6 @@ async function main() {
       },
       create: {
         empresaId: empresa.id,
-        sucursalId: sucursal.id,
         comisionistaId: comisionista.id,
         fecha: fechaDemo,
         documento: venta.documento,
@@ -204,36 +190,6 @@ async function main() {
         inicio: inicioMes,
       },
     });
-  }
-
-  const periodoMeta = hoyCR.slice(0, 7);
-  const metasDemo = [
-    { comisionistaId: null, monto: '60000' },
-    { comisionistaId: comisionista.id, monto: '50000' },
-  ];
-  for (const meta of metasDemo) {
-    const existente = await prisma.meta.findFirst({
-      where: {
-        empresaId: empresa.id,
-        periodo: periodoMeta,
-        comisionistaId: meta.comisionistaId,
-      },
-    });
-    if (existente) {
-      await prisma.meta.update({
-        where: { id: existente.id },
-        data: { monto: meta.monto },
-      });
-    } else {
-      await prisma.meta.create({
-        data: {
-          empresaId: empresa.id,
-          periodo: periodoMeta,
-          comisionistaId: meta.comisionistaId,
-          monto: meta.monto,
-        },
-      });
-    }
   }
 
   console.log(

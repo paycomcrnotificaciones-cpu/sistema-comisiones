@@ -41,7 +41,7 @@ export class ComisionistasController {
   }
 
   @Get(':id')
-  // GET /api/comisionistas/:id — perfil con sus datos y su sucursal.
+  // GET /api/comisionistas/:id — perfil con sus datos y su usuario.
   obtener(@Req() req: RequestConUsuario, @Param('id') id: string) {
     const usuario = req.usuario!;
     if (usuario.rol === 'COMISIONISTA' && usuario.comisionistaId !== id) {

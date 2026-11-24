@@ -11,13 +11,11 @@ import { EnlacesService } from '../auth/enlaces.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 const incluir = {
-  sucursal: { select: { id: true, nombre: true } },
   usuario: { select: { email: true, activo: true } },
 } as const;
 
 // Comisionistas: personas que venden y ganan comisión.
-// Cada uno pertenece a una sucursal y puede tener (o no) un usuario para
-// entrar al sistema.
+// Cada uno puede tener (o no) un usuario para entrar al sistema.
 @Injectable()
 export class ComisionistasService {
   constructor(
@@ -25,7 +23,7 @@ export class ComisionistasService {
     private readonly enlaces: EnlacesService,
   ) {}
 
-  // Lista los comisionistas de la empresa con su sucursal y su usuario.
+  // Lista los comisionistas de la empresa con su usuario.
   // Si llega soloId, devuelve únicamente ese (lo usa el propio comisionista).
   listar(empresaId: string, soloId?: string | null) {
     return this.prisma.comisionista.findMany({
@@ -53,19 +51,11 @@ export class ComisionistasService {
   // Crea el comisionista y, si viene correo, también su usuario de acceso
   // con rol COMISIONISTA. La persona elige su contraseña desde el enlace.
   async crear(empresaId: string, data: ComisionistaCreateInput) {
-    const sucursal = await this.prisma.sucursal.findFirst({
-      where: { id: data.sucursalId, empresaId },
-    });
-    if (!sucursal) {
-      throw new NotFoundException('Sucursal no encontrada');
-    }
-
     try {
       return await this.prisma.$transaction(async (tx) => {
         const comisionista = await tx.comisionista.create({
           data: {
             empresaId,
-            sucursalId: data.sucursalId,
             nombre: data.nombre,
           },
         });
@@ -113,24 +103,12 @@ export class ComisionistasService {
       throw new NotFoundException('Comisionista no encontrado');
     }
 
-    if (data.sucursalId) {
-      const sucursal = await this.prisma.sucursal.findFirst({
-        where: { id: data.sucursalId, empresaId },
-      });
-      if (!sucursal) {
-        throw new NotFoundException('Sucursal no encontrada');
-      }
-    }
-
     try {
       return await this.prisma.$transaction(async (tx) => {
         await tx.comisionista.update({
           where: { id },
           data: {
             ...(data.nombre !== undefined ? { nombre: data.nombre } : {}),
-            ...(data.sucursalId !== undefined
-              ? { sucursalId: data.sucursalId }
-              : {}),
             ...(data.activo !== undefined ? { activo: data.activo } : {}),
           },
         });

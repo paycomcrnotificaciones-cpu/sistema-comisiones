@@ -116,16 +116,27 @@ export default function UsuariosPage() {
     return u.rol === "SUPERVISOR" || u.rol === "COMISIONISTA";
   }
 
-  // Cambia el rol de un usuario (solo si tiene permiso para hacerlo).
+  // Cambia el rol de un usuario. Si el rol cambia, el servidor genera un
+  // enlace nuevo de un solo uso para que la persona defina su contraseña.
   async function cambiarRol(id: string, nuevoRol: string) {
     setError(null);
     setMensaje(null);
+    setEnlace(null);
     try {
-      await apiFetch(`/usuarios/${id}`, {
+      const actualizado = await apiFetch<
+        Usuario & { enlaceInvitacion?: string }
+      >(`/usuarios/${id}`, {
         method: "PATCH",
         body: JSON.stringify({ rol: nuevoRol }),
       });
-      setMensaje("Rol actualizado");
+      if (actualizado.enlaceInvitacion) {
+        setEnlace({ email: actualizado.email, url: actualizado.enlaceInvitacion });
+        setMensaje(
+          "Rol actualizado. Comparte el enlace para que defina su nueva contraseña.",
+        );
+      } else {
+        setMensaje("Rol actualizado");
+      }
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cambiar el rol");
@@ -293,15 +304,25 @@ export default function UsuariosPage() {
                         </span>
                       </td>
                       <td className="hidden xl:table-cell px-4 py-3.5">
-                        {puedeGestionar(u) && u.rol !== "COMISIONISTA" ? (
+                        {puedeGestionar(u) ? (
                           <select
                             value={u.rol}
                             onChange={(e) => cambiarRol(u.id, e.target.value)}
                             className="rounded-md border border-light-100 bg-white px-2 py-1 text-sm dark:border-dark-600 dark:bg-dark-700 dark:text-white"
                           >
+                            {u.rol === "COMISIONISTA" && (
+                              <option value="COMISIONISTA">Comisionista</option>
+                            )}
                             <option value="SUPERVISOR">Supervisor</option>
-                            {esSuperAdmin && <option value="ADMIN">Administrador</option>}
-                            {esSuperAdmin && <option value="SUPER_ADMIN">Super admin</option>}
+                            {(esSuperAdmin || u.rol === "ADMIN") && (
+                              <option value="ADMIN">Administrador</option>
+                            )}
+                            {(esSuperAdmin || u.rol === "SUPER_ADMIN") && (
+                              <option value="SUPER_ADMIN">Super admin</option>
+                            )}
+                            {u.comisionista && u.rol !== "COMISIONISTA" && (
+                              <option value="COMISIONISTA">Comisionista</option>
+                            )}
                           </select>
                         ) : (
                           <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${rolClass[u.rol]}`}>

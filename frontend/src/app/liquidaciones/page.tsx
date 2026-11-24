@@ -32,7 +32,6 @@ interface VentaLiquidada {
   producto: string | null;
   neto: string;
   comisionMonto: string;
-  sucursal: { nombre: string };
 }
 
 interface ComisionSuscripcion {
@@ -488,7 +487,7 @@ export default function LiquidacionesPage() {
                                 )}
                                 {detalle.ventas.map((v) => (
                                   <div key={v.id} className="flex flex-wrap justify-between gap-2 text-[12px] text-body-text">
-                                    <span>{v.fecha.slice(0, 10)} · {v.producto ?? "Sin producto"} · {v.sucursal.nombre}</span>
+                                    <span>{v.fecha.slice(0, 10)} · {v.producto ?? "Sin producto"}</span>
                                     <span>Monto {formatoDinero.format(Number(v.neto))} · Comisión {formatoDinero.format(Number(v.comisionMonto))}</span>
                                   </div>
                                 ))}

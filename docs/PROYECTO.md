@@ -1,4 +1,4 @@
-# LiquiCom — Guía del proyecto
+# PayCom CR — Guía del proyecto
 
 ## 1. ¿Qué es?
 

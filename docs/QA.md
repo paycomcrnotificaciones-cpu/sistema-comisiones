@@ -1,4 +1,4 @@
-# Revisión de calidad — LiquiCom
+# Revisión de calidad — PayCom CR
 
 Fecha: 20 de noviembre de 2026
 Alcance: API (NestJS), web (Next.js) y base de datos (PostgreSQL).

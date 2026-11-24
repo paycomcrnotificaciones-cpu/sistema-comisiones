@@ -67,9 +67,6 @@ export class LiquidacionesService {
         ...incluir,
         ventas: {
           orderBy: { fecha: 'asc' },
-          include: {
-            sucursal: { select: { id: true, nombre: true } },
-          },
         },
         comisiones: {
           orderBy: { periodo: 'asc' },

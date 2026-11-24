@@ -4,21 +4,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
-import { AccionTabla } from "@/components/accion-tabla";
 import { AppShell } from "@/components/app-shell";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import { apiFetch, descargarArchivo, getSesion, type SesionJwt } from "@/lib/api";
-
-interface Sucursal {
-  id: string;
-  nombre: string;
-}
 
 interface Comisionista {
   id: string;
   nombre: string;
   activo: boolean;
-  sucursal: { id: string; nombre: string } | null;
   usuario: { email: string; activo: boolean } | null;
 }
 
@@ -48,6 +40,37 @@ interface RespuestaVentas {
   comisionPagada: string;
 }
 
+type Frecuencia = "MENSUAL" | "TRIMESTRAL" | "SEMESTRAL" | "ANUAL" | "UNICA";
+type EstadoSuscripcion = "ACTIVA" | "PAUSADA" | "FINALIZADA";
+
+interface Suscripcion {
+  id: string;
+  cliente: string;
+  producto: string | null;
+  monto: string;
+  frecuenciaCobro: Frecuencia;
+  comisionTipo: "PORCENTAJE" | "MONTO_FIJO";
+  comisionValor: string;
+  comisionFrecuencia: Frecuencia;
+  inicio: string;
+  fin: string | null;
+  estado: EstadoSuscripcion;
+}
+
+const frecuenciaLabel: Record<Frecuencia, string> = {
+  MENSUAL: "Mensual",
+  TRIMESTRAL: "Trimestral",
+  SEMESTRAL: "Semestral",
+  ANUAL: "Anual",
+  UNICA: "Única",
+};
+
+const estadoSuscripcionLabel: Record<EstadoSuscripcion, string> = {
+  ACTIVA: "Activa",
+  PAUSADA: "Pausada",
+  FINALIZADA: "Finalizada",
+};
+
 const formatoDinero = new Intl.NumberFormat("es-CR", {
   style: "currency",
   currency: "CRC",
@@ -62,31 +85,15 @@ const labelClass =
 
 type Periodo = "mes" | "anterior" | "todos" | "rango";
 
-// La libreta del comisionista: su perfil, sus ventas, su meta y el registro
-// de ventas nuevas. Es la pantalla principal para quien vende.
-
-// Fecha de hoy en formato AAAA-MM-DD (usando la hora de Costa Rica).
-function fechaHoy(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+// La libreta del comisionista: su perfil, sus ventas y el resumen del
+// período. El registro de ventas y sus suscripciones viven en
+// /comisionistas/[id]/movimientos.
 
 // Fecha corta para mostrar en la tabla (dd/mm/aa).
 function fechaCorta(d: Date): string {
   const mes = String(d.getMonth() + 1).padStart(2, "0");
   const dia = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${mes}-${dia}`;
-}
-
-// Devuelve el mes que corresponde al filtro elegido (este mes o el anterior).
-function mesDePeriodo(periodo: Periodo): string | null {
-  if (periodo === "todos" || periodo === "rango") return null;
-  const hoy = new Date();
-  const base = new Date(
-    hoy.getFullYear(),
-    hoy.getMonth() + (periodo === "anterior" ? -1 : 0),
-    1,
-  );
-  return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, "0")}`;
 }
 
 // Devuelve las fechas desde/hasta según el filtro, incluido el rango manual.
@@ -105,7 +112,6 @@ function rangoDePeriodo(periodo: Periodo, desde: string, hasta: string) {
 
 // Pantalla completa del perfil. Incluye:
 // - resumen de ventas y comisión del período
-// - formulario para registrar o editar una venta
 // - tabla de ventas con filtros, estados y exportación
 function PerfilComisionista() {
   const params = useParams<{ id: string }>();
@@ -113,7 +119,6 @@ function PerfilComisionista() {
   const [sesion, setSesion] = useState<SesionJwt | null>(null);
   const esComisionista = sesion?.rol === "COMISIONISTA";
   const soloLectura = esComisionista || sesion?.rol === "SUPERVISOR";
-  const esGestor = sesion?.rol === "ADMIN" || sesion?.rol === "SUPER_ADMIN";
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -121,25 +126,14 @@ function PerfilComisionista() {
   }, []);
 
   const [comisionista, setComisionista] = useState<Comisionista | null>(null);
-  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [ventas, setVentas] = useState<Venta[]>([]);
+  const [suscripciones, setSuscripciones] = useState<Suscripcion[]>([]);
   const [periodo, setPeriodo] = useState<Periodo>("mes");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [exportando, setExportando] = useState(false);
-  const [meta, setMeta] = useState<number | null>(null);
-  const [metaInput, setMetaInput] = useState("");
-  const [metaGuardando, setMetaGuardando] = useState(false);
-  const [sugerencia, setSugerencia] = useState<{
-    nombre: string;
-    tipo: "PORCENTAJE" | "MONTO_FIJO";
-    valor: number;
-    detalle?: { nombre: string; valor: number }[];
-  } | null>(null);
-  const [ventaAnular, setVentaAnular] = useState<Venta | null>(null);
-  const [anulando, setAnulando] = useState(false);
   const [totales, setTotales] = useState({
     montoVendido: 0,
     totalComision: 0,
@@ -150,108 +144,10 @@ function PerfilComisionista() {
   const [error, setError] = useState<string | null>(null);
 
   const [nombre, setNombre] = useState("");
-  const [sucursalId, setSucursalId] = useState("");
-  const [ventaSucursalId, setVentaSucursalId] = useState("");
   const [activo, setActivo] = useState(true);
   const [email, setEmail] = useState("");
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [mensajePerfil, setMensajePerfil] = useState<string | null>(null);
-
-  const [fecha, setFecha] = useState("");
-  const [producto, setProducto] = useState("");
-  // Productos que ya tienen una regla activa: se ofrecen como atajo.
-  const [productosConRegla, setProductosConRegla] = useState<string[]>([]);
-  const [monto, setMonto] = useState("");
-  const [comisionTipo, setComisionTipo] = useState<"PORCENTAJE" | "MONTO_FIJO">(
-    "PORCENTAJE",
-  );
-  const [comisionValor, setComisionValor] = useState("");
-  const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [guardandoVenta, setGuardandoVenta] = useState(false);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFecha(fechaHoy());
-  }, []);
-
-  const mesMeta = mesDePeriodo(periodo);
-
-  useEffect(() => {
-    if (!mesMeta) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMeta(null);
-      return;
-    }
-    let vivo = true;
-    (async () => {
-      try {
-        const data = await apiFetch<{
-          general: number | null;
-          comisionistas: { comisionistaId: string; monto: number }[];
-        }>(`/metas?mes=${mesMeta}`);
-        if (!vivo) return;
-        const propia = data.comisionistas.find((c) => c.comisionistaId === id);
-        const valor = propia?.monto ?? data.general ?? null;
-        setMeta(valor);
-        setMetaInput(valor === null ? "" : String(valor));
-      } catch {
-        if (vivo) setMeta(null);
-      }
-    })();
-    return () => {
-      vivo = false;
-    };
-  }, [mesMeta, id]);
-
-  useEffect(() => {
-    const texto = producto.trim();
-    if (texto.length < 2) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSugerencia(null);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      try {
-        const params = new URLSearchParams({
-          producto: texto,
-          comisionistaId: id,
-        });
-        if (ventaSucursalId) params.set("sucursalId", ventaSucursalId);
-        const regla = await apiFetch<{
-          nombre: string;
-          tipo: "PORCENTAJE" | "MONTO_FIJO";
-          valor: number;
-          detalle?: { nombre: string; valor: number }[];
-        } | null>(`/reglas/sugerir?${params.toString()}`);
-        setSugerencia(regla);
-        if (regla && !editandoId) {
-          setComisionTipo(regla.tipo);
-          setComisionValor(String(regla.valor));
-        }
-      } catch {
-        setSugerencia(null);
-      }
-    }, 450);
-    return () => clearTimeout(timer);
-  }, [producto, ventaSucursalId, id, editandoId]);
-
-  // Fija la meta mensual del comisionista (solo administradores).
-  async function guardarMeta(monto: number | null) {
-    if (!mesMeta) return;
-    setMetaGuardando(true);
-    try {
-      await apiFetch("/metas", {
-        method: "PUT",
-        body: JSON.stringify({ mes: mesMeta, monto, comisionistaId: id }),
-      });
-      setMeta(monto);
-      setMetaInput(monto === null ? "" : String(monto));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar la meta");
-    } finally {
-      setMetaGuardando(false);
-    }
-  }
 
   const paramsVentas = useCallback(
     (
@@ -304,18 +200,16 @@ function PerfilComisionista() {
     let vivo = true;
     (async () => {
       try {
-        const [c, s, catalogo] = await Promise.all([
+        const [c, s] = await Promise.all([
           apiFetch<Comisionista>(`/comisionistas/${id}`),
-          apiFetch<Sucursal[]>("/sucursales"),
-          apiFetch<string[]>("/reglas/productos?conRegla=1"),
+          apiFetch<Suscripcion[]>(
+            `/suscripciones?${new URLSearchParams({ comisionistaId: id }).toString()}`,
+          ),
         ]);
         if (!vivo) return;
         setComisionista(c);
-        setSucursales(s);
-        setProductosConRegla(catalogo);
+        setSuscripciones(s);
         setNombre(c.nombre);
-        setSucursalId(c.sucursal?.id ?? s[0]?.id ?? "");
-        setVentaSucursalId(c.sucursal?.id ?? s[0]?.id ?? "");
         setActivo(c.activo);
         setEmail(c.usuario?.email ?? "");
         await cargarVentas("mes", "", "");
@@ -334,7 +228,7 @@ function PerfilComisionista() {
     };
   }, [id, cargarVentas]);
 
-  // Guarda los cambios del perfil: nombre, sucursal y estado.
+  // Guarda los cambios del perfil: nombre y estado.
   async function guardarPerfil(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -345,7 +239,6 @@ function PerfilComisionista() {
         method: "PATCH",
         body: JSON.stringify({
           nombre,
-          sucursalId,
           activo,
           ...(email ? { email } : {}),
         }),
@@ -361,90 +254,6 @@ function PerfilComisionista() {
       setGuardandoPerfil(false);
     }
   }
-
-  // Deja el formulario de venta listo para registrar una nueva.
-  function resetVenta() {
-    setEditandoId(null);
-    setFecha(fechaHoy());
-    setProducto("");
-    setMonto("");
-    setComisionTipo("PORCENTAJE");
-    setComisionValor("");
-  }
-
-  // Carga una venta existente en el formulario para corregirla.
-  function editarVenta(v: Venta) {
-    setEditandoId(v.id);
-    setFecha(v.fecha.slice(0, 10));
-    setProducto(v.producto ?? "");
-    setMonto(v.neto);
-    setComisionTipo(v.comisionTipo);
-    setComisionValor(v.comisionValor);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  // Registra o actualiza la venta. Antes de guardar, si el producto coincide
-  // con una regla, se sugiere el porcentaje o monto de comisión.
-  async function guardarVenta(event: React.FormEvent) {
-    event.preventDefault();
-    setError(null);
-    if (!monto || Number(monto) <= 0) {
-      setError("Indica el monto de la venta");
-      return;
-    }
-    setGuardandoVenta(true);
-    try {
-      const cuerpo = {
-        sucursalId: ventaSucursalId,
-        comisionistaId: id,
-        fecha,
-        producto: producto || null,
-        bruto: monto,
-        neto: monto,
-        costo: "0",
-        comisionTipo,
-        comisionValor: comisionValor || "0",
-      };
-      if (editandoId) {
-        await apiFetch(`/ventas/${editandoId}`, {
-          method: "PATCH",
-          body: JSON.stringify(cuerpo),
-        });
-      } else {
-        await apiFetch("/ventas", {
-          method: "POST",
-          body: JSON.stringify(cuerpo),
-        });
-      }
-      resetVenta();
-      await cargarVentas(periodo, desde, hasta, estadoFiltro, busqueda);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar la venta");
-    } finally {
-      setGuardandoVenta(false);
-    }
-  }
-
-  // Anula la venta elegida. Queda en el historial, no se borra.
-  async function anularVenta() {
-    if (!ventaAnular) return;
-    setError(null);
-    setAnulando(true);
-    try {
-      await apiFetch(`/ventas/${ventaAnular.id}/anular`, { method: "POST" });
-      setVentaAnular(null);
-      await cargarVentas(periodo, desde, hasta, estadoFiltro, busqueda);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo anular");
-    } finally {
-      setAnulando(false);
-    }
-  }
-
-  const comisionCalculada =
-    comisionTipo === "PORCENTAJE"
-      ? (Number(monto) * Number(comisionValor)) / 100
-      : Number(comisionValor);
 
   // Cambia entre este mes, el anterior, todos o un rango manual.
   function cambiarPeriodo(nuevo: Periodo) {
@@ -525,19 +334,27 @@ function PerfilComisionista() {
                   {comisionista?.nombre ?? "Cargando…"}
                 </h1>
                 <p className="mt-2 text-[13px] text-white/65">
-                  {comisionista?.sucursal?.nombre ?? "Sin sucursal"}
+                  {comisionista?.usuario?.email ?? "Sin acceso al sistema"}
                 </p>
               </div>
             </div>
-            <span
-              className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
-                comisionista?.activo
-                  ? "bg-success-500/20 text-[#7ef0e4] ring-1 ring-success-500/30"
-                  : "bg-white/10 text-white/70 ring-1 ring-white/15"
-              }`}
-            >
-              {comisionista?.activo ? "Activo" : "Inactivo"}
-            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={`/comisionistas/${id}/movimientos`}
+                className="rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/20"
+              >
+                Suscripciones y ventas →
+              </Link>
+              <span
+                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
+                  comisionista?.activo
+                    ? "bg-success-500/20 text-[#7ef0e4] ring-1 ring-success-500/30"
+                    : "bg-white/10 text-white/70 ring-1 ring-white/15"
+                }`}
+              >
+                {comisionista?.activo ? "Activo" : "Inactivo"}
+              </span>
+            </div>
           </div>
         </section>
 
@@ -642,61 +459,6 @@ function PerfilComisionista() {
                 ))}
               </div>
 
-              {mesMeta && (
-                <div className="mt-3 rounded-xl border border-light-100 bg-light-50/70 p-4 dark:border-dark-600 dark:bg-dark-600/60">
-                  <div className="flex flex-wrap items-end justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[1.5px] text-body-text">Meta del mes</p>
-                      <p className="mt-1 font-display text-[22px] font-bold text-zinc-900 dark:text-white">
-                        {meta === null ? "Sin meta" : formatoDinero.format(meta)}
-                      </p>
-                    </div>
-                    <p className="text-[12px] text-body-text">
-                      {meta && meta > 0
-                        ? `${formatoDinero.format(totales.montoVendido)} vendido · ${Math.round((totales.montoVendido / meta) * 1000) / 10}% de la meta`
-                        : "Fija una meta para medir el avance del mes"}
-                    </p>
-                  </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-light-100 dark:bg-dark-500">
-                    <div
-                      className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-brand-cyan-500),var(--color-primary-500))] transition-all"
-                      style={{ width: `${meta && meta > 0 ? Math.min(100, (totales.montoVendido / meta) * 100) : 0}%` }}
-                    />
-                  </div>
-                  {esGestor && (
-                    <div className="mt-3 flex flex-wrap items-end gap-2">
-                      <label className={`${labelClass} w-40`}>
-                        <span>Meta (₡)</span>
-                        <input
-                          inputMode="decimal"
-                          placeholder="0.00"
-                          value={metaInput}
-                          onChange={(e) => setMetaInput(e.target.value)}
-                          className={inputClass}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        disabled={metaGuardando || !metaInput}
-                        onClick={() => guardarMeta(Number(metaInput) || 0)}
-                        className="h-[42px] rounded-xl bg-primary-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
-                      >
-                        {metaGuardando ? "Guardando…" : "Guardar meta"}
-                      </button>
-                      {meta !== null && (
-                        <button
-                          type="button"
-                          disabled={metaGuardando}
-                          onClick={() => guardarMeta(null)}
-                          className="h-[42px] rounded-xl border border-light-100 px-4 text-sm font-semibold text-body-text transition-colors hover:border-danger-500 hover:text-danger-500 dark:border-dark-600"
-                        >
-                          Quitar meta
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
             </section>
 
             <section className="surface overflow-hidden">
@@ -717,12 +479,6 @@ function PerfilComisionista() {
                     </dd>
                   </div>
                   <div className={labelClass}>
-                    <dt>Sucursal</dt>
-                    <dd className="text-sm font-medium text-zinc-900 dark:text-white">
-                      {comisionista?.sucursal?.nombre ?? "—"}
-                    </dd>
-                  </div>
-                  <div className={labelClass}>
                     <dt>Estado</dt>
                     <dd className="text-sm font-medium text-zinc-900 dark:text-white">
                       {comisionista?.activo ? "Activo" : "Inactivo"}
@@ -740,14 +496,6 @@ function PerfilComisionista() {
                 <label className={labelClass}>
                   <span>Nombre completo</span>
                   <input required value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputClass} />
-                </label>
-                <label className={labelClass}>
-                  <span>Sucursal</span>
-                  <select value={sucursalId} onChange={(e) => setSucursalId(e.target.value)} className={inputClass}>
-                    {sucursales.map((s) => (
-                      <option key={s.id} value={s.id}>{s.nombre}</option>
-                    ))}
-                  </select>
                 </label>
                 <label className={labelClass}>
                   <span>Estado</span>
@@ -772,118 +520,11 @@ function PerfilComisionista() {
               )}
             </section>
 
-            {!soloLectura && (
+
             <section className="surface overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
                 <div className="flex items-center gap-3">
                   <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">02</span>
-                  <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
-                    {editandoId ? "Editar venta" : "Agregar venta"}
-                  </h2>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-[1.5px] text-body-text">Comisión del período</p>
-                  <p className="font-display text-[22px] font-bold text-zinc-900 dark:text-white">
-                    {formatoDinero.format(totales.totalComision)}
-                  </p>
-                </div>
-              </div>
-
-              <form onSubmit={guardarVenta} className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
-                <div className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
-                  <label className="space-y-1.5">
-                    <span className="block">¿Qué vendió?</span>
-                    <input
-                      required
-                      value={producto}
-                      onChange={(e) => setProducto(e.target.value)}
-                      placeholder="Escribe el artículo"
-                      className={inputClass}
-                    />
-                  </label>
-                  <label className="mt-3 block space-y-1.5">
-                    <span className="block normal-case tracking-normal text-[11px] font-medium text-body-text">
-                      O elige un producto que ya tiene regla
-                    </span>
-                    <select
-                      value={productosConRegla.includes(producto) ? producto : ""}
-                      onChange={(e) => {
-                        if (e.target.value) setProducto(e.target.value);
-                      }}
-                      className={inputClass}
-                    >
-                      <option value="">
-                        {productosConRegla.length
-                          ? "Sin regla específica (se escribe arriba)"
-                          : "Todavía no hay productos con regla"}
-                      </option>
-                      {productosConRegla.map((p) => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
-                  <span>Fecha</span>
-                  <input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputClass} />
-                </label>
-                <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
-                  <span>¿Cómo se le paga?</span>
-                  <select
-                    value={comisionTipo}
-                    onChange={(e) => setComisionTipo(e.target.value as "PORCENTAJE" | "MONTO_FIJO")}
-                    className={inputClass}
-                  >
-                    <option value="PORCENTAJE">Porcentaje (%)</option>
-                    <option value="MONTO_FIJO">Monto fijo (₡)</option>
-                  </select>
-                </label>
-                <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
-                  <span>Monto de la venta</span>
-                  <input required inputMode="decimal" placeholder="0.00" value={monto} onChange={(e) => setMonto(e.target.value)} className={inputClass} />
-                </label>
-                <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
-                  <span>{comisionTipo === "PORCENTAJE" ? "Porcentaje de comisión (%)" : "Monto fijo de comisión (₡)"}</span>
-                  <input required inputMode="decimal" placeholder={comisionTipo === "PORCENTAJE" ? "5" : "0.00"} value={comisionValor} onChange={(e) => setComisionValor(e.target.value)} className={inputClass} />
-                </label>
-                <div className="flex flex-col justify-end gap-1 pb-2 text-sm text-body-text sm:col-span-2">
-                  {sugerencia && (
-                    <span className="text-[12px] font-medium text-primary-600 dark:text-primary-100">
-                      Regla aplicada:{" "}
-                      {sugerencia.detalle && sugerencia.detalle.length > 1
-                        ? `${sugerencia.detalle.map((parte) => `${parte.nombre} (${sugerencia.tipo === "PORCENTAJE" ? `${parte.valor}%` : formatoDinero.format(parte.valor)})`).join(" + ")} = ${sugerencia.tipo === "PORCENTAJE" ? `${sugerencia.valor}%` : formatoDinero.format(sugerencia.valor)}`
-                        : sugerencia.nombre}
-                    </span>
-                  )}
-                  {comisionTipo === "PORCENTAJE"
-                    ? `El ${Number(comisionValor) || 0}% de ${formatoDinero.format(Number(monto) || 0)} = ${formatoDinero.format(comisionCalculada)}`
-                    : `Monto fijo: ${formatoDinero.format(comisionCalculada)}`}
-                </div>
-
-                <div className="flex items-end gap-3 sm:col-span-2">
-                  <button type="submit" disabled={guardandoVenta} className="h-[46px] rounded-xl bg-primary-500 px-5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60">
-                    {guardandoVenta ? "Guardando…" : editandoId ? "Guardar cambios" : "Agregar venta"}
-                  </button>
-                  {editandoId && (
-                    <button type="button" onClick={resetVenta} className="h-[46px] rounded-xl border border-light-100 px-5 text-sm font-semibold text-body-text dark:border-dark-600">
-                      Cancelar
-                    </button>
-                  )}
-                </div>
-
-                <p className="text-[12px] leading-relaxed text-body-text sm:col-span-4">
-                  <strong>Monto de la venta:</strong> lo que pagó el cliente.
-                  <br />
-                  <strong>Comisión:</strong> lo que gana el comisionista por esa venta.
-                </p>
-              </form>
-            </section>
-            )}
-
-            <section className="surface overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
-                <div className="flex items-center gap-3">
-                  <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">03</span>
                   <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
                     {esComisionista ? "Mis ventas" : "Ventas del comisionista"}
                   </h2>
@@ -908,13 +549,12 @@ function PerfilComisionista() {
                       <th className="hidden xl:table-cell px-4 py-3 text-right font-semibold">Monto</th>
                       <th className="hidden xl:table-cell px-4 py-3 text-right font-semibold">Comisión</th>
                       <th className="hidden xl:table-cell px-4 py-3 font-semibold">Estado</th>
-                      <th className="lg:sticky lg:right-0 lg:z-10 bg-light-50 dark:bg-dark-600 px-4 py-3 text-right font-semibold">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {ventas.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-body-text">
+                        <td colSpan={5} className="px-6 py-8 text-center text-body-text">
                           Todavía no tiene ventas registradas.
                         </td>
                       </tr>
@@ -966,25 +606,83 @@ function PerfilComisionista() {
                                   : "Pendiente"}
                             </span>
                           </td>
-                          <td className="lg:sticky lg:right-0 lg:z-10 bg-white lg:shadow-[-8px_0_12px_-12px_rgba(10,18,38,0.5)] dark:bg-dark-700 px-4 py-3.5">
-                            {!soloLectura && (
-                            <div className="flex items-center justify-end gap-1.5">
-                              <AccionTabla
-                                etiqueta={`Editar venta de ${v.producto ?? "producto"}`}
-                                icono="editar"
-                                variante="primario"
-                                onClick={() => editarVenta(v)}
-                              />
-                              {v.estado === "ACTIVA" && (
-                                <AccionTabla
-                                  etiqueta={`Anular venta de ${v.producto ?? "producto"}`}
-                                  icono="anular"
-                                  variante="peligro"
-                                  onClick={() => setVentaAnular(v)}
-                                />
-                              )}
-                            </div>
-                            )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="surface overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
+                <div className="flex items-center gap-3">
+                  <span className="font-display text-[11px] font-bold tracking-[1px] text-primary-500">03</span>
+                  <h2 className="font-display text-[20px] font-bold tracking-[-0.3px] text-zinc-900 dark:text-white">
+                    {esComisionista ? "Mis suscripciones" : "Suscripciones del comisionista"}
+                  </h2>
+                </div>
+                <Link
+                  href={`/comisionistas/${id}/movimientos`}
+                  className="text-[12px] font-semibold text-primary-600 transition-colors hover:text-primary-500 dark:text-primary-100"
+                >
+                  Gestionar →
+                </Link>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full xl:min-w-[820px] text-left text-sm">
+                  <thead>
+                    <tr className="bg-light-50 text-[10px] uppercase tracking-[1.5px] text-body-text dark:bg-dark-600">
+                      <th className="px-6 py-3 font-semibold">Cliente</th>
+                      <th className="hidden xl:table-cell px-4 py-3 font-semibold">Producto</th>
+                      <th className="px-4 py-3 text-right font-semibold">Cobro</th>
+                      <th className="hidden xl:table-cell px-4 py-3 font-semibold">Comisión</th>
+                      <th className="hidden xl:table-cell px-4 py-3 font-semibold">Vigencia</th>
+                      <th className="px-6 py-3 font-semibold">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {suscripciones.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-body-text">
+                          Todavía no tiene suscripciones registradas.
+                        </td>
+                      </tr>
+                    ) : (
+                      suscripciones.map((s) => (
+                        <tr key={s.id} className="table-row-hover border-t border-light-100 dark:border-dark-600">
+                          <td className="px-6 py-3.5 text-zinc-900 dark:text-white">
+                            {s.cliente}
+                            <span className="mt-0.5 block text-[11px] font-medium text-body-text xl:hidden">
+                              {s.producto ?? "—"}
+                            </span>
+                          </td>
+                          <td className="hidden xl:table-cell px-4 py-3.5 text-body-text">{s.producto ?? "—"}</td>
+                          <td className="px-4 py-3.5 text-right text-zinc-900 dark:text-white">
+                            {formatoDinero.format(Number(s.monto))}
+                            <span className="mt-0.5 block text-[11px] font-normal text-body-text">
+                              {frecuenciaLabel[s.frecuenciaCobro]}
+                            </span>
+                          </td>
+                          <td className="hidden xl:table-cell px-4 py-3.5 text-body-text">
+                            {s.comisionTipo === "PORCENTAJE"
+                              ? `${Number(s.comisionValor).toFixed(2)}% · ${frecuenciaLabel[s.comisionFrecuencia]}`
+                              : `${formatoDinero.format(Number(s.comisionValor))} · ${frecuenciaLabel[s.comisionFrecuencia]}`}
+                          </td>
+                          <td className="hidden xl:table-cell px-4 py-3.5 text-[12px] text-body-text">
+                            {s.inicio.slice(0, 10)}
+                            {s.fin ? ` → ${s.fin.slice(0, 10)}` : " → vigente"}
+                          </td>
+                          <td className="px-6 py-3.5">
+                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                              s.estado === "ACTIVA"
+                                ? "bg-success-500/10 text-success-600 dark:text-success-500"
+                                : s.estado === "PAUSADA"
+                                  ? "bg-warning-500/10 text-warning-600"
+                                  : "bg-light-100 text-body-text dark:bg-dark-600"
+                            }`}>
+                              {estadoSuscripcionLabel[s.estado]}
+                            </span>
                           </td>
                         </tr>
                       ))
@@ -996,21 +694,6 @@ function PerfilComisionista() {
           </>
         )}
       </div>
-
-      <ConfirmDialog
-        abierto={ventaAnular !== null}
-        titulo="¿Anular esta venta?"
-        mensaje="La venta dejará de contar para el monto vendido y la comisión del período."
-        detalle={
-          ventaAnular
-            ? `${ventaAnular.producto ?? "Venta"} · ${formatoDinero.format(Number(ventaAnular.neto))}`
-            : null
-        }
-        textoConfirmar="Anular venta"
-        cargando={anulando}
-        onConfirmar={anularVenta}
-        onCancelar={() => setVentaAnular(null)}
-      />
     </AppShell>
   );
 }

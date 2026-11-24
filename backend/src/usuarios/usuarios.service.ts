@@ -151,10 +151,20 @@ export class UsuariosService {
         throw new BadRequestException('No puedes cambiar tu propio rol');
       }
       this.validarRolAsignable(actor.rol, data.rol);
-      if (actual.rol === 'COMISIONISTA' || data.rol === 'COMISIONISTA') {
+      if (data.rol === 'COMISIONISTA' && !actual.comisionistaId && !data.comisionistaId) {
         throw new BadRequestException(
-          'El rol comisionista se gestiona desde la pantalla del comisionista',
+          'Para pasar a comisionista hay que vincular una ficha de comisionista',
         );
+      }
+    }
+
+    if (data.comisionistaId) {
+      const ficha = await this.prisma.comisionista.findFirst({
+        where: { id: data.comisionistaId, empresaId },
+        select: { id: true },
+      });
+      if (!ficha) {
+        throw new NotFoundException('Comisionista no encontrado');
       }
     }
 
@@ -170,15 +180,27 @@ export class UsuariosService {
     }
 
     try {
-      return await this.prisma.usuario.update({
+      const usuario = await this.prisma.usuario.update({
         where: { id },
         data: {
           ...(data.email !== undefined ? { email: data.email } : {}),
           ...(data.rol !== undefined ? { rol: data.rol } : {}),
           ...(data.activo !== undefined ? { activo: data.activo } : {}),
+          ...(data.comisionistaId !== undefined
+            ? { comisionistaId: data.comisionistaId }
+            : {}),
         },
         select: seleccion,
       });
+
+      // Cambiar de rol invalida la contraseña anterior: se entrega un enlace
+      // nuevo para que la persona defina una clave acorde a su nuevo acceso.
+      if (data.rol && data.rol !== actual.rol) {
+        const { enlace, expiraEn } = await this.enlaces.crear(usuario.id);
+        return { ...usuario, enlaceInvitacion: enlace, expiraEnlace: expiraEn };
+      }
+
+      return usuario;
     } catch (error) {
       this.manejarConflicto(error);
       throw error;

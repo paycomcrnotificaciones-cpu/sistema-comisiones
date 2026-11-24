@@ -36,7 +36,7 @@ export class VentasService {
         query: VentaQueryInput,
         soloComisionistaId?: string | null,
     ) {
-        const { desde, hasta, comisionistaId, sucursalId, estado, pago, q } = query;
+        const { desde, hasta, comisionistaId, estado, pago, q } = query;
 
         const hastaExclusivo = hasta
             ? new Date(new Date(`${hasta}T06:00:00Z`).getTime() + 24 * 60 * 60 * 1000)
@@ -45,7 +45,6 @@ export class VentasService {
         return {
             empresaId,
             comisionistaId: soloComisionistaId ?? comisionistaId,
-            sucursalId,
             estado,
             ...(q ? { producto: { contains: q, mode: 'insensitive' as const } } : {}),
             ...(pago === 'PAGADA'
@@ -109,7 +108,6 @@ export class VentasService {
                 skip: (pagina - 1) * limite,
                 take: limite, 
                 include: {
-                    sucursal: { select: { id: true, nombre: true }},
                     comisionista: { select: { id: true, nombre: true}},
                     liquidacion: { select: { id: true, estado: true }},
                 },
@@ -128,21 +126,18 @@ export class VentasService {
         };
     }
 
-    // Registra una venta nueva. Revisa que la sucursal y el comisionista
-    // existan en la empresa y calcula la comisión en el momento de guardar.
+    // Registra una venta nueva. Revisa que el comisionista exista en la
+    // empresa y calcula la comisión en el momento de guardar.
     async crear(empresaId: string, data: VentaCreateInput) {
-    const [sucursal, comisionista] = await Promise.all([
-      this.prisma.sucursal.findFirst({ where: { id: data.sucursalId, empresaId } }),
-      this.prisma.comisionista.findFirst({ where: { id: data.comisionistaId, empresaId } }),
-    ]);
-    if (!sucursal) throw new NotFoundException('Sucursal no encontrada');
+    const comisionista = await this.prisma.comisionista.findFirst({
+      where: { id: data.comisionistaId, empresaId },
+    });
     if (!comisionista) throw new NotFoundException('Comisionista no encontrado');
 
     try {
       return await this.prisma.venta.create({
         data: {
           empresaId,
-          sucursalId: data.sucursalId,
           comisionistaId: data.comisionistaId,
           fecha: new Date(`${data.fecha}T06:00:00Z`),
           documento: data.documento ?? null,
@@ -191,18 +186,11 @@ export class VentasService {
       );
     }
 
-    const sucursalId = data.sucursalId ?? actual.sucursalId;
     const comisionistaId = data.comisionistaId ?? actual.comisionistaId;
 
-    const [sucursal, comisionista] = await Promise.all([
-      this.prisma.sucursal.findFirst({
-        where: { id: sucursalId, empresaId },
-      }),
-      this.prisma.comisionista.findFirst({
-        where: { id: comisionistaId, empresaId },
-      }),
-    ]);
-    if (!sucursal) throw new NotFoundException('Sucursal no encontrada');
+    const comisionista = await this.prisma.comisionista.findFirst({
+      where: { id: comisionistaId, empresaId },
+    });
     if (!comisionista) {
       throw new NotFoundException('Comisionista no encontrado');
     }
@@ -227,7 +215,6 @@ export class VentasService {
     return this.prisma.venta.update({
       where: { id },
       data: {
-        sucursalId,
         comisionistaId,
         ...(data.fecha
           ? { fecha: new Date(`${data.fecha}T06:00:00Z`) }
@@ -252,7 +239,6 @@ export class VentasService {
         ),
       },
       include: {
-        sucursal: { select: { id: true, nombre: true } },
         comisionista: { select: { id: true, nombre: true } },
       },
     });
@@ -269,7 +255,6 @@ export class VentasService {
       where: this.construirWhere(empresaId, query, soloComisionistaId),
       orderBy: [{ fecha: 'asc' }, { creadoEn: 'asc' }],
       include: {
-        sucursal: { select: { nombre: true } },
         comisionista: { select: { nombre: true } },
       },
     });
@@ -286,11 +271,10 @@ export class VentasService {
     };
 
     const filas = [
-      ['Fecha', 'Comisionista', 'Sucursal', 'Documento', 'Cliente', 'Producto', 'Monto', 'Comision', 'Tipo', 'Valor', 'Estado'],
+      ['Fecha', 'Comisionista', 'Documento', 'Cliente', 'Producto', 'Monto', 'Comision', 'Tipo', 'Valor', 'Estado'],
       ...datos.map((v) => [
         v.fecha.toISOString().slice(0, 10),
         v.comisionista.nombre,
-        v.sucursal.nombre,
         v.documento ?? '',
         v.cliente ?? '',
         v.producto ?? '',

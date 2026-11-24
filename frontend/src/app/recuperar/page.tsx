@@ -10,7 +10,7 @@ export default function RecuperarPage() {
 
       <div className="relative w-full max-w-md rounded-[28px] bg-white p-7 shadow-[0_30px_90px_-30px_rgba(0,0,0,0.65)] dark:bg-dark-700 sm:p-10">
         <p className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-100">
-          LiquiCom
+          PayCom CR
         </p>
         <h1 className="mt-2 font-display text-[26px] font-bold tracking-[-0.4px] text-zinc-900 dark:text-white">
           Recuperar acceso

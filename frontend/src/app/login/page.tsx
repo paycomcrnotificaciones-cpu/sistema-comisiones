@@ -52,7 +52,7 @@ export default function LoginPage() {
             la tarjeta. Sin fondo blanco en la tarjeta no queda orilla clara. */}
         <section className="hero-panel hero-panel-recto relative hidden flex-col justify-between p-10 lg:flex">
           <div className="relative z-10">
-            <Image src={logoLight} alt="LiquiCom" width={200} height={74} className="h-auto w-44" priority />
+            <Image src={logoLight} alt="PayCom CR" width={563} height={259} className="h-auto w-48 rounded-xl" priority />
             <p className="mt-8 text-[11px] font-bold uppercase tracking-[2.4px] text-brand-cyan-500">
               Solusoft CR
             </p>
@@ -87,7 +87,7 @@ export default function LoginPage() {
           className="relative space-y-5 bg-white p-7 dark:bg-dark-700 sm:p-10"
         >
           <div className="flex flex-col items-center gap-2 lg:hidden">
-            <Image src={logo} alt="LiquiCom" width={120} height={45} className="h-auto w-36" priority />
+            <Image src={logo} alt="PayCom CR" width={563} height={259} className="h-auto w-40 rounded-xl shadow-[0_10px_24px_-14px_rgba(10,18,38,0.6)]" priority />
           </div>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-100">
@@ -135,7 +135,7 @@ export default function LoginPage() {
         </button>
 
         <p className="text-center text-[11px] text-body-text">
-          LiquiCom · Solusoft CR · Acceso autorizado
+          PayCom CR · Solusoft CR · Acceso autorizado
         </p>
 
         <p className="text-center text-[12px]">

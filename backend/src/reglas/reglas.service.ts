@@ -76,7 +76,6 @@ export class ReglasService {
       orderBy: [{ prioridad: 'asc' }, { nombre: 'asc' }],
       include: {
         comisionista: { select: { id: true, nombre: true } },
-        sucursal: { select: { id: true, nombre: true } },
       },
     });
   }
@@ -134,7 +133,7 @@ export class ReglasService {
   }
 
   // Crea una regla y deja vacíos los datos que no corresponden a su ámbito:
-  // una regla global no guarda producto, comisionista ni sucursal.
+  // una regla global no guarda producto ni comisionista.
   crear(empresaId: string, input: ReglaComisionInput) {
     return this.prisma.reglaComision.create({
       data: {
@@ -146,8 +145,6 @@ export class ReglasService {
         producto: input.ambito === 'PRODUCTO' ? (input.producto ?? null) : null,
         comisionistaId:
           input.ambito === 'COMISIONISTA' ? (input.comisionistaId ?? null) : null,
-        sucursalId:
-          input.ambito === 'SUCURSAL' ? (input.sucursalId ?? null) : null,
         prioridad: input.prioridad,
         acumulable: input.acumulable,
         activa: input.activa,
@@ -181,9 +178,6 @@ export class ReglasService {
         ...(input.comisionistaId !== undefined
           ? { comisionistaId: input.comisionistaId || null }
           : {}),
-        ...(input.sucursalId !== undefined
-          ? { sucursalId: input.sucursalId || null }
-          : {}),
         ...(input.prioridad !== undefined ? { prioridad: input.prioridad } : {}),
         ...(input.acumulable !== undefined
           ? { acumulable: input.acumulable }
@@ -209,9 +203,9 @@ export class ReglasService {
     return { eliminada: true };
   }
 
-  // Busca la mejor regla para una venta según el producto, el comisionista
-  // y la sucursal. Primero descarta las vencidas; luego puntúa cada regla
-  // (comisionista 100 > producto 90 > sucursal 80 > global 60) y, si hay
+  // Busca la mejor regla para una venta según el producto y el comisionista.
+  // Primero descarta las vencidas; luego puntúa cada regla
+  // (comisionista 100 > producto 90 > global 60) y, si hay
   // empate, gana la de menor prioridad. Las reglas "acumulables" del mismo
   // tipo que la ganadora se suman; las de otro tipo se ignoran.
   async sugerir(empresaId: string, query: ReglaSugerirInput) {
@@ -240,10 +234,6 @@ export class ReglasService {
         } else if (r.ambito === 'PRODUCTO') {
           if (producto && r.producto && coincide(r.producto, producto)) {
             puntaje = 90;
-          }
-        } else if (r.ambito === 'SUCURSAL') {
-          if (query.sucursalId && r.sucursalId === query.sucursalId) {
-            puntaje = 80;
           }
         } else if (r.ambito === 'GLOBAL') {
           puntaje = producto && coincide(r.nombre, producto) ? 60 : 10;

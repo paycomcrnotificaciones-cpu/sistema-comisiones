@@ -1,4 +1,4 @@
-# LiquiCom
+# PayCom CR
 
 Aplicación web para administrar comisionistas, ventas y la comisión que genera cada venta. El proyecto está desarrollado por Dilan Delgado y se organiza en un frontend, una API y una base de datos relacional.
 
