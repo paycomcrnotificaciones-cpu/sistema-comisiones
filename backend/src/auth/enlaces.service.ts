@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { hash } from 'bcryptjs';
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomInt } from 'node:crypto';
 
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -86,21 +86,32 @@ export class EnlacesService {
     await this.prisma.$transaction([
       this.prisma.usuario.update({
         where: { id: registro.usuarioId },
-        data: { passwordHash },
+        data: {
+          passwordHash,
+          debeCambiarPassword: false,
+          passwordTemporalExpira: null,
+        },
       }),
-      this.prisma.tokenAcceso.update({
-        where: { id: registro.id },
-        data: { usadoEn: new Date() },
-      }),
+      // Un solo uso: el enlace se elimina en cuanto se usa.
+      this.prisma.tokenAcceso.delete({ where: { id: registro.id } }),
     ]);
 
     return { email: registro.usuario.email };
   }
 
-  // Contraseña aleatoria e inservible para los usuarios nuevos: mientras no
-  // activen su enlace, nadie puede entrar con esa cuenta.
-  passwordProvisional(): Promise<string> {
-    return hash(randomUUID(), 10);
+  // Clave temporal de 6 dígitos. Se entrega al usuario y debe cambiarla.
+  generarClaveTemporal(): string {
+    return String(randomInt(0, 1_000_000)).padStart(6, '0');
+  }
+
+  // Guarda la clave temporal como hash, igual que cualquier contraseña.
+  hashearClave(clave: string): Promise<string> {
+    return hash(clave, 10);
+  }
+
+  // Cuándo vence la clave temporal (7 días).
+  vencimientoClaveTemporal(): Date {
+    return new Date(Date.now() + 7 * 24 * 3_600_000);
   }
 
   // Guarda en la base solo el hash del token, nunca el token en claro.

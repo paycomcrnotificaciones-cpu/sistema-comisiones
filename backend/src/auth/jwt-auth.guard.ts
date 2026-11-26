@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -57,6 +58,8 @@ export class JwtAuthGuard implements CanActivate {
         rol: true,
         activo: true,
         comisionistaId: true,
+        debeCambiarPassword: true,
+        passwordTemporalExpira: true,
       },
     });
 
@@ -65,6 +68,19 @@ export class JwtAuthGuard implements CanActivate {
     }
     if (!usuario.activo) {
       throw new UnauthorizedException('La cuenta está desactivada');
+    }
+
+    // Si la clave temporal venció, solo se le deja cambiar la contraseña.
+    const esCambioDeClave = request.path.startsWith('/api/auth/cambiar-clave');
+    if (
+      !esCambioDeClave &&
+      usuario.debeCambiarPassword &&
+      usuario.passwordTemporalExpira &&
+      usuario.passwordTemporalExpira < new Date()
+    ) {
+      throw new ForbiddenException(
+        'Tu clave temporal venció. Pide una nueva al administrador.',
+      );
     }
 
     request.usuario = {

@@ -9,7 +9,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { ComisionistasModule } from './comisionistas/comisionistas.module.js';
 import { LiquidacionesModule } from './liquidaciones/liquidaciones.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
-import { ReglasModule } from './reglas/reglas.module.js';
+import { CatalogosModule } from './catalogos/catalogos.module.js';
 import { ResumenModule } from './resumen/resumen.module.js';
 import { SuscripcionesModule } from './suscripciones/suscripciones.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
@@ -39,7 +39,7 @@ import { VentasModule } from './ventas/ventas.module.js';
     UsuariosModule,
     VentasModule,
     AuditoriaModule,
-    ReglasModule,
+    CatalogosModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

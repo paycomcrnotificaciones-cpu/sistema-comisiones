@@ -8,6 +8,7 @@ import type {
   ComisionistaUpdateInput,
 } from '../common/validators.js';
 import { EnlacesService } from '../auth/enlaces.service.js';
+import { CorreoService } from '../correo/correo.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 const incluir = {
@@ -21,6 +22,7 @@ export class ComisionistasService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly enlaces: EnlacesService,
+    private readonly correo: CorreoService,
   ) {}
 
   // Lista los comisionistas de la empresa con su usuario.
@@ -52,7 +54,8 @@ export class ComisionistasService {
   // con rol COMISIONISTA. La persona elige su contraseña desde el enlace.
   async crear(empresaId: string, data: ComisionistaCreateInput) {
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const { creado, enlaceInvitacion, claveTemporal } =
+        await this.prisma.$transaction(async (tx) => {
         const comisionista = await tx.comisionista.create({
           data: {
             empresaId,
@@ -61,13 +64,17 @@ export class ComisionistasService {
         });
 
         let enlaceInvitacion: string | undefined;
+        let claveTemporal: string | undefined;
         if (data.email) {
+          claveTemporal = this.enlaces.generarClaveTemporal();
           const acceso = await tx.usuario.create({
             data: {
               empresaId,
               email: data.email,
-              // Nadie puede entrar hasta que active su enlace.
-              passwordHash: await this.enlaces.passwordProvisional(),
+              // Clave temporal de 6 dígitos: debe cambiarla en 7 días.
+              passwordHash: await this.enlaces.hashearClave(claveTemporal),
+              debeCambiarPassword: true,
+              passwordTemporalExpira: this.enlaces.vencimientoClaveTemporal(),
               rol: 'COMISIONISTA',
               comisionistaId: comisionista.id,
             },
@@ -80,8 +87,18 @@ export class ComisionistasService {
           where: { id: comisionista.id },
           include: incluir,
         });
-        return { ...creado, enlaceInvitacion };
+        return { creado, enlaceInvitacion, claveTemporal };
       });
+
+      if (data.email && enlaceInvitacion && claveTemporal) {
+        const envio = await this.correo.enviarInvitacion({
+          para: data.email,
+          enlace: enlaceInvitacion,
+          claveTemporal,
+        });
+        return { ...creado, enlaceInvitacion, claveTemporal, ...envio };
+      }
+      return { ...creado, enlaceInvitacion };
     } catch (error) {
       this.manejarConflicto(error);
       throw error;
@@ -104,7 +121,8 @@ export class ComisionistasService {
     }
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const { editado, enlaceInvitacion, claveTemporal } =
+        await this.prisma.$transaction(async (tx) => {
         await tx.comisionista.update({
           where: { id },
           data: {
@@ -114,6 +132,7 @@ export class ComisionistasService {
         });
 
         let enlaceInvitacion: string | undefined;
+        let claveTemporal: string | undefined;
 
         if (actual.usuario) {
           await tx.usuario.update({
@@ -124,11 +143,14 @@ export class ComisionistasService {
             },
           });
         } else if (data.email) {
+          claveTemporal = this.enlaces.generarClaveTemporal();
           const acceso = await tx.usuario.create({
             data: {
               empresaId,
               email: data.email,
-              passwordHash: await this.enlaces.passwordProvisional(),
+              passwordHash: await this.enlaces.hashearClave(claveTemporal),
+              debeCambiarPassword: true,
+              passwordTemporalExpira: this.enlaces.vencimientoClaveTemporal(),
               rol: 'COMISIONISTA',
               comisionistaId: id,
               activo: data.activo ?? true,
@@ -142,8 +164,18 @@ export class ComisionistasService {
           where: { id },
           include: incluir,
         });
-        return { ...editado, enlaceInvitacion };
+        return { editado, enlaceInvitacion, claveTemporal };
       });
+
+      if (data.email && enlaceInvitacion && claveTemporal) {
+        const envio = await this.correo.enviarInvitacion({
+          para: data.email,
+          enlace: enlaceInvitacion,
+          claveTemporal,
+        });
+        return { ...editado, enlaceInvitacion, claveTemporal, ...envio };
+      }
+      return { ...editado, enlaceInvitacion };
     } catch (error) {
       this.manejarConflicto(error);
       throw error;

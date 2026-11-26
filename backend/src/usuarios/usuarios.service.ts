@@ -10,6 +10,7 @@ import type {
   UsuarioUpdateInput,
 } from '../common/validators.js';
 import { EnlacesService } from '../auth/enlaces.service.js';
+import { CorreoService } from '../correo/correo.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 const seleccion = {
@@ -29,6 +30,7 @@ export class UsuariosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly enlaces: EnlacesService,
+    private readonly correo: CorreoService,
   ) {}
 
   // Lista los usuarios de la empresa sin datos sensibles (sin contraseña).
@@ -65,13 +67,15 @@ export class UsuariosService {
     }
 
     try {
+      const claveTemporal = this.enlaces.generarClaveTemporal();
       const usuario = await this.prisma.usuario.create({
         data: {
           empresaId,
           email: data.email,
-          // Contraseña aleatoria e inservible: la persona elige la suya
-          // desde el enlace de invitación.
-          passwordHash: await this.enlaces.passwordProvisional(),
+          // Clave temporal de 6 dígitos: debe cambiarla en los próximos 7 días.
+          passwordHash: await this.enlaces.hashearClave(claveTemporal),
+          debeCambiarPassword: true,
+          passwordTemporalExpira: this.enlaces.vencimientoClaveTemporal(),
           rol: data.rol,
           comisionistaId:
             data.rol === 'COMISIONISTA' ? data.comisionistaId : null,
@@ -79,8 +83,7 @@ export class UsuariosService {
         select: seleccion,
       });
 
-      const { enlace, expiraEn } = await this.enlaces.crear(usuario.id);
-      return { ...usuario, enlaceInvitacion: enlace, expiraEnlace: expiraEn };
+      return await this.entregarAcceso(empresaId, usuario, claveTemporal);
     } catch (error) {
       this.manejarConflicto(error);
       throw error;
@@ -96,7 +99,7 @@ export class UsuariosService {
   ) {
     const usuario = await this.prisma.usuario.findFirst({
       where: { id, empresaId },
-      select: { id: true, rol: true, activo: true },
+      select: { id: true, email: true, rol: true, activo: true },
     });
     if (!usuario) {
       throw new NotFoundException('Usuario no encontrado');
@@ -108,11 +111,44 @@ export class UsuariosService {
       throw new BadRequestException('Activa el usuario antes de darle acceso');
     }
 
-    const { enlace, expiraEn } = await this.enlaces.crear(
-      usuario.id,
-      'RESETEO',
-    );
-    return { enlace, expiraEn };
+    const claveTemporal = this.enlaces.generarClaveTemporal();
+    await this.prisma.usuario.update({
+      where: { id: usuario.id },
+      data: {
+        passwordHash: await this.enlaces.hashearClave(claveTemporal),
+        debeCambiarPassword: true,
+        passwordTemporalExpira: this.enlaces.vencimientoClaveTemporal(),
+      },
+    });
+    return this.entregarAcceso(empresaId, usuario, claveTemporal, 'RESETEO');
+  }
+
+  // Crea el enlace, envía el correo con la clave y arma la respuesta.
+  private async entregarAcceso(
+    empresaId: string,
+    usuario: { id: string; email: string; rol?: string },
+    claveTemporal: string,
+    tipo: 'INVITACION' | 'RESETEO' = 'INVITACION',
+  ) {
+    const { enlace, expiraEn } = await this.enlaces.crear(usuario.id, tipo);
+    const empresa = await this.prisma.empresa.findUnique({
+      where: { id: empresaId },
+      select: { nombre: true },
+    });
+    const envio = await this.correo.enviarInvitacion({
+      para: usuario.email,
+      enlace,
+      claveTemporal,
+      nombreEmpresa: empresa?.nombre,
+    });
+    return {
+      ...usuario,
+      claveTemporal,
+      enlaceInvitacion: enlace,
+      expiraEnlace: expiraEn,
+      correoEnviado: envio.enviado,
+      motivoCorreo: envio.motivo,
+    };
   }
 
   // Actualiza correo, rol o estado. La contraseña no se toca aquí:
@@ -196,8 +232,16 @@ export class UsuariosService {
       // Cambiar de rol invalida la contraseña anterior: se entrega un enlace
       // nuevo para que la persona defina una clave acorde a su nuevo acceso.
       if (data.rol && data.rol !== actual.rol) {
-        const { enlace, expiraEn } = await this.enlaces.crear(usuario.id);
-        return { ...usuario, enlaceInvitacion: enlace, expiraEnlace: expiraEn };
+        const claveTemporal = this.enlaces.generarClaveTemporal();
+        await this.prisma.usuario.update({
+          where: { id: usuario.id },
+          data: {
+            passwordHash: await this.enlaces.hashearClave(claveTemporal),
+            debeCambiarPassword: true,
+            passwordTemporalExpira: this.enlaces.vencimientoClaveTemporal(),
+          },
+        });
+        return this.entregarAcceso(empresaId, usuario, claveTemporal);
       }
 
       return usuario;

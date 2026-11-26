@@ -51,10 +51,10 @@ function describir(
     return null;
   }
 
-  if (recurso === 'reglas') {
-    if (metodo === 'POST') return { accion: 'Creó una regla', entidad: 'Regla' };
-    if (metodo === 'PATCH') return { accion: 'Editó una regla', entidad: 'Regla' };
-    if (metodo === 'DELETE') return { accion: 'Eliminó una regla', entidad: 'Regla' };
+  if (recurso === 'catalogos') {
+    if (metodo === 'POST') return { accion: 'Creó un producto', entidad: 'Catálogo' };
+    if (metodo === 'PATCH') return { accion: 'Editó un producto', entidad: 'Catálogo' };
+    if (metodo === 'DELETE') return { accion: 'Eliminó un producto', entidad: 'Catálogo' };
     return null;
   }
 

@@ -1,6 +1,6 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { compare } from 'bcryptjs';
+import { compare, hash } from 'bcryptjs';
 
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -25,6 +25,17 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    // La clave temporal vence a los 7 días: si no la cambió, se bloquea.
+    if (
+      usuario.debeCambiarPassword &&
+      usuario.passwordTemporalExpira &&
+      usuario.passwordTemporalExpira < new Date()
+    ) {
+      throw new ForbiddenException(
+        'Tu clave temporal venció. Pide una nueva al administrador.',
+      );
+    }
+
     const payload = {
       sub: usuario.id,
       email: usuario.email,
@@ -41,7 +52,22 @@ export class AuthService {
         rol: usuario.rol,
         empresaId: usuario.empresaId,
         comisionistaId: usuario.comisionistaId,
+        debeCambiarPassword: usuario.debeCambiarPassword,
       },
     };
+  }
+
+  // Cambia la contraseña del usuario que ya está dentro.
+  // Sirve tanto para la clave temporal como para un cambio voluntario.
+  async cambiarClave(usuarioId: string, nueva: string) {
+    await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: {
+        passwordHash: await hash(nueva, 10),
+        debeCambiarPassword: false,
+        passwordTemporalExpira: null,
+      },
+    });
+    return { cambiada: true };
   }
 }

@@ -49,7 +49,7 @@ beforeAll(async () => {
   await prisma.liquidacion.deleteMany();
   await prisma.venta.deleteMany();
   await prisma.suscripcion.deleteMany();
-  await prisma.reglaComision.deleteMany();
+  await prisma.catalogo.deleteMany();
   await prisma.usuario.deleteMany();
   await prisma.comisionista.deleteMany();
   await prisma.empresa.deleteMany();

@@ -26,6 +26,10 @@ export default function LoginPage() {
     setError(null);
     try {
       const usuario = await login(email, password);
+      if (usuario.debeCambiarPassword) {
+        router.push("/cambiar-clave");
+        return;
+      }
       if (usuario.rol === "COMISIONISTA") {
         router.push(
           usuario.comisionistaId

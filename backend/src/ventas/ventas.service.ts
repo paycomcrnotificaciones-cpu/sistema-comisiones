@@ -21,6 +21,15 @@ function calcularComisionMonto(
   return tipo === 'PORCENTAJE' ? porcentaje(neto, valor) : aTexto(valor);
 }
 
+// Si la venta viene con un producto del catálogo, se toma el nombre de ahí.
+// Así el producto siempre coincide con lo que se eligió.
+function datosCatalogo(
+  catalogo: { id: string; nombre: string } | null,
+): { catalogoId: string | null; producto?: string } {
+  if (!catalogo) return { catalogoId: null };
+  return { catalogoId: catalogo.id, producto: catalogo.nombre };
+}
+
 // Toda la lógica de las ventas: listar con filtros, crear, editar,
 // exportar a CSV y anular. Solo se puede editar o anular mientras la venta
 // no haya entrado en una liquidación.
@@ -156,6 +165,20 @@ export class VentasService {
         };
     }
 
+    // Busca el producto del catálogo y valida que sea de la empresa.
+    private async buscarCatalogo(empresaId: string, catalogoId: string) {
+      const catalogo = await this.prisma.catalogo.findFirst({
+        where: { id: catalogoId, empresaId },
+      });
+      if (!catalogo) {
+        throw new NotFoundException('Producto del catálogo no encontrado');
+      }
+      if (!catalogo.activo) {
+        throw new BadRequestException('Ese producto está inactivo');
+      }
+      return catalogo;
+    }
+
     // Registra una venta nueva. Revisa que el comisionista exista en la
     // empresa y calcula la comisión en el momento de guardar.
     async crear(empresaId: string, data: VentaCreateInput) {
@@ -163,6 +186,10 @@ export class VentasService {
       where: { id: data.comisionistaId, empresaId },
     });
     if (!comisionista) throw new NotFoundException('Comisionista no encontrado');
+
+    const catalogo = data.catalogoId
+      ? await this.buscarCatalogo(empresaId, data.catalogoId)
+      : null;
 
     try {
       return await this.prisma.venta.create({
@@ -172,7 +199,8 @@ export class VentasService {
           fecha: new Date(`${data.fecha}T06:00:00Z`),
           documento: data.documento ?? null,
           cliente: data.cliente ?? null,
-          producto: data.producto ?? null,
+          producto: catalogo ? catalogo.nombre : (data.producto ?? null),
+          catalogoId: catalogo?.id ?? null,
           categoria: data.categoria ?? null,
           bruto: data.bruto,
           neto: data.neto,
@@ -233,6 +261,13 @@ export class VentasService {
       );
     }
 
+    const catalogo =
+      data.catalogoId === undefined
+        ? undefined
+        : data.catalogoId === null
+          ? null
+          : await this.buscarCatalogo(empresaId, data.catalogoId);
+
     const comisionTipo = data.comisionTipo ?? actual.comisionTipo;
     const comisionValor =
       data.comisionValor ?? actual.comisionValor.toString();
@@ -253,7 +288,14 @@ export class VentasService {
           ? { documento: data.documento }
           : {}),
         ...(data.cliente !== undefined ? { cliente: data.cliente } : {}),
-        ...(data.producto !== undefined ? { producto: data.producto } : {}),
+        ...(catalogo !== undefined
+          ? {
+              catalogoId: catalogo?.id ?? null,
+              producto: catalogo ? catalogo.nombre : data.producto ?? null,
+            }
+          : data.producto !== undefined
+            ? { producto: data.producto }
+            : {}),
         ...(data.categoria !== undefined
           ? { categoria: data.categoria }
           : {}),

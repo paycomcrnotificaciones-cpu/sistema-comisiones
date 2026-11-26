@@ -44,7 +44,7 @@ model Empresa {
   suscripciones         Suscripcion[]
   comisionesSuscripcion ComisionSuscripcion[]
   auditoria             Auditoria[]
-  reglaComisions        ReglaComision[]
+  catalogos             Catalogo[]
 
   @@map("empresas")
 }
@@ -57,6 +57,9 @@ model Usuario {
   passwordHash   String   @map("password_hash")
   rol            Rol      @default(COMISIONISTA)
   activo         Boolean  @default(true)
+  // Clave temporal de 6 dígitos: el usuario debe cambiarla antes de que venza.
+  debeCambiarPassword    Boolean   @default(false) @map("debe_cambiar_password")
+  passwordTemporalExpira DateTime? @map("password_temporal_expira")
   comisionistaId String?  @unique @map("comisionista_id")
   creadoEn       DateTime @default(now()) @map("creado_en")
 
@@ -99,7 +102,6 @@ model Comisionista {
   liquidaciones         Liquidacion[]
   suscripciones         Suscripcion[]
   comisionesSuscripcion ComisionSuscripcion[]
-  reglaComisions        ReglaComision[]
 
   @@index([empresaId])
   @@map("comisionistas")
@@ -136,13 +138,6 @@ enum TipoComision {
 enum EstadoLiquidacion {
   BORRADOR
   PAGADA
-}
-
-// A qué aplica una regla: a todo, a un producto o a una persona.
-enum AmbitoRegla {
-  GLOBAL
-  PRODUCTO
-  COMISIONISTA
 }
 
 // Cómo se le pagó al comisionista.
@@ -202,6 +197,7 @@ model Suscripcion {
   comisionistaId     String            @map("comisionista_id")
   cliente            String
   producto           String?
+  catalogoId         String?           @map("catalogo_id")
   monto              Decimal           @db.Decimal(18, 4)
   frecuenciaCobro    Frecuencia        @map("frecuencia_cobro")
   comisionTipo       TipoComision      @default(PORCENTAJE) @map("comision_tipo")
@@ -214,9 +210,11 @@ model Suscripcion {
 
   empresa      Empresa               @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   comisionista Comisionista          @relation(fields: [comisionistaId], references: [id], onDelete: Restrict)
+  catalogo     Catalogo?             @relation(fields: [catalogoId], references: [id], onDelete: SetNull)
   comisiones   ComisionSuscripcion[]
 
   @@index([empresaId, estado])
+  @@index([catalogoId])
   @@index([empresaId, comisionistaId])
   @@map("suscripciones")
 }
@@ -254,6 +252,7 @@ model Venta {
   cliente        String?
   producto       String?
   categoria      String?
+  catalogoId     String?      @map("catalogo_id")
   bruto          Decimal      @db.Decimal(18, 4)
   neto           Decimal      @db.Decimal(18, 4)
   costo          Decimal      @default(0) @db.Decimal(18, 4)
@@ -266,11 +265,13 @@ model Venta {
 
   empresa      Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   comisionista Comisionista @relation(fields: [comisionistaId], references: [id], onDelete: Restrict)
+  catalogo     Catalogo?    @relation(fields: [catalogoId], references: [id], onDelete: SetNull)
   liquidacion  Liquidacion? @relation(fields: [liquidacionId], references: [id], onDelete: SetNull)
 
   @@unique([empresaId, documento])
   @@index([empresaId, fecha])
   @@index([empresaId, comisionistaId])
+  @@index([catalogoId])
   @@index([liquidacionId])
   @@map("ventas")
 }
@@ -296,28 +297,21 @@ model Auditoria {
   @@map("auditoria")
 }
 
-// Regla de comisión: sugerencia para llenar el formulario de venta.
-// No cambia liquidaciones ya hechas.
-model ReglaComision {
-  id             String       @id @default(uuid())
-  empresaId      String       @map("empresa_id")
-  nombre         String
-  activa         Boolean      @default(true)
-  tipo           TipoComision
-  valor          Decimal      @db.Decimal(18, 4)
-  ambito         AmbitoRegla  @default(GLOBAL)
-  producto       String?
-  comisionistaId String?      @map("comisionista_id")
-  prioridad      Int          @default(100)
-  acumulable     Boolean      @default(false)
-  vigenciaDesde  DateTime?    @map("vigencia_desde")
-  vigenciaHasta  DateTime?    @map("vigencia_hasta")
-  creadoEn       DateTime     @default(now()) @map("creado_en")
-  actualizadoEn  DateTime     @updatedAt @map("actualizado_en")
+// Catálogo: los productos o servicios que se pueden vender o suscribir.
+// Solo llevan nombre y si están activos; la comisión se escribe en la venta.
+model Catalogo {
+  id            String   @id @default(uuid())
+  empresaId     String   @map("empresa_id")
+  nombre        String
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  comisionista Comisionista? @relation(fields: [comisionistaId], references: [id], onDelete: Cascade)
+  ventas       Venta[]
+  suscripciones Suscripcion[]
 
-  @@index([empresaId, ambito])
-  @@map("reglas_comision")
+  @@unique([empresaId, nombre])
+  @@index([empresaId, activo])
+  @@map("catalogos")
 }

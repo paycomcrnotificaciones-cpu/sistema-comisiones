@@ -15,11 +15,11 @@ interface NavItem {
 }
 
 // Menú lateral. Algunas entradas se ocultan según el rol:
-// usuarios, reglas e historial son solo para administradores.
+// usuarios, catálogos e historial son solo para administradores.
 const enlaces: NavItem[] = [
   { href: "/comisionistas", texto: "Comisionistas" },
   { href: "/liquidaciones", texto: "Liquidaciones" },
-  { href: "/reglas", texto: "Reglas" },
+  { href: "/catalogos", texto: "Catálogos" },
   { href: "/historial", texto: "Historial" },
   { href: "/usuarios", texto: "Usuarios" },
 ];
@@ -225,7 +225,7 @@ export function AppShell({
       .filter((e) => !(esComisionista && e.href === "/comisionistas"))
       .filter((e) => e.href !== "/usuarios" || esGestor)
       .filter((e) => e.href !== "/historial" || esGestor)
-      .filter((e) => e.href !== "/reglas" || esGestor)
+      .filter((e) => e.href !== "/catalogos" || esGestor)
       .map((e) => ({
         href: e.href,
         texto: e.texto,
@@ -238,7 +238,7 @@ export function AppShell({
             <MoneyIcon />
           ) : e.href === "/historial" ? (
             <HistoryIcon />
-          ) : e.href === "/reglas" ? (
+          ) : e.href === "/catalogos" ? (
             <ReglasIcon />
           ) : (
             <SalesIcon />

@@ -5,6 +5,13 @@ import { z } from 'zod';
 // También sirve para limpiar: quita espacios, pasa correos a minúscula, etc.
 
 // --- Login ---
+// Nueva contraseña (mínimo 6 caracteres, como la clave temporal).
+export const cambiarClaveSchema = z.object({
+  nueva: z.string().min(10).max(72),
+});
+
+export type CambiarClaveInput = z.infer<typeof cambiarClaveSchema>;
+
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
@@ -39,6 +46,7 @@ export const ventaCreateSchema = z.object({
   cliente: z.string().trim().max(120).optional(),
   producto: z.string().trim().max(120).optional(),
   categoria: z.string().trim().max(120).optional(),
+  catalogoId: z.string().uuid().nullable().optional(),
   bruto: dinero,
   neto: dinero,
   costo: dinero.optional(),
@@ -64,6 +72,7 @@ export const ventaUpdateSchema = z
     cliente: z.string().trim().max(120).nullable().optional(),
     producto: z.string().trim().max(120).nullable().optional(),
     categoria: z.string().trim().max(120).nullable().optional(),
+    catalogoId: z.string().uuid().nullable().optional(),
     bruto: dinero.optional(),
     neto: dinero.optional(),
     costo: dinero.optional(),
@@ -189,6 +198,7 @@ export const suscripcionCreateSchema = z.object({
   comisionistaId: z.string().uuid(),
   cliente: z.string().trim().min(1).max(120),
   producto: z.string().trim().max(120).optional(),
+  catalogoId: z.string().uuid().nullable().optional(),
   monto: dinero,
   frecuenciaCobro: frecuenciaSchema,
   comisionTipo: z.enum(['PORCENTAJE', 'MONTO_FIJO']),
@@ -214,51 +224,14 @@ export const suscripcionQuerySchema = z.object({
 
 export type SuscripcionQueryInput = z.infer<typeof suscripcionQuerySchema>;
 
-// --- Reglas de comisión ---
-// Cada ámbito exige su dato: una regla de producto necesita el producto,
-// una de comisionista necesita el comisionista, y así.
-const fechaOpcional = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .nullable()
-  .optional();
-
-const reglaComisionBase = z.object({
+// --- Catálogo de productos ---
+// Solo nombre y si está activo. La comisión se define en cada venta.
+export const catalogoSchema = z.object({
   nombre: z.string().trim().min(1).max(120),
-  tipo: z.enum(['PORCENTAJE', 'MONTO_FIJO']),
-  valor: z.coerce.number().min(0),
-  ambito: z
-    .enum(['GLOBAL', 'PRODUCTO', 'COMISIONISTA'])
-    .default('GLOBAL'),
-  producto: z.string().trim().max(120).nullable().optional(),
-  comisionistaId: z.string().uuid().nullable().optional(),
-  prioridad: z.coerce.number().int().min(1).max(999).default(100),
-  acumulable: z.boolean().default(false),
-  activa: z.boolean().default(true),
-  vigenciaDesde: fechaOpcional,
-  vigenciaHasta: fechaOpcional,
+  activo: z.boolean().default(true),
 });
 
-export const reglaComisionSchema = reglaComisionBase
-  .refine((v) => v.ambito !== 'PRODUCTO' || !!v.producto, {
-    message: 'Indica el producto de la regla',
-    path: ['producto'],
-  })
-  .refine((v) => v.ambito !== 'COMISIONISTA' || !!v.comisionistaId, {
-    message: 'Indica el comisionista de la regla',
-    path: ['comisionistaId'],
-  });
+export const catalogoUpdateSchema = catalogoSchema.partial();
 
-export const reglaComisionUpdateSchema = reglaComisionBase.partial();
-
-export type ReglaComisionInput = z.infer<typeof reglaComisionSchema>;
-export type ReglaComisionUpdateInput = z.infer<
-  typeof reglaComisionUpdateSchema
->;
-
-export const reglaSugerirSchema = z.object({
-  producto: z.string().trim().max(120).optional(),
-  comisionistaId: z.string().uuid().optional(),
-});
-
-export type ReglaSugerirInput = z.infer<typeof reglaSugerirSchema>;
+export type CatalogoInput = z.infer<typeof catalogoSchema>;
+export type CatalogoUpdateInput = z.infer<typeof catalogoUpdateSchema>;

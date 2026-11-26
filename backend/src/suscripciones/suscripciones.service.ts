@@ -50,6 +50,20 @@ export class SuscripcionesService {
     return suscripcion;
   }
 
+  // Busca el producto del catálogo y valida que sea de la empresa.
+  private async buscarCatalogo(empresaId: string, catalogoId: string) {
+    const catalogo = await this.prisma.catalogo.findFirst({
+      where: { id: catalogoId, empresaId },
+    });
+    if (!catalogo) {
+      throw new NotFoundException('Producto del catálogo no encontrado');
+    }
+    if (!catalogo.activo) {
+      throw new BadRequestException('Ese producto está inactivo');
+    }
+    return catalogo;
+  }
+
   // Registra una suscripción nueva y calcula cuándo toca la próxima cobranza.
   async crear(empresaId: string, data: SuscripcionCreateInput) {
     const comisionista = await this.prisma.comisionista.findFirst({
@@ -58,6 +72,10 @@ export class SuscripcionesService {
     if (!comisionista) {
       throw new NotFoundException('Comisionista no encontrado');
     }
+
+    const catalogo = data.catalogoId
+      ? await this.buscarCatalogo(empresaId, data.catalogoId)
+      : null;
 
     const inicio = new Date(`${data.inicio}T06:00:00Z`);
     const fin = data.fin ? new Date(`${data.fin}T06:00:00Z`) : null;
@@ -70,7 +88,8 @@ export class SuscripcionesService {
         empresaId,
         comisionistaId: data.comisionistaId,
         cliente: data.cliente,
-        producto: data.producto ?? null,
+        producto: catalogo ? catalogo.nombre : (data.producto ?? null),
+        catalogoId: catalogo?.id ?? null,
         monto: data.monto,
         frecuenciaCobro: data.frecuenciaCobro,
         comisionTipo: data.comisionTipo,
@@ -92,6 +111,13 @@ export class SuscripcionesService {
   ) {
     const actual = await this.obtener(empresaId, id);
 
+    const catalogo =
+      data.catalogoId === undefined
+        ? undefined
+        : data.catalogoId === null
+          ? null
+          : await this.buscarCatalogo(empresaId, data.catalogoId);
+
     const inicio = data.inicio
       ? new Date(`${data.inicio}T06:00:00Z`)
       : actual.inicio;
@@ -110,7 +136,14 @@ export class SuscripcionesService {
       where: { id },
       data: {
         ...(data.cliente !== undefined ? { cliente: data.cliente } : {}),
-        ...(data.producto !== undefined ? { producto: data.producto } : {}),
+        ...(catalogo !== undefined
+          ? {
+              catalogoId: catalogo?.id ?? null,
+              producto: catalogo ? catalogo.nombre : data.producto ?? null,
+            }
+          : data.producto !== undefined
+            ? { producto: data.producto }
+            : {}),
         ...(data.monto !== undefined ? { monto: data.monto } : {}),
         ...(data.frecuenciaCobro !== undefined
           ? { frecuenciaCobro: data.frecuenciaCobro }

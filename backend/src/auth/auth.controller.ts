@@ -1,15 +1,18 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import {
   activarSchema,
+  cambiarClaveSchema,
   loginSchema,
   type ActivarInput,
+  type CambiarClaveInput,
   type LoginInput,
 } from '../common/validators.js';
 import { AuthService } from './auth.service.js';
 import { EnlacesService } from './enlaces.service.js';
+import { JwtAuthGuard, type RequestConUsuario } from './jwt-auth.guard.js';
 
 @Controller('auth')
 export class AuthController {
@@ -33,5 +36,15 @@ export class AuthController {
   @Post('activar')
   activar(@Body(new ZodValidationPipe(activarSchema)) body: ActivarInput) {
     return this.enlaces.activar(body.token, body.password);
+  }
+
+  // POST /api/auth/cambiar-clave — cambia la contraseña del usuario con sesión.
+  @UseGuards(JwtAuthGuard)
+  @Post('cambiar-clave')
+  cambiarClave(
+    @Req() req: RequestConUsuario,
+    @Body(new ZodValidationPipe(cambiarClaveSchema)) body: CambiarClaveInput,
+  ) {
+    return this.authService.cambiarClave(req.usuario!.sub, body.nueva);
   }
 }

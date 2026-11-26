@@ -18,6 +18,7 @@ interface Venta {
   documento: string | null;
   cliente: string | null;
   producto: string | null;
+  catalogoId: string | null;
   categoria: string | null;
   bruto: string;
   neto: string;
@@ -42,6 +43,7 @@ interface Suscripcion {
   id: string;
   cliente: string;
   producto: string | null;
+  catalogoId: string | null;
   monto: string;
   frecuenciaCobro: Frecuencia;
   comisionTipo: "PORCENTAJE" | "MONTO_FIJO";
@@ -111,9 +113,9 @@ function MovimientosComisionista() {
   const [error, setError] = useState<string | null>(null);
 
   const [fecha, setFecha] = useState("");
-  const [producto, setProducto] = useState("");
-  // Productos que ya tienen una regla activa: se ofrecen como atajo.
-  const [productosConRegla, setProductosConRegla] = useState<string[]>([]);
+  // Producto elegido del catálogo y su nombre para mostrar.
+  const [catalogoId, setCatalogoId] = useState("");
+  const [catalogos, setCatalogos] = useState<{ id: string; nombre: string }[]>([]);
   const [monto, setMonto] = useState("");
   const [comisionTipo, setComisionTipo] = useState<"PORCENTAJE" | "MONTO_FIJO">(
     "PORCENTAJE",
@@ -121,19 +123,13 @@ function MovimientosComisionista() {
   const [comisionValor, setComisionValor] = useState("");
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [guardandoVenta, setGuardandoVenta] = useState(false);
-  const [sugerencia, setSugerencia] = useState<{
-    nombre: string;
-    tipo: "PORCENTAJE" | "MONTO_FIJO";
-    valor: number;
-    detalle?: { nombre: string; valor: number }[];
-  } | null>(null);
   const [ventaAnular, setVentaAnular] = useState<Venta | null>(null);
   const [anulando, setAnulando] = useState(false);
 
   // Formulario y acciones de suscripciones del comisionista de la URL.
   const [subEditandoId, setSubEditandoId] = useState<string | null>(null);
   const [subCliente, setSubCliente] = useState("");
-  const [subProducto, setSubProducto] = useState("");
+  const [subCatalogoId, setSubCatalogoId] = useState("");
   const [subMonto, setSubMonto] = useState("");
   const [subFrecuenciaCobro, setSubFrecuenciaCobro] =
     useState<Frecuencia>("MENSUAL");
@@ -156,6 +152,21 @@ function MovimientosComisionista() {
     cliente: string;
   } | null>(null);
   const [subCambiando, setSubCambiando] = useState(false);
+  const [pestana, setPestana] = useState<"ventas" | "suscripciones">("ventas");
+
+  // Recuerda si la última vez se estaba en ventas o en suscripciones.
+  useEffect(() => {
+    const guardada = window.localStorage.getItem("movimientos-pestana");
+    if (guardada === "ventas" || guardada === "suscripciones") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPestana(guardada);
+    }
+  }, []);
+
+  function cambiarPestana(nueva: "ventas" | "suscripciones") {
+    setPestana(nueva);
+    window.localStorage.setItem("movimientos-pestana", nueva);
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -195,15 +206,15 @@ function MovimientosComisionista() {
     (async () => {
       try {
         const parametros = new URLSearchParams({ comisionistaId: id });
-        const [c, s, catalogo] = await Promise.all([
+        const [c, s, lista] = await Promise.all([
           apiFetch<{ nombre: string }>(`/comisionistas/${id}`),
           apiFetch<Suscripcion[]>(`/suscripciones?${parametros.toString()}`),
-          apiFetch<string[]>("/reglas/productos?conRegla=1"),
+          apiFetch<{ id: string; nombre: string }[]>("/catalogos?activos=1"),
         ]);
         if (!vivo) return;
         setComisionista(c);
         setSuscripciones(s);
-        setProductosConRegla(catalogo);
+        setCatalogos(lista);
         await cargarVentas();
         if (!vivo) return;
         setCargando(false);
@@ -220,54 +231,21 @@ function MovimientosComisionista() {
     };
   }, [id, cargarVentas]);
 
-  // Busca la regla que aplica al producto escrito y sugiere la comisión.
-  useEffect(() => {
-    const texto = producto.trim();
-    if (texto.length < 2) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSugerencia(null);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      try {
-        const params = new URLSearchParams({
-          producto: texto,
-          comisionistaId: id,
-        });
-        const regla = await apiFetch<{
-          nombre: string;
-          tipo: "PORCENTAJE" | "MONTO_FIJO";
-          valor: number;
-          detalle?: { nombre: string; valor: number }[];
-        } | null>(`/reglas/sugerir?${params.toString()}`);
-        setSugerencia(regla);
-        if (regla && !editandoId) {
-          setComisionTipo(regla.tipo);
-          setComisionValor(String(regla.valor));
-        }
-      } catch {
-        setSugerencia(null);
-      }
-    }, 450);
-    return () => clearTimeout(timer);
-  }, [producto, id, editandoId]);
-
   // Deja el formulario listo para registrar una venta nueva.
   function resetVenta() {
     setEditandoId(null);
     setFecha(fechaHoy());
-    setProducto("");
+    setCatalogoId("");
     setMonto("");
     setComisionTipo("PORCENTAJE");
     setComisionValor("");
-    setSugerencia(null);
   }
 
   // Carga una venta existente en el formulario para corregirla.
   function editarVenta(v: Venta) {
     setEditandoId(v.id);
     setFecha(v.fecha.slice(0, 10));
-    setProducto(v.producto ?? "");
+    setCatalogoId(v.catalogoId ?? "");
     setMonto(v.neto);
     setComisionTipo(v.comisionTipo);
     setComisionValor(v.comisionValor);
@@ -287,7 +265,7 @@ function MovimientosComisionista() {
       const cuerpo = {
         comisionistaId: id,
         fecha,
-        producto: producto || null,
+        catalogoId: catalogoId || null,
         bruto: monto,
         neto: monto,
         costo: "0",
@@ -334,7 +312,7 @@ function MovimientosComisionista() {
   function resetSuscripcion() {
     setSubEditandoId(null);
     setSubCliente("");
-    setSubProducto("");
+    setSubCatalogoId("");
     setSubMonto("");
     setSubFrecuenciaCobro("MENSUAL");
     setSubComisionTipo("PORCENTAJE");
@@ -348,7 +326,7 @@ function MovimientosComisionista() {
   function editarSuscripcion(s: Suscripcion) {
     setSubEditandoId(s.id);
     setSubCliente(s.cliente);
-    setSubProducto(s.producto ?? "");
+    setSubCatalogoId(s.catalogoId ?? "");
     setSubMonto(String(Number(s.monto)));
     setSubFrecuenciaCobro(s.frecuenciaCobro);
     setSubComisionTipo(s.comisionTipo);
@@ -375,7 +353,7 @@ function MovimientosComisionista() {
     try {
       const base = {
         cliente: subCliente,
-        producto: subProducto || undefined,
+        catalogoId: subCatalogoId || null,
         monto: subMonto,
         frecuenciaCobro: subFrecuenciaCobro,
         comisionTipo: subComisionTipo,
@@ -531,6 +509,25 @@ function MovimientosComisionista() {
           <p className="text-sm text-body-text">Cargando movimientos…</p>
         ) : (
           <>
+            <div className="flex flex-wrap gap-2 rounded-2xl border border-light-100 bg-white p-1.5 dark:border-dark-600 dark:bg-dark-700">
+              {(["ventas", "suscripciones"] as const).map((opcion) => (
+                <button
+                  key={opcion}
+                  type="button"
+                  onClick={() => cambiarPestana(opcion)}
+                  className={`flex-1 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-colors ${
+                    pestana === opcion
+                      ? "bg-primary-500 text-white"
+                      : "text-body-text hover:bg-light-50 dark:hover:bg-dark-600"
+                  }`}
+                >
+                  {opcion === "ventas" ? "Ventas" : "Suscripciones"}
+                </button>
+              ))}
+            </div>
+
+            {pestana === "ventas" ? (
+              <>
             {esGestor && (
               <section className="surface overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-light-100 p-6 dark:border-dark-600">
@@ -541,44 +538,29 @@ function MovimientosComisionista() {
                     </h2>
                   </div>
                   <p className="text-[12px] text-body-text">
-                    La comisión se sugiere según la regla del producto.
+                    Elige el producto del catálogo y escribe la comisión.
                   </p>
                 </div>
 
                 <form onSubmit={guardarVenta} className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
-                    <label className="space-y-1.5">
-                      <span className="block">¿Qué vendió?</span>
-                      <input
-                        required
-                        value={producto}
-                        onChange={(e) => setProducto(e.target.value)}
-                        placeholder="Escribe el artículo"
-                        className={inputClass}
-                      />
-                    </label>
-                    <label className="mt-3 block space-y-1.5">
-                      <span className="block normal-case tracking-normal text-[11px] font-medium text-body-text">
-                        O elige un producto que ya tiene regla
-                      </span>
-                      <select
-                        value={productosConRegla.includes(producto) ? producto : ""}
-                        onChange={(e) => {
-                          if (e.target.value) setProducto(e.target.value);
-                        }}
-                        className={inputClass}
-                      >
-                        <option value="">
-                          {productosConRegla.length
-                            ? "Sin regla específica (se escribe arriba)"
-                            : "Todavía no hay productos con regla"}
-                        </option>
-                        {productosConRegla.map((p) => (
-                          <option key={p} value={p}>{p}</option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
+                  <label className={`${labelClass} sm:col-span-2 lg:col-span-4`}>
+                    <span>¿Qué vendió?</span>
+                    <select
+                      required
+                      value={catalogoId}
+                      onChange={(e) => setCatalogoId(e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="">
+                        {catalogos.length
+                          ? "Elige un producto del catálogo"
+                          : "No hay productos en el catálogo"}
+                      </option>
+                      {catalogos.map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                    </select>
+                  </label>
                   <label className={`${labelClass} sm:col-span-1 lg:col-span-2`}>
                     <span>Fecha</span>
                     <input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputClass} />
@@ -603,14 +585,6 @@ function MovimientosComisionista() {
                     <input required inputMode="decimal" placeholder={comisionTipo === "PORCENTAJE" ? "5" : "0.00"} value={comisionValor} onChange={(e) => setComisionValor(e.target.value)} className={inputClass} />
                   </label>
                   <div className="flex flex-col justify-end gap-1 pb-2 text-sm text-body-text sm:col-span-2">
-                    {sugerencia && (
-                      <span className="text-[12px] font-medium text-primary-600 dark:text-primary-100">
-                        Regla aplicada:{" "}
-                        {sugerencia.detalle && sugerencia.detalle.length > 1
-                          ? `${sugerencia.detalle.map((parte) => `${parte.nombre} (${sugerencia.tipo === "PORCENTAJE" ? `${parte.valor}%` : formatoDinero.format(parte.valor)})`).join(" + ")} = ${sugerencia.tipo === "PORCENTAJE" ? `${sugerencia.valor}%` : formatoDinero.format(sugerencia.valor)}`
-                          : sugerencia.nombre}
-                      </span>
-                    )}
                     {comisionTipo === "PORCENTAJE"
                       ? `El ${Number(comisionValor) || 0}% de ${formatoDinero.format(Number(monto) || 0)} = ${formatoDinero.format(comisionCalculada)}`
                       : `Monto fijo: ${formatoDinero.format(comisionCalculada)}`}
@@ -748,6 +722,9 @@ function MovimientosComisionista() {
               </div>
             </section>
 
+            </>
+            ) : (
+              <>
             {esGestor && (
               <section
                 ref={formSuscripcionRef}
@@ -776,7 +753,14 @@ function MovimientosComisionista() {
                   </label>
                   <label className={labelClass}>
                     <span>Producto</span>
-                    <input value={subProducto} onChange={(e) => setSubProducto(e.target.value)} placeholder="Ej. Plan Básico" className={inputClass} />
+                    <select required value={subCatalogoId} onChange={(e) => setSubCatalogoId(e.target.value)} className={inputClass}>
+                      <option value="">
+                        {catalogos.length ? "Elige un producto" : "No hay productos"}
+                      </option>
+                      {catalogos.map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                    </select>
                   </label>
                   <label className={labelClass}>
                     <span>Monto (₡)</span>
@@ -955,6 +939,8 @@ function MovimientosComisionista() {
                 </table>
               </div>
             </section>
+              </>
+            )}
           </>
         )}
       </div>

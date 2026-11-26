@@ -53,7 +53,7 @@ export default function UsuariosPage() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   // Enlace de un solo uso que se le entrega a la persona para que cree su
   // contraseña. El administrador nunca la conoce.
-  const [enlace, setEnlace] = useState<{ email: string; url: string } | null>(null);
+  const [enlace, setEnlace] = useState<{ email: string; url: string; clave?: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
 
   // Trae la lista de usuarios de la empresa.
@@ -95,13 +95,14 @@ export default function UsuariosPage() {
       const creado = await apiFetch<{
         email: string;
         enlaceInvitacion: string;
+        claveTemporal?: string;
       }>("/usuarios", {
         method: "POST",
         body: JSON.stringify({ email, rol }),
       });
       setEmail("");
       setMensaje("Usuario creado. Comparte el enlace para que defina su contraseña.");
-      setEnlace({ email: creado.email, url: creado.enlaceInvitacion });
+      setEnlace({ email: creado.email, url: creado.enlaceInvitacion, clave: creado.claveTemporal });
       await cargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear");
@@ -124,13 +125,13 @@ export default function UsuariosPage() {
     setEnlace(null);
     try {
       const actualizado = await apiFetch<
-        Usuario & { enlaceInvitacion?: string }
+        Usuario & { enlaceInvitacion?: string; claveTemporal?: string }
       >(`/usuarios/${id}`, {
         method: "PATCH",
         body: JSON.stringify({ rol: nuevoRol }),
       });
       if (actualizado.enlaceInvitacion) {
-        setEnlace({ email: actualizado.email, url: actualizado.enlaceInvitacion });
+        setEnlace({ email: actualizado.email, url: actualizado.enlaceInvitacion, clave: actualizado.claveTemporal });
         setMensaje(
           "Rol actualizado. Comparte el enlace para que defina su nueva contraseña.",
         );
@@ -165,11 +166,15 @@ export default function UsuariosPage() {
     setMensaje(null);
     setEnlace(null);
     try {
-      const data = await apiFetch<{ enlace: string }>(
-        `/usuarios/${u.id}/enlace`,
-        { method: "POST" },
-      );
-      setEnlace({ email: u.email, url: data.enlace });
+      const data = await apiFetch<{
+        enlaceInvitacion: string;
+        claveTemporal?: string;
+      }>(`/usuarios/${u.id}/enlace`, { method: "POST" });
+      setEnlace({
+        email: u.email,
+        url: data.enlaceInvitacion,
+        clave: data.claveTemporal,
+      });
       setMensaje("Enlace generado. Los anteriores quedaron anulados.");
     } catch (err) {
       setError(
@@ -264,9 +269,22 @@ export default function UsuariosPage() {
                   {copiado ? "Copiado" : "Copiar"}
                 </button>
               </div>
+              {enlace.clave && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-[12px] font-semibold text-primary-600 dark:text-primary-100">
+                    Clave temporal:
+                  </span>
+                  <code className="rounded-lg bg-white px-3 py-1.5 font-mono text-[15px] font-bold tracking-[0.25em] text-zinc-900 dark:bg-dark-700 dark:text-white">
+                    {enlace.clave}
+                  </code>
+                  <span className="text-[11px] text-body-text">
+                    Debe cambiarla en los próximos 7 días.
+                  </span>
+                </div>
+              )}
               <p className="mt-2 text-[11px] text-body-text">
-                Caduca en 48 horas y sirve una sola vez. Compártelo por un medio
-                privado: quien lo abra podrá definir la contraseña.
+                El enlace caduca en 48 horas y sirve una sola vez. Compártelo por
+                un medio privado: quien lo abra podrá definir la contraseña.
               </p>
             </div>
           )}

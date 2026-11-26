@@ -107,6 +107,7 @@ export interface UsuarioSesion {
   rol: string;
   empresaId: string;
   comisionistaId?: string | null;
+  debeCambiarPassword?: boolean;
 }
 
 // Inicia sesión: pide el token, lo guarda y devuelve los datos del usuario.
