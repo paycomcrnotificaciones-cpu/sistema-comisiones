@@ -16,3 +16,11 @@
 
 # Las rutas dinámicas (por ejemplo /comisionistas/[id]) las resuelve
 # el adaptador; cualquier ruta desconocida cae en la página 404 de Next.
+
+# La web llama a /api y Netlify reenvía a la API: evita problemas de CORS
+# y permite cambiar de servidor sin recompilar la web.
+[[redirects]]
+  from = "/api/*"
+  to = "https://sistema-comisiones-osln.onrender.com/api/:splat"
+  status = 200
+  force = true
