@@ -175,3 +175,5 @@ pnpm lint        # Analizar el código
 - [`docs/design.md`](./docs/design.md): diseño del sistema.
 - [`docs/decisiones.md`](./docs/decisiones.md): decisiones técnicas.
 - [`docs/roadmap.md`](./docs/roadmap.md): próximos pasos.
+
+<!-- despliegue 2026-11-26 -->
