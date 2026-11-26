@@ -79,7 +79,21 @@ export class VentasService {
 
         const whereActivas = { ...where, estado: 'ACTIVA' as const };
 
-        const [total, suma, pagada, pendiente, datos] = await this.prisma.$transaction([
+        // Las comisiones de suscripción se guardan por mes (periodo), no por
+        // fecha de venta. Se filtra con los meses que cubre el rango elegido.
+        const comisionistaFiltrado = soloComisionistaId ?? query.comisionistaId;
+        const dondeComisionSuscripcion = {
+            empresaId,
+            comisionistaId: comisionistaFiltrado,
+            ...((query.desde || query.hasta) ? {
+                periodo: {
+                    gte: query.desde?.slice(0, 7),
+                    lte: query.hasta?.slice(0, 7),
+                },
+            } : {}),
+        };
+
+        const [total, suma, pagada, pendiente, datos, comisionSuscripciones, comisionSuscripcionesPendiente] = await this.prisma.$transaction([
             this.prisma.venta.count({ where }),
             this.prisma.venta.aggregate({
                 where: whereActivas,
@@ -112,6 +126,20 @@ export class VentasService {
                     liquidacion: { select: { id: true, estado: true }},
                 },
             }),
+            this.prisma.comisionSuscripcion.aggregate({
+                where: dondeComisionSuscripcion,
+                _sum: { monto: true },
+            }),
+            this.prisma.comisionSuscripcion.aggregate({
+                where: {
+                    ...dondeComisionSuscripcion,
+                    OR: [
+                        { liquidacionId: null },
+                        { liquidacion: { is: { estado: 'BORRADOR' } } },
+                    ],
+                },
+                _sum: { monto: true },
+            }),
         ]);
 
         return {
@@ -123,6 +151,8 @@ export class VentasService {
             totalComision: aDecimal(suma._sum.comisionMonto ?? 0).toFixed(2),
             comisionPendiente: aDecimal(pendiente._sum.comisionMonto ?? 0).toFixed(2),
             comisionPagada: aDecimal(pagada._sum.comisionMonto ?? 0).toFixed(2),
+            comisionSuscripciones: aDecimal(comisionSuscripciones._sum.monto ?? 0).toFixed(2),
+            comisionSuscripcionesPendiente: aDecimal(comisionSuscripcionesPendiente._sum.monto ?? 0).toFixed(2),
         };
     }
 

@@ -38,6 +38,8 @@ interface RespuestaVentas {
   totalComision: string;
   comisionPendiente: string;
   comisionPagada: string;
+  comisionSuscripciones: string;
+  comisionSuscripcionesPendiente: string;
 }
 
 type Frecuencia = "MENSUAL" | "TRIMESTRAL" | "SEMESTRAL" | "ANUAL" | "UNICA";
@@ -139,6 +141,8 @@ function PerfilComisionista() {
     totalComision: 0,
     comisionPendiente: 0,
     comisionPagada: 0,
+    comisionSuscripciones: 0,
+    comisionSuscripcionesPendiente: 0,
   });
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -191,6 +195,8 @@ function PerfilComisionista() {
         totalComision: Number(data.totalComision),
         comisionPendiente: Number(data.comisionPendiente),
         comisionPagada: Number(data.comisionPagada),
+        comisionSuscripciones: Number(data.comisionSuscripciones ?? 0),
+        comisionSuscripcionesPendiente: Number(data.comisionSuscripcionesPendiente ?? 0),
       });
     },
     [paramsVentas],
@@ -303,6 +309,11 @@ function PerfilComisionista() {
       setExportando(false);
     }
   }
+
+  // En la ficha se suman ventas y suscripciones, y se muestra el desglose.
+  const comisionGenerada = totales.totalComision + totales.comisionSuscripciones;
+  const comisionPendiente =
+    totales.comisionPendiente + totales.comisionSuscripcionesPendiente;
 
   const iniciales = (comisionista?.nombre ?? "??")
     .split(" ")
@@ -446,8 +457,8 @@ function PerfilComisionista() {
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   { etiqueta: "Monto vendido", valor: totales.montoVendido, detalle: "Total facturado en ventas del rango", clase: "text-zinc-900 dark:text-white", borde: "border-t-primary-500" },
-                  { etiqueta: "Comisión generada", valor: totales.totalComision, detalle: "Comisión de ventas + comisión de suscripciones", clase: "text-primary-600 dark:text-primary-100", borde: "border-t-brand-cyan-500" },
-                  { etiqueta: "Pendiente de pago", valor: totales.comisionPendiente, detalle: "Generado y todavía sin pagar", clase: "text-warning-600", borde: "border-t-warning-500" },
+                  { etiqueta: "Comisión generada", valor: comisionGenerada, detalle: `Ventas ${formatoDinero.format(totales.totalComision)} · Suscripciones ${formatoDinero.format(totales.comisionSuscripciones)}`, clase: "text-primary-600 dark:text-primary-100", borde: "border-t-brand-cyan-500" },
+                  { etiqueta: "Pendiente de pago", valor: comisionPendiente, detalle: `Ventas ${formatoDinero.format(totales.comisionPendiente)} · Suscripciones ${formatoDinero.format(totales.comisionSuscripcionesPendiente)}`, clase: "text-warning-600", borde: "border-t-warning-500" },
                   { etiqueta: "Comisión pagada", valor: totales.comisionPagada, detalle: "Liquidaciones pagadas del rango", clase: "text-success-600 dark:text-success-500", borde: "border-t-success-500" },
                 ].map((item) => (
                   <div key={item.etiqueta} className={`rounded-xl border border-t-2 border-light-100 bg-light-50/70 p-4 dark:border-dark-600 dark:bg-dark-600/60 ${item.borde}`}>
@@ -538,7 +549,7 @@ function PerfilComisionista() {
                       Comisión del período
                     </p>
                     <p className="font-display text-[22px] font-bold text-zinc-900 dark:text-white">
-                      {formatoDinero.format(totales.totalComision)}
+                      {formatoDinero.format(comisionGenerada)}
                     </p>
                   </div>
                 )}

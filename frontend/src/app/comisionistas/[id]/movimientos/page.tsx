@@ -779,7 +779,7 @@ function MovimientosComisionista() {
                     <input value={subProducto} onChange={(e) => setSubProducto(e.target.value)} placeholder="Ej. Plan Básico" className={inputClass} />
                   </label>
                   <label className={labelClass}>
-                    <span>Monto por cobro (₡)</span>
+                    <span>Monto (₡)</span>
                     <input required inputMode="decimal" value={subMonto} onChange={(e) => setSubMonto(e.target.value)} placeholder="30000" className={inputClass} />
                   </label>
                   <label className={labelClass}>

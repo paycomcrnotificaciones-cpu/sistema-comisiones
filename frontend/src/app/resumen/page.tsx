@@ -333,49 +333,6 @@ export default function ResumenPage() {
           Comisión pendiente + Comisión pagada = Comisión generada.
         </p>
 
-        <section className="surface min-w-0 overflow-hidden">
-          <div className="flex items-start justify-between gap-4 border-b border-light-100 p-4 dark:border-dark-600 sm:p-5">
-            <div className="min-w-0">
-              <h2 className="font-display text-[17px] font-bold text-zinc-900 dark:text-white sm:text-[18px]">
-                Resumen del mes
-              </h2>
-              <p className="mt-1 text-[12px] text-body-text">
-                {data
-                  ? `${data.totalVentas} ventas · ${formatoDinero.format(data.totalComision)} en comisión`
-                  : "Sin movimientos aún"}
-              </p>
-            </div>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-100">
-              <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M3 3v18h18" />
-                <path d="M7 15l4-4 3 3 5-6" />
-              </svg>
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
-            <p className="font-display text-[28px] font-bold leading-tight text-zinc-900 dark:text-white">
-              {formatoDinero.format(data?.montoVendido ?? 0)}
-            </p>
-            <div className="w-full sm:w-64">
-              <div className="h-1.5 overflow-hidden rounded-full bg-light-100 dark:bg-dark-600">
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-primary-500),var(--color-brand-cyan-500))]"
-                  style={{
-                    width: `${
-                      data && data.montoVendido > 0
-                        ? Math.min(100, (data.totalComision / data.montoVendido) * 100 * 4)
-                        : 0
-                    }%`,
-                  }}
-                />
-              </div>
-              <p className="mt-2 text-right text-[10px] uppercase tracking-[1.2px] text-body-text">
-                Comisión sobre ventas
-              </p>
-            </div>
-          </div>
-        </section>
 
         <section className="surface min-w-0 overflow-hidden">
           <div className="flex items-start justify-between gap-4 border-b border-light-100 p-4 dark:border-dark-600 sm:p-5">
@@ -434,6 +391,50 @@ export default function ResumenPage() {
             ) : (
               <p className="px-5 py-8 text-center text-sm text-body-text">Sin datos</p>
             )}
+          </div>
+        </section>
+
+        <section className="surface min-w-0 overflow-hidden">
+          <div className="flex items-start justify-between gap-4 border-b border-light-100 p-4 dark:border-dark-600 sm:p-5">
+            <div className="min-w-0">
+              <h2 className="font-display text-[17px] font-bold text-zinc-900 dark:text-white sm:text-[18px]">
+                Resumen del mes
+              </h2>
+              <p className="mt-1 text-[12px] text-body-text">
+                {data
+                  ? `${data.totalVentas} ventas · ${formatoDinero.format(data.totalComision)} en comisión`
+                  : "Sin movimientos aún"}
+              </p>
+            </div>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-100">
+              <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 3v18h18" />
+                <path d="M7 15l4-4 3 3 5-6" />
+              </svg>
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
+            <p className="font-display text-[28px] font-bold leading-tight text-zinc-900 dark:text-white">
+              {formatoDinero.format(data?.montoVendido ?? 0)}
+            </p>
+            <div className="w-full sm:w-64">
+              <div className="h-1.5 overflow-hidden rounded-full bg-light-100 dark:bg-dark-600">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-primary-500),var(--color-brand-cyan-500))]"
+                  style={{
+                    width: `${
+                      data && data.montoVendido > 0
+                        ? Math.min(100, (data.totalComision / data.montoVendido) * 100 * 4)
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+              <p className="mt-2 text-right text-[10px] uppercase tracking-[1.2px] text-body-text">
+                Comisión sobre ventas
+              </p>
+            </div>
           </div>
         </section>
       </div>
