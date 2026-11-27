@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Permite que el CLI avise de actualizaciones de seguridad de Next.
+    agentUpgrade: "security",
+  },
   turbopack: {
     rules: {
       "*.css": {

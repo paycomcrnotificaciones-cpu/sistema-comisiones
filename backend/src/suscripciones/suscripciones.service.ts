@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -202,6 +203,8 @@ export class SuscripcionesService {
   }
 
   // Borra definitivamente una suscripción finalizada y sus comisiones.
+  // No se permite si alguna comisión ya entró en una liquidación: borrarla
+  // dejaría la liquidación con un total que no cuadra con sus filas.
   async eliminar(empresaId: string, id: string) {
     const actual = await this.obtener(empresaId, id);
     if (actual.estado !== 'FINALIZADA') {
@@ -209,6 +212,16 @@ export class SuscripcionesService {
         'Solo se puede borrar una suscripción finalizada',
       );
     }
+
+    const liquidadas = await this.prisma.comisionSuscripcion.count({
+      where: { suscripcionId: id, empresaId, liquidacionId: { not: null } },
+    });
+    if (liquidadas > 0) {
+      throw new ConflictException(
+        'No se puede borrar: sus comisiones ya están en una liquidación.',
+      );
+    }
+
     await this.prisma.$transaction([
       this.prisma.comisionSuscripcion.deleteMany({
         where: { suscripcionId: id, empresaId },

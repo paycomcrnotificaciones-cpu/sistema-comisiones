@@ -22,7 +22,7 @@ export function Navbar() {
     <header className="flex items-center justify-between border-b border-dark-600 bg-dark-500 px-6 py-3">
       <div className="flex items-center gap-6">
         <Link href="/comisionistas" className="flex items-center gap-3">
-          <Image src="/logo-icon-dark.png" alt="PayCom CR" width={40} height={24} className="h-8 w-auto" />
+          <Image src="/logo-icon-dark.png" alt="PayCom CR" width={40} height={36} className="h-8 w-auto" />
           <span className="text-lg font-semibold text-white">PayCom CR</span>
         </Link>
         <nav className="flex items-center gap-1">

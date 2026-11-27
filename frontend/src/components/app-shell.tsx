@@ -290,7 +290,7 @@ export function AppShell({
     <div className="app-bg min-h-screen text-zinc-900 dark:text-light-50">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[268px] flex-col border-r border-white/5 bg-[linear-gradient(180deg,#151f3b_0%,#1d2a50_55%,#121a33_100%)] px-5 pb-6 pt-8 shadow-[8px_0_40px_-24px_rgba(10,18,38,0.8)] lg:flex">
         <Link href={esComisionista ? rutaPerfil : "/comisionistas"} className="flex items-center gap-3 px-2 pb-8">
-          <Image src={logoIcon} alt="PayCom CR" width={48} height={48} className="shrink-0 rounded-2xl" />
+          <Image src={logoIcon} alt="PayCom CR" width={48} height={44} className="shrink-0" />
           <span className="flex flex-col">
             <span className="font-display text-[19px] font-bold leading-tight tracking-tight text-white">
               PayCom CR

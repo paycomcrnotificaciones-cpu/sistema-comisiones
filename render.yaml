@@ -32,3 +32,9 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: CORREO_RELAY_URL
+        sync: false
+      - key: CORREO_RELAY_SECRET
+        sync: false

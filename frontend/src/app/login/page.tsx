@@ -56,7 +56,7 @@ export default function LoginPage() {
             la tarjeta. Sin fondo blanco en la tarjeta no queda orilla clara. */}
         <section className="hero-panel hero-panel-recto relative hidden flex-col justify-between p-10 lg:flex">
           <div className="relative z-10">
-            <Image src={logoDark} alt="PayCom CR" width={488} height={135} className="h-auto w-56" priority />
+            <Image src={logoDark} alt="PayCom CR" width={1000} height={310} className="h-auto w-56" priority />
             <p className="mt-8 text-[11px] font-bold uppercase tracking-[2.4px] text-brand-cyan-500">
               Solusoft CR
             </p>
@@ -91,8 +91,8 @@ export default function LoginPage() {
           className="relative space-y-5 bg-white p-7 dark:bg-dark-700 sm:p-10"
         >
           <div className="flex flex-col items-center gap-2 lg:hidden">
-            <Image src={logo} alt="PayCom CR" width={488} height={135} className="h-auto w-44 dark:hidden" priority />
-            <Image src={logoDark} alt="PayCom CR" width={488} height={135} className="hidden h-auto w-44 dark:block" priority />
+            <Image src={logo} alt="PayCom CR" width={1000} height={310} className="h-auto w-44 dark:hidden" priority />
+            <Image src={logoDark} alt="PayCom CR" width={1000} height={310} className="hidden h-auto w-44 dark:block" priority />
           </div>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-100">

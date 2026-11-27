@@ -21,15 +21,6 @@ function calcularComisionMonto(
   return tipo === 'PORCENTAJE' ? porcentaje(neto, valor) : aTexto(valor);
 }
 
-// Si la venta viene con un producto del catálogo, se toma el nombre de ahí.
-// Así el producto siempre coincide con lo que se eligió.
-function datosCatalogo(
-  catalogo: { id: string; nombre: string } | null,
-): { catalogoId: string | null; producto?: string } {
-  if (!catalogo) return { catalogoId: null };
-  return { catalogoId: catalogo.id, producto: catalogo.nombre };
-}
-
 // Toda la lógica de las ventas: listar con filtros, crear, editar,
 // exportar a CSV y anular. Solo se puede editar o anular mientras la venta
 // no haya entrado en una liquidación.
@@ -54,7 +45,9 @@ export class VentasService {
         return {
             empresaId,
             comisionistaId: soloComisionistaId ?? comisionistaId,
-            estado,
+            // Una venta anulada no queda pendiente ni se paga: al filtrar por
+            // estado de pago solo se miran las activas.
+            estado: estado ?? (pago ? ('ACTIVA' as const) : undefined),
             ...(q ? { producto: { contains: q, mode: 'insensitive' as const } } : {}),
             ...(pago === 'PAGADA'
                 ? { liquidacion: { is: { estado: 'PAGADA' as const } } }

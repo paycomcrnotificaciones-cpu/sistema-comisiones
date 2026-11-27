@@ -95,7 +95,17 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
   if (!response.ok) {
     const cuerpo = (await response.json().catch(() => null)) as { message?: string } | null;
-    throw new Error(cuerpo?.message ?? `Error ${response.status}`);
+    const mensaje = cuerpo?.message ?? `Error ${response.status}`;
+    // Clave temporal: la única pantalla permitida es la de cambiarla.
+    if (
+      typeof window !== "undefined" &&
+      response.status === 403 &&
+      /contraseña antes de continuar|clave temporal venció/i.test(mensaje) &&
+      !window.location.pathname.startsWith("/cambiar-clave")
+    ) {
+      window.location.replace("/cambiar-clave");
+    }
+    throw new Error(mensaje);
   }
 
   return (await response.json()) as T;

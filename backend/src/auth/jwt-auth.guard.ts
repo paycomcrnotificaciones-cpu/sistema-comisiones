@@ -70,16 +70,20 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('La cuenta está desactivada');
     }
 
-    // Si la clave temporal venció, solo se le deja cambiar la contraseña.
+    // Con clave temporal solo se puede cambiar la contraseña. Da igual si
+    // todavía no venció: mientras no la cambie, el resto de la API queda cerrado.
     const esCambioDeClave = request.path.startsWith('/api/auth/cambiar-clave');
-    if (
-      !esCambioDeClave &&
-      usuario.debeCambiarPassword &&
-      usuario.passwordTemporalExpira &&
-      usuario.passwordTemporalExpira < new Date()
-    ) {
+    if (!esCambioDeClave && usuario.debeCambiarPassword) {
+      if (
+        usuario.passwordTemporalExpira &&
+        usuario.passwordTemporalExpira < new Date()
+      ) {
+        throw new ForbiddenException(
+          'Tu clave temporal venció. Pide una nueva al administrador.',
+        );
+      }
       throw new ForbiddenException(
-        'Tu clave temporal venció. Pide una nueva al administrador.',
+        'Debes cambiar tu contraseña antes de continuar.',
       );
     }
 
